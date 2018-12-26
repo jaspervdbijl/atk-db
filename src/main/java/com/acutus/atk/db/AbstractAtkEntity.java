@@ -8,6 +8,10 @@ import java.sql.ResultSet;
 
 public interface AbstractAtkEntity<T> extends AbstractAtk<T> {
 
+    public boolean isLoadedFromDB();
+
+    public void setLoadedFromDB(boolean loaded);
+
     public default String getTableName() {
         Table table = getClass().getAnnotation(Table.class);
         return table != null && !StringUtils.isEmpty(table.name()) ? table.name() : getClass().getSimpleName();

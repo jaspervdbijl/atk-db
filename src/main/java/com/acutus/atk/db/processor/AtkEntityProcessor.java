@@ -20,12 +20,18 @@ import java.util.stream.IntStream;
 @AutoService(Processor.class)
 public class AtkEntityProcessor extends AtkProcessor {
 
-    public static String GET_FIELDS = "\n" +
+    private static String GET_FIELDS = "\n" +
             "    public AtkEnFieldList getFields() {\n" +
             "        return (AtkEnFieldList) getRefFields().stream()\n" +
             "                .map(f -> (AtkField) handle(() -> ((Field) f).get(this)))\n" +
             "                .collect(Collectors.toCollection(AtkEnFieldList::new));\n" +
             "    }";
+
+    private static Strings EXTRA_FIELDS = Strings.asList("private transient boolean isLoadedFromDB");
+
+    private static Strings EXTRA_METHODS = Strings.asList(
+            "public boolean isLoadedFromDB() {return isLoadedFromDB;}"
+            , "public void setLoadedFromDB(boolean isLoadedFromDB) {this.isLoadedFromDB = isLoadedFromDB;}");
 
     @Override
     protected String getClassName(Element element) {
@@ -40,9 +46,15 @@ public class AtkEntityProcessor extends AtkProcessor {
                 "implements AbstractAtkEntity {", getClassName(element), element.getSimpleName());
     }
 
+
     @Override
     protected Strings getImports() {
         return super.getImports().plus("import com.acutus.atk.db.*");
+    }
+
+    @Override
+    protected Strings getExtraFields(Element parent) {
+        return EXTRA_FIELDS;
     }
 
     @Override
@@ -69,9 +81,7 @@ public class AtkEntityProcessor extends AtkProcessor {
         );
     }
 
-    @Override
-    protected Strings getMethods(String className, Element element) {
-        // add all query shortcuts
+    private Strings getQueryMethods(Element element) {
         Strings methods = new Strings();
         Arrays.stream(Query.class.getMethods()).forEach(m -> {
             if ("java.util.Optional<T>".equals(m.getGenericReturnType().getTypeName())
@@ -79,6 +89,14 @@ public class AtkEntityProcessor extends AtkProcessor {
                 methods.add(cloneQueryMethod(element, m));
             }
         });
-        return Strings.asList(GET_FIELDS).plus(methods);
+        return methods;
+    }
+
+    @Override
+    protected Strings getMethods(String className, Element element) {
+        // add all query shortcuts
+        Strings methods = new Strings();
+        methods.add(String.format("public Query<%s> query() {return new Query(this);}", getClassName(element)));
+        return Strings.asList(GET_FIELDS).plus(methods).plus(EXTRA_METHODS);
     }
 }
