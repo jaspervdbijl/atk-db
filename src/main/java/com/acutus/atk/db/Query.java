@@ -2,49 +2,84 @@ package com.acutus.atk.db;
 
 import com.acutus.atk.db.sql.Filter;
 import com.acutus.atk.util.Assert;
+import com.acutus.atk.util.Call;
 import lombok.SneakyThrows;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
-import java.util.stream.IntStream;
 
+import static com.acutus.atk.db.sql.Filter.and;
+import static com.acutus.atk.db.sql.SQLHelper.run;
 import static com.acutus.atk.db.sql.SQLHelper.runAndReturn;
-import static com.acutus.atk.util.AtkUtil.handle;
 
 public class Query<T extends AbstractAtkEntity> {
 
     private T entity;
+    private ResultSet rs;
 
     public Query(T entity) {
         this.entity = entity;
     }
 
     @SneakyThrows
-    private Optional<T> getBySet(Connection connection, T entity, AtkEnFieldList set) {
-        Assert.isTrue(set.isEmpty(), "No set fields for entity %s ", entity.getTableName());
+    private PreparedStatement prepareStatementFromFilter(Connection connection, Filter filter) {
+        return filter.prepare(connection.prepareStatement(
+                String.format("select %s from %s where %s"
+                        , entity.getEnFields().getColNames().toString()
+                        , entity.getTableName(), filter.getSql())));
+    }
 
-        String sql = String.format("select * from %s where %s = ?"
-                , entity.getTableName()
-                , set.getColNames().append(" = ?").toString(" and ")
-        );
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            IntStream.range(0, set.size())
-                    .forEach(i -> handle(() -> ps.setObject(i + 1, set.get(i).get())));
+    @SneakyThrows
+    public Optional<T> get(Connection connection, Filter filter) {
+        try (PreparedStatement ps = prepareStatementFromFilter(connection, filter)) {
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    entity.getFields().stream().forEach(f -> f.setFromRs(rs));
-                    return Optional.of(entity);
+                    return Optional.of((T) entity.set(rs));
                 }
             }
         }
         return Optional.empty();
     }
 
-    public Optional<T> getBySet(Connection connection, T entity) {
-        return getBySet(connection, entity, entity.getFields().getSet());
+    public Optional<T> get(DataSource dataSource, Filter filter) {
+        return runAndReturn(dataSource, c -> get(c, filter));
+    }
+
+
+    @SneakyThrows
+    public void iterate(Connection connection, Filter filter, Call.One<T> call) {
+        try (PreparedStatement ps = prepareStatementFromFilter(connection, filter)) {
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    call.call((T) entity.set(rs));
+                }
+            }
+        }
+    }
+
+    public void iterate(DataSource dataSource, Filter filter, Call.One<T> call) {
+        run(dataSource, c -> iterate(c, filter, call));
+    }
+
+    public List<T> getAll(Connection connection, Filter filter) {
+        List<T> list = new ArrayList<>();
+        iterate(connection, filter, e -> list.add(e));
+        return list;
+    }
+
+    @SneakyThrows
+    private Optional<T> getBySet(Connection connection, AtkEnFieldList set) {
+        Assert.isTrue(set.isEmpty(), "No set fields for entity %s ", entity.getTableName());
+        return get(connection, and(set.toArray(new AtkEnField[]{})));
+    }
+
+    public Optional<T> getBySet(Connection connection) {
+        return getBySet(connection, entity.getEnFields().getSet());
     }
 
     /**
@@ -54,19 +89,15 @@ public class Query<T extends AbstractAtkEntity> {
      */
     @SneakyThrows
     public Optional<T> findById(Connection connection) {
-        AtkEnFieldList ids = entity.getFields().getIds();
+        AtkEnFieldList ids = entity.getEnFields().getIds();
         Assert.isTrue(ids.isEmpty(), "No Primary keys defined for entity %s ", entity.getTableName());
         Assert.isTrue(ids.getSet().size() == ids.size(), "Null id values. entity %s ", entity.getTableName());
-        return getBySet(connection, entity, ids);
+        return getBySet(connection, ids);
 
     }
 
     public Optional<T> findById(DataSource dataSource) {
         return runAndReturn(dataSource, c -> findById(c));
-    }
-
-    public Optional<T> where(Filter stack) {
-        return null;
     }
 
 

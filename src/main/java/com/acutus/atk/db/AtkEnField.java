@@ -1,7 +1,6 @@
 package com.acutus.atk.db;
 
 import com.acutus.atk.entity.AtkField;
-import com.acutus.atk.entity.processor.Atk;
 import com.acutus.atk.util.Assert;
 import lombok.SneakyThrows;
 import lombok.Synchronized;
@@ -11,7 +10,10 @@ import javax.persistence.Id;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.sql.ResultSet;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
 import static com.acutus.atk.util.StringUtils.isEmpty;
 
@@ -19,7 +21,7 @@ public class AtkEnField<T,R> extends AtkField<T,R> {
 
     public static final Map<Class, Optional<Method>> PARSE_METHOD = new HashMap<>();
 
-    @Synchronized("getParseMethod")
+    @Synchronized("PARSE_METHOD")
     public static Optional<Method> getParseStringMethod(Class type) {
         if (!PARSE_METHOD.containsKey(type)) {
             PARSE_METHOD.put(type,Arrays.stream(type.getMethods())
@@ -38,7 +40,7 @@ public class AtkEnField<T,R> extends AtkField<T,R> {
 
     public String getColName() {
         Column column = getField().getAnnotation(Column.class);
-        return column != null && isEmpty(column.name()) ?column.name():getField().getName();
+        return column != null && !isEmpty(column.name()) ? column.name() : getField().getName();
     }
 
     public boolean isId() {

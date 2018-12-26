@@ -2,12 +2,11 @@ package com.acutus.atk.db.sql;
 
 import com.acutus.atk.db.AtkEnField;
 import com.acutus.atk.db.AtkEnFieldList;
-import com.acutus.atk.db.processor.AtkEntity;
-import com.sun.javafx.binding.StringFormatter;
 import lombok.NoArgsConstructor;
+import lombok.SneakyThrows;
 
-import java.util.Arrays;
-import java.util.Stack;
+import java.sql.PreparedStatement;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @NoArgsConstructor
 public class Filter {
@@ -57,10 +56,29 @@ public class Filter {
     }
 
     public String getSql() {
-        return String.format("(%s)",
-                fields != null ? fields.getColNames().toString(String.format(" %s ", type.name().toLowerCase()))
-                        : String.format("(%s %s %s)", s1.getSql(), type.name().toLowerCase(),s2.getSql()));
+        if (fields != null) {
+            return fields.getColNames().append(" = ? ")
+                    .toString(String.format(" %s ", type.name().toLowerCase()));
+        } else {
+            return String.format("((%s) %s (%s))", s1.getSql(), type.name().toLowerCase(), s2.getSql());
+        }
+    }
 
+    @SneakyThrows
+    private void set(PreparedStatement ps, AtomicInteger index) {
+        if (fields != null) {
+            for (AtkEnField f : fields) {
+                ps.setObject(index.getAndIncrement(), f.get());
+            }
+        } else {
+            s1.set(ps, index);
+            s2.set(ps, index);
+        }
+    }
+
+    public PreparedStatement prepare(PreparedStatement ps) {
+        set(ps, new AtomicInteger(1));
+        return ps;
     }
 
 
