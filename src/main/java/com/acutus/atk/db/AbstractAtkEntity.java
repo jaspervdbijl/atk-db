@@ -2,27 +2,31 @@ package com.acutus.atk.db;
 
 import com.acutus.atk.entity.AbstractAtk;
 import com.acutus.atk.util.StringUtils;
+import lombok.Getter;
+import lombok.Setter;
 
 import javax.persistence.Table;
 import java.sql.ResultSet;
 
-public interface AbstractAtkEntity<T> extends AbstractAtk<T> {
+public class AbstractAtkEntity<T> extends AbstractAtk<T> {
 
-    public boolean isLoadedFromDB();
+    @Getter
+    @Setter
+    private transient boolean isLoadedFromDB;
 
-    public void setLoadedFromDB(boolean loaded);
-
-    public default String getTableName() {
+    public String getTableName() {
         Table table = getClass().getAnnotation(Table.class);
         return table != null && !StringUtils.isEmpty(table.name()) ? table.name() : getClass().getSimpleName();
     }
 
-    public default AtkEnFieldList getEnFields() {
-        return (AtkEnFieldList) getFields();
+    public AtkEnFieldList getEnFields() {
+        return new AtkEnFieldList(getFields());
     }
 
-    public default AbstractAtkEntity set(ResultSet rs) {
+    public AbstractAtkEntity set(ResultSet rs) {
+        isLoadedFromDB = true;
         getEnFields().stream().forEach(f -> f.setFromRs(rs));
         return this;
     }
+
 }

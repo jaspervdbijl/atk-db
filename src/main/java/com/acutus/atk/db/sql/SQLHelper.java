@@ -35,15 +35,15 @@ public class SQLHelper {
     }
 
     @SneakyThrows
-    public static <T> T mapFromRs(Class<T> type, int index) {
+    public static <T> T mapFromRs(ResultSet rs, Class<T> type, int index) {
         Assert.isTrue(RS_FUNC_INT_MAP.containsKey(type), "Type not supprted %s", type);
-        return (T) RS_FUNC_INT_MAP.get(type).invoke(index);
+        return (T) RS_FUNC_INT_MAP.get(type).invoke(rs, index);
     }
 
     @SneakyThrows
-    public static <T> T mapFromRs(Class<T> type, String colName) {
+    public static <T> T mapFromRs(ResultSet rs, Class<T> type, String colName) {
         Assert.isTrue(RS_FUNC_INT_MAP.containsKey(type), "Type not supprted %s", type);
-        return (T) RS_FUNC_INT_MAP.get(type).invoke(colName);
+        return (T) RS_FUNC_INT_MAP.get(type).invoke(rs, colName);
     }
 
     /**
@@ -58,8 +58,8 @@ public class SQLHelper {
         while (rs.next()) {
             values.add(IntStream.range(0, type.length)
                     .mapToObj(i -> colNames == null
-                            ? mapFromRs(type[i], i + 1)
-                            : mapFromRs(type[i], colNames[i]))
+                            ? mapFromRs(rs, type[i], i + 1)
+                            : mapFromRs(rs, type[i], colNames[i]))
                     .collect(Collectors.toList()));
         }
         return values;

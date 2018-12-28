@@ -8,6 +8,7 @@ import javax.persistence.Id;
 import java.lang.reflect.Field;
 import java.sql.ResultSet;
 
+import static com.acutus.atk.db.sql.SQLHelper.mapFromRs;
 import static com.acutus.atk.util.StringUtils.isEmpty;
 
 public class AtkEnField<T,R> extends AtkField<T,R> {
