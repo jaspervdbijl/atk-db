@@ -2,7 +2,7 @@ package com.acutus.atk.db;
 
 import com.acutus.atk.db.sql.Filter;
 import com.acutus.atk.util.Assert;
-import com.acutus.atk.util.Call;
+import com.acutus.atk.util.call.CallOne;
 import lombok.SneakyThrows;
 
 import javax.sql.DataSource;
@@ -52,7 +52,7 @@ public class Query<T extends AbstractAtkEntity> {
 
 
     @SneakyThrows
-    public void iterate(Connection connection, Filter filter, Call.One<T> call) {
+    public void iterate(Connection connection, Filter filter, CallOne<T> call) {
         try (PreparedStatement ps = prepareStatementFromFilter(connection, filter)) {
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
@@ -62,7 +62,7 @@ public class Query<T extends AbstractAtkEntity> {
         }
     }
 
-    public void iterate(DataSource dataSource, Filter filter, Call.One<T> call) {
+    public void iterate(DataSource dataSource, Filter filter, CallOne<T> call) {
         run(dataSource, c -> iterate(c, filter, call));
     }
 
