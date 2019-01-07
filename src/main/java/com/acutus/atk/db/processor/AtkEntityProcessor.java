@@ -80,9 +80,12 @@ public class AtkEntityProcessor extends AtkProcessor {
 
     @Override
     protected Strings getMethods(String className, Element element) {
+        AtkEntity atk = element.getAnnotation(AtkEntity.class);
         // add all query shortcuts
         Strings methods = new Strings();
         methods.add(String.format("public Query<%s> query() {return new Query(this);}", getClassName(element)));
+        methods.add(String.format("public Persist<%s> persist() {return new Persist(this);}", getClassName(element)));
+        methods.add(String.format("public int version() {return %d;}", atk.version()));
         return methods;
     }
 }

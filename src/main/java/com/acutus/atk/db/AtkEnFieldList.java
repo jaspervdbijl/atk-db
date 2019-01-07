@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @NoArgsConstructor
@@ -38,9 +39,18 @@ public class AtkEnFieldList extends AtkFieldList<AtkEnField> {
         return this.stream().map(f -> f.get()).collect(Collectors.toList());
     }
 
-
     public Strings getColNames() {
         return new Strings(stream().map(f -> f.getColName()).collect(Collectors.toList()));
+    }
+
+    public Optional<AtkEnField> getByColName(String name) {
+        Optional<AtkEnField> field = stream().filter(f -> f.getColName().equalsIgnoreCase(name)).findAny();
+        return field;
+    }
+
+
+    public AtkEnFieldList clone() {
+        return new AtkEnFieldList(this);
     }
 
 }

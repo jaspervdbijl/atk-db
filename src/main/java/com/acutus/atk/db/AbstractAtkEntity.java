@@ -14,9 +14,16 @@ public class AbstractAtkEntity<T> extends AbstractAtk<T> {
     @Setter
     private transient boolean isLoadedFromDB;
 
+    // entities created as child classes will have this reference set to the parent
+    private AbstractAtkEntity parentEntity;
+
     public String getTableName() {
         Table table = getClass().getAnnotation(Table.class);
         return table != null && !StringUtils.isEmpty(table.name()) ? table.name() : getClass().getSimpleName();
+    }
+
+    public int version() {
+        return 0;
     }
 
     public AtkEnFieldList getEnFields() {

@@ -30,7 +30,7 @@ public class Query<T extends AbstractAtkEntity> {
     private PreparedStatement prepareStatementFromFilter(Connection connection, Filter filter) {
         return filter.prepare(connection.prepareStatement(
                 String.format("select %s from %s where %s"
-                        , entity.getEnFields().getColNames().toString()
+                        , entity.getEnFields().getColNames().toString(",")
                         , entity.getTableName(), filter.getSql())));
     }
 
@@ -74,7 +74,7 @@ public class Query<T extends AbstractAtkEntity> {
 
     @SneakyThrows
     private Optional<T> getBySet(Connection connection, AtkEnFieldList set) {
-        Assert.isTrue(set.isEmpty(), "No set fields for entity %s ", entity.getTableName());
+        Assert.isTrue(!set.isEmpty(), "No set fields for entity %s ", entity.getTableName());
         return get(connection, and(set.toArray(new AtkEnField[]{})));
     }
 

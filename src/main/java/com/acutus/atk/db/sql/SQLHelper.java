@@ -1,5 +1,6 @@
 package com.acutus.atk.db.sql;
 
+import com.acutus.atk.db.constants.SQLConstants;
 import com.acutus.atk.util.Assert;
 import com.acutus.atk.util.call.CallOne;
 import com.acutus.atk.util.call.CallOneRet;
@@ -10,15 +11,21 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static com.acutus.atk.db.sql.Constants.RS_FUNC_INT_MAP;
+import static com.acutus.atk.db.constants.SQLConstants.RS_FUNC_INT_MAP;
+import static com.acutus.atk.db.constants.SQLConstants.RS_FUNC_INT_STR;
 import static com.acutus.atk.util.AtkUtil.handle;
 
 public class SQLHelper {
+
+    static {
+        SQLConstants.init();
+    }
 
     @SneakyThrows
     public static void run(DataSource dataSource, CallOne<Connection> call) {
@@ -36,14 +43,14 @@ public class SQLHelper {
 
     @SneakyThrows
     public static <T> T mapFromRs(ResultSet rs, Class<T> type, int index) {
-        Assert.isTrue(RS_FUNC_INT_MAP.containsKey(type), "Type not supprted %s", type);
+        Assert.isTrue(RS_FUNC_INT_MAP.containsKey(type), "Type not supported %s", type);
         return (T) RS_FUNC_INT_MAP.get(type).invoke(rs, index);
     }
 
     @SneakyThrows
     public static <T> T mapFromRs(ResultSet rs, Class<T> type, String colName) {
-        Assert.isTrue(RS_FUNC_INT_MAP.containsKey(type), "Type not supprted %s", type);
-        return (T) RS_FUNC_INT_MAP.get(type).invoke(rs, colName);
+        Assert.isTrue(RS_FUNC_INT_STR.containsKey(type), "Type not supprted %s", type);
+        return (T) RS_FUNC_INT_STR.get(type).invoke(rs, colName);
     }
 
     /**
@@ -139,6 +146,24 @@ public class SQLHelper {
     public static <A, B, C, D> List<Four<A, B, C, D>> query(DataSource dataSource, Class<A> t1, Class<B> t2
             , Class<C> t3, Class<D> t4, String query, Object... params) {
         return runAndReturn(dataSource, connection -> query(connection, t1, t2, t3, t4, query, params));
+    }
+
+    @SneakyThrows
+    public static int executeUpdate(Connection connection, String sql, Object... params) {
+        try (PreparedStatement ps = prepare(connection, sql, params)) {
+            return ps.executeUpdate();
+        }
+    }
+
+    @SneakyThrows
+    public static void execute(Connection connection, String sql) {
+        try (Statement smt = connection.createStatement()) {
+            ((Statement) smt).execute(sql);
+        }
+    }
+
+    public static void execute(DataSource dataSource, String sql) {
+        run(dataSource, c -> execute(c, sql));
     }
 
 }

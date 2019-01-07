@@ -11,4 +11,7 @@ public @interface AtkEntity {
     String className() default "";
 
     String classNameExt() default "Entity";
+
+    // 0 will always upgrade
+    int version() default 0;
 }
