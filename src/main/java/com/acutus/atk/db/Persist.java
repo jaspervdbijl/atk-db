@@ -1,14 +1,18 @@
 package com.acutus.atk.db;
 
 import com.acutus.atk.db.util.DriverFactory;
+import com.acutus.atk.util.Assert;
 import lombok.SneakyThrows;
 
 import javax.persistence.GeneratedValue;
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.util.List;
 import java.util.UUID;
 
 import static com.acutus.atk.db.sql.SQLHelper.prepare;
+import static com.acutus.atk.db.sql.SQLHelper.runAndReturn;
 import static javax.persistence.GenerationType.AUTO;
 import static javax.persistence.GenerationType.IDENTITY;
 
@@ -33,7 +37,7 @@ public class Persist<T extends AbstractAtkEntity> {
     }
 
     @SneakyThrows
-    public T insert(Connection connecton) {
+    public T insert(Connection connection) {
         // no id
         boolean autoInc = false;
         AtkEnFieldList ids = entity.getEnFields().getIds();
@@ -45,7 +49,7 @@ public class Persist<T extends AbstractAtkEntity> {
         if (autoInc) {
             clone.removeAll(ids);
         }
-        try (PreparedStatement ps = prepare(connecton,
+        try (PreparedStatement ps = prepare(connection,
                 String.format("insert into %s (%s) values(%s)"
                         , entity.getTableName(), clone.getColNames().toString(",")
                         , clone.stream().map(f -> "?").reduce((s1, s2) -> s1 + "," + s2).get())
@@ -54,8 +58,87 @@ public class Persist<T extends AbstractAtkEntity> {
         }
         // load any auto inc fields
         if (autoInc) {
-            ids.get(0).set(DriverFactory.getDriver(connecton).getLastInsertValue(connecton, ids.get(0).getType()));
+            ids.get(0).set(DriverFactory.getDriver(connection)
+                    .getLastInsertValue(connection, ids.get(0).getType()));
         }
         return entity;
     }
+
+    public T insert(DataSource dataSource) {
+        return runAndReturn(dataSource, c -> insert(c));
+    }
+
+    /**
+     * update on the entity id
+     *
+     * @param connection
+     * @return
+     */
+    @SneakyThrows
+    private T update(Connection connection, AtkEnFieldList updateFields) {
+        Assert.isTrue(!entity.getEnFields().getIds().isEmpty(), "No Id fields defined for entity " + entity.getTableName());
+        Assert.isTrue(!entity.getEnFields().getIds().getValues()
+                        .stream().filter(c -> c == null).findAny().isPresent()
+                , "Ids can not be null %s %s", entity.getTableName(), entity.getEnFields().getIds());
+        List updateValues = updateFields.getValues();
+        updateFields.addAll(entity.getEnFields().getIds().getValues());
+        try (PreparedStatement ps = prepare(connection,
+                String.format("update %s set %s where %s"
+                        , entity.getTableName(), updateFields.getColNames().append("= ?").toString(",")
+                        , entity.getEnFields().getIds().getColNames().append("= ?").toString(","))
+                , updateValues.toArray())) {
+            int updated = ps.executeUpdate();
+            Assert.isTrue(updated == 1, "Failed to update %s on %s", entity.getTableName(), entity.getEnFields().getIds());
+            entity.getEnFields().reset();
+        }
+        return entity;
+    }
+
+    /**
+     * update only set fields
+     *
+     * @param connection
+     * @return
+     */
+    public T update(Connection connection) {
+        return update(connection, entity.getEnFields().getSet());
+    }
+
+    /**
+     * update only set fields
+     *
+     * @param connection
+     * @return
+     */
+    public T updateAllColumns(Connection connection) {
+        return update(connection, entity.getEnFields());
+    }
+
+    public T update(DataSource dataSource) {
+        return runAndReturn(dataSource, c -> update(c));
+    }
+
+    public T updateAllColumns(DataSource dataSource) {
+        return runAndReturn(dataSource, c -> updateAllColumns(c));
+    }
+
+    /**
+     * update or insert entity
+     *
+     * @param connection
+     * @return
+     */
+    public T set(Connection connection) {
+        if (entity.isLoadedFromDB()) {
+            return update(connection);
+        } else {
+            return insert(connection);
+        }
+    }
+
+    public T set(DataSource dataSource) {
+        return runAndReturn(dataSource, c -> set(c));
+    }
+
+
 }

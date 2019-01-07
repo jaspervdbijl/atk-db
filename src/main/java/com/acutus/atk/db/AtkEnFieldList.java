@@ -31,6 +31,10 @@ public class AtkEnFieldList extends AtkFieldList<AtkEnField> {
         return stream().filter(f -> f.isSet()).collect(Collectors.toCollection(AtkEnFieldList::new));
     }
 
+    public void reset() {
+        stream().forEach(f -> f.reset());
+    }
+
     public AtkEnFieldList getIds() {
         return this.stream().filter(f -> f.isId()).collect(Collectors.toCollection(AtkEnFieldList::new));
     }
@@ -48,9 +52,14 @@ public class AtkEnFieldList extends AtkFieldList<AtkEnField> {
         return field;
     }
 
-
     public AtkEnFieldList clone() {
         return new AtkEnFieldList(this);
+    }
+
+    @Override
+    public String toString() {
+        return new Strings(stream().map(f -> f.toString()).collect(Collectors.toList())).toString("\n\t");
+
     }
 
 }
