@@ -11,8 +11,7 @@ import java.sql.PreparedStatement;
 import java.util.List;
 import java.util.UUID;
 
-import static com.acutus.atk.db.sql.SQLHelper.prepare;
-import static com.acutus.atk.db.sql.SQLHelper.runAndReturn;
+import static com.acutus.atk.db.sql.SQLHelper.*;
 import static javax.persistence.GenerationType.AUTO;
 import static javax.persistence.GenerationType.IDENTITY;
 
@@ -68,6 +67,13 @@ public class Persist<T extends AbstractAtkEntity> {
         return runAndReturn(dataSource, c -> insert(c));
     }
 
+    private void assertIdIsPresent() {
+        Assert.isTrue(!entity.getEnFields().getIds().isEmpty(), "No Id fields defined for entity " + entity.getTableName());
+        Assert.isTrue(!entity.getEnFields().getIds().getValues()
+                        .stream().filter(c -> c == null).findAny().isPresent()
+                , "Ids can not be null %s %s", entity.getTableName(), entity.getEnFields().getIds());
+
+    }
     /**
      * update on the entity id
      *
@@ -76,10 +82,7 @@ public class Persist<T extends AbstractAtkEntity> {
      */
     @SneakyThrows
     private T update(Connection connection, AtkEnFieldList updateFields) {
-        Assert.isTrue(!entity.getEnFields().getIds().isEmpty(), "No Id fields defined for entity " + entity.getTableName());
-        Assert.isTrue(!entity.getEnFields().getIds().getValues()
-                        .stream().filter(c -> c == null).findAny().isPresent()
-                , "Ids can not be null %s %s", entity.getTableName(), entity.getEnFields().getIds());
+        assertIdIsPresent();
         List updateValues = updateFields.getValues();
         updateFields.addAll(entity.getEnFields().getIds().getValues());
         try (PreparedStatement ps = prepare(connection,
@@ -140,5 +143,27 @@ public class Persist<T extends AbstractAtkEntity> {
         return runAndReturn(dataSource, c -> set(c));
     }
 
+    /**
+     * update on the entity id
+     *
+     * @param connection
+     * @return
+     */
+    @SneakyThrows
+    public void delete(Connection connection) {
+        assertIdIsPresent();
+        try (PreparedStatement ps = prepare(connection,
+                String.format("delete from %s where %s"
+                        , entity.getTableName()
+                        , entity.getEnFields().getIds().getColNames().append("= ?").toString(","))
+                , entity.getEnFields().getIds().getValues().toArray())) {
+            int updated = ps.executeUpdate();
+            Assert.isTrue(updated == 1, "Failed to delete %s on %s", entity.getTableName(), entity.getEnFields().getIds());
+        }
+    }
+
+    public void delete(DataSource dataSource) {
+        run(dataSource, c -> delete(c));
+    }
 
 }

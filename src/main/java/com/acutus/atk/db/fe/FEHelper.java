@@ -10,10 +10,7 @@ import com.acutus.atk.util.Strings;
 import lombok.SneakyThrows;
 import lombok.extern.java.Log;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.Optional;
 
 import static com.acutus.atk.db.constants.EnvProperties.DB_FE_ALLOW_DROP;
@@ -67,12 +64,14 @@ public class FEHelper {
             colNames.add(meta.getColumnName(i + 1));
             Optional<AtkEnField> atkField = entity.getEnFields().getByColName(meta.getColumnName(i + 1));
             if (atkField.isPresent()) {
-                boolean typeMatch = atkField.get()
-                        .getColumnType(driver).getName().equals(meta.getColumnClassName(i + 1));
-                boolean sizeMatch = atkField.get()
+                boolean typeMatch =
+                        driver.getFieldType(atkField.get()).equalsIgnoreCase(meta.getColumnTypeName(i + 1))
+                                || atkField.get().getType().getName().equals(meta.getColumnClassName(i + 1));
+                boolean sizeMatch = Clob.class.equals(atkField.get().getColumnType(driver))
+                        || Blob.class.equals(atkField.get().getColumnType(driver))
+                        || atkField.get()
                         .getColLength() == meta.getColumnDisplaySize(i + 1);
-                boolean nullMatch = atkField.get()
-                        .getColLength() == meta.getColumnDisplaySize(i + 1);
+                boolean nullMatch = atkField.get().isNullable() == (meta.isNullable(i + 1) == 1);
                 if (!(typeMatch && (sizeMatch || !DB_FE_STRICT.get()) && nullMatch)) {
                     // alter the column
                     logAndExecute(connection, DriverFactory.getDriver(connection)
