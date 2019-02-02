@@ -3,30 +3,56 @@ package com.acutus.atk.db.fe;
 import com.acutus.atk.db.AbstractAtkEntity;
 import com.acutus.atk.db.AtkEnField;
 import com.acutus.atk.db.AtkEnFieldList;
-import com.acutus.atk.db.util.AbstractDriver;
-import com.acutus.atk.db.util.DriverFactory;
+import com.acutus.atk.db.driver.AbstractDriver;
+import com.acutus.atk.db.driver.DriverFactory;
+import com.acutus.atk.db.fe.keys.FrKeys;
 import com.acutus.atk.util.Assert;
 import com.acutus.atk.util.Strings;
 import lombok.SneakyThrows;
 import lombok.extern.java.Log;
 
 import java.sql.*;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static com.acutus.atk.db.constants.EnvProperties.DB_FE_ALLOW_DROP;
 import static com.acutus.atk.db.constants.EnvProperties.DB_FE_STRICT;
 import static com.acutus.atk.db.sql.SQLHelper.execute;
+import static com.acutus.atk.util.AtkUtil.handle;
 
 @Log
 public class FEHelper {
 
-    public static void maintainDataDefinition(Connection connection, AbstractAtkEntity entity) {
+    public static void maintainDataDefinition(Connection connection, Class<? extends AbstractAtkEntity>... classes) {
+        List<AbstractAtkEntity> entities = Arrays.stream(classes)
+                .map(c -> handle(() -> c.newInstance()))
+                .collect(Collectors.toList());
+        maintainDataDefinition(connection, entities.toArray(new AbstractAtkEntity[]{}));
+    }
+
+    @SneakyThrows
+    private static void maintainDataDefinition(Connection connection, AbstractAtkEntity... entities) {
         AbstractDriver driver = DriverFactory.getDriver(connection);
-        if (!driver.doesTableExist(connection, entity.getTableName())) {
-            createTable(connection, entity);
-        } else {
-            updateTable(connection, entity);
+        // maintain schema's
+        for (AbstractAtkEntity entity : entities) {
+            if (!driver.doesTableExist(connection, entity.getTableName())) {
+                createTable(connection, entity);
+            } else {
+                maintainTable(connection, entity);
+            }
         }
+        // PK
+        for (AbstractAtkEntity entity : entities) {
+            maintainPrimaryKeys(connection, driver, entity);
+        }
+
+        // FK
+        for (AbstractAtkEntity entity : entities) {
+            maintainForeignKeys(connection, driver, entity);
+        }
+
     }
 
     public static void createTableIfNoExists(Connection connection, AbstractAtkEntity entity) {
@@ -47,17 +73,17 @@ public class FEHelper {
     }
 
     @SneakyThrows
-    public static void updateTable(Connection connection, AbstractAtkEntity entity) {
+    public static void maintainTable(Connection connection, AbstractAtkEntity entity) {
         AbstractDriver driver = DriverFactory.getDriver(connection);
         try (Statement smt = connection.createStatement()) {
             try (ResultSet rs = smt.executeQuery(String.format("select * from %s", entity.getTableName()))) {
-                updateTable(connection, driver, entity, rs.getMetaData());
+                maintainTable(connection, driver, entity, rs.getMetaData());
             }
         }
     }
 
     @SneakyThrows
-    private static void updateTable(Connection connection, AbstractDriver driver, AbstractAtkEntity entity
+    private static void maintainTable(Connection connection, AbstractDriver driver, AbstractAtkEntity entity
             , ResultSetMetaData meta) {
         Strings colNames = new Strings();
         for (int i = 0; i < meta.getColumnCount(); i++) {
@@ -93,6 +119,51 @@ public class FEHelper {
                     .getAddColumnColumnDefinition(field));
         }
     }
+
+    private static void maintainPrimaryKeys(Connection connection, AbstractDriver driver, AbstractAtkEntity entity) {
+        Strings dbPks = driver.getPrimaryKeys(connection, entity.getTableName());
+
+        AtkEnFieldList pkToAdd = entity.getEnFields().getIds()
+                .removeWhen(f -> dbPks.containsIgnoreCase(f.getColName()));
+        if (!pkToAdd.isEmpty()) {
+            logAndExecute(connection, driver.getAddPrimaryKeyDefinition(pkToAdd));
+        }
+
+    }
+
+    /**
+     * add missing Foreign keys, replace mismatching keys, drop redundant keys
+     *
+     * @param connection
+     * @param driver
+     * @param entity
+     */
+    private static void maintainForeignKeys(Connection connection, AbstractDriver driver, AbstractAtkEntity entity) {
+        // **** Foreign Keys
+
+        FrKeys dbKeys = FrKeys.load(driver.getForeignKeys(connection, entity.getTableName()));
+        AtkEnFieldList enKeys = entity.getEnFields().getForeignKeys();
+
+        // add missing
+        AtkEnFieldList missing = enKeys.removeWhen(k -> dbKeys.containsField(k));
+        missing.stream().forEach(k -> logAndExecute(connection, driver.addForeignKey(k)));
+
+        // remove redundant
+        FrKeys remove = dbKeys.removeWhen(k -> k.isPresentIn(enKeys));
+        remove.stream().forEach(k -> logAndExecute(connection, driver.dropForeignKey(entity.getTableName(), k)));
+    }
+
+    public interface PopulateStringsFromResultSet {
+
+        public default <T> T populate(ResultSet rs, T bean) {
+            Arrays.stream(bean.getClass().getDeclaredFields()).forEach(f -> handle(() -> {
+                f.setAccessible(true);
+                f.set(bean, rs.getString(f.getName()));
+            }));
+            return bean;
+        }
+    }
+
 
 
 }

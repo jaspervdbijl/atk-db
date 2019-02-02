@@ -12,7 +12,10 @@ import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.OptionalInt;
 import java.util.stream.IntStream;
+
+import static com.acutus.atk.util.StringUtils.removeAllASpaces;
 
 @SupportedAnnotationTypes(
         "com.acutus.atk.db.processor.AtkEntity")
@@ -30,6 +33,19 @@ public class AtkEntityProcessor extends AtkProcessor {
     @Override
     protected String getClassNameLine(Element element) {
         return String.format("public class %s extends AbstractAtkEntity {", getClassName(element));
+    }
+
+    @Override
+    protected String getField(Element element) {
+        String value = super.getField(element);
+        info("GETFIELD " + value);
+        Strings lines = new Strings(Arrays.asList(value.split("\n")));
+        OptionalInt fKindex = lines.transform(s -> removeAllASpaces(s)).getInsideIndex("ForeignKey");
+        if (fKindex.isPresent()) {
+            lines.set(fKindex.getAsInt(), lines.get(fKindex.getAsInt()).replace(".class", "Entity.class"));
+            value = lines.toString("\n");
+        }
+        return value;
     }
 
 

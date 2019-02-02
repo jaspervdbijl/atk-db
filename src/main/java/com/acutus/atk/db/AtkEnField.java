@@ -1,6 +1,7 @@
 package com.acutus.atk.db;
 
-import com.acutus.atk.db.util.AbstractDriver;
+import com.acutus.atk.db.annotations.ForeignKey;
+import com.acutus.atk.db.driver.AbstractDriver;
 import com.acutus.atk.entity.AtkField;
 import lombok.SneakyThrows;
 
@@ -39,6 +40,10 @@ public class AtkEnField<T, R extends AbstractAtkEntity> extends AtkField<T, R> {
     // TODO - expand to include complex ids
     public boolean isId() {
         return getField().getAnnotation(Id.class) != null;
+    }
+
+    public boolean isForeignKey() {
+        return getField().getAnnotation(ForeignKey.class) != null;
     }
 
     public Optional<Column> getColumn() {

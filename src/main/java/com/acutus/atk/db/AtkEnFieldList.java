@@ -1,6 +1,7 @@
 package com.acutus.atk.db;
 
 import com.acutus.atk.entity.AtkFieldList;
+import com.acutus.atk.util.Assert;
 import com.acutus.atk.util.Strings;
 import lombok.NoArgsConstructor;
 
@@ -8,6 +9,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 @NoArgsConstructor
@@ -39,6 +41,16 @@ public class AtkEnFieldList extends AtkFieldList<AtkEnField> {
         return this.stream().filter(f -> f.isId()).collect(Collectors.toCollection(AtkEnFieldList::new));
     }
 
+    public AtkEnField getSingleId() {
+        AtkEnFieldList ids = getIds();
+        Assert.isTrue(ids.size() == 1, "Expected a single id");
+        return ids.get(0);
+    }
+
+    public AtkEnFieldList getForeignKeys() {
+        return this.stream().filter(f -> f.isForeignKey()).collect(Collectors.toCollection(AtkEnFieldList::new));
+    }
+
     public List getValues() {
         return this.stream().map(f -> f.get()).collect(Collectors.toList());
     }
@@ -54,6 +66,16 @@ public class AtkEnFieldList extends AtkFieldList<AtkEnField> {
 
     public AtkEnFieldList clone() {
         return new AtkEnFieldList(this);
+    }
+
+    /**
+     * @param filter
+     * @return a new instance with items matching filter removed
+     */
+    public AtkEnFieldList removeWhen(Predicate<AtkEnField> filter) {
+        AtkEnFieldList clone = clone();
+        clone.removeIf(filter);
+        return clone;
     }
 
     @Override

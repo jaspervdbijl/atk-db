@@ -1,22 +1,26 @@
-package com.acutus.atk.db.util;
+package com.acutus.atk.db.driver;
 
 import com.acutus.atk.db.AbstractAtkEntity;
 import com.acutus.atk.db.AtkEnField;
+import com.acutus.atk.db.AtkEnFieldList;
+import com.acutus.atk.db.annotations.ForeignKey;
+import com.acutus.atk.db.fe.keys.FrKey;
 import com.acutus.atk.db.sql.SQLHelper;
+import com.acutus.atk.util.Assert;
 import com.acutus.atk.util.StringUtils;
+import com.acutus.atk.util.Strings;
 import lombok.SneakyThrows;
 
 import javax.persistence.Column;
 import javax.persistence.Lob;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import static com.acutus.atk.db.annotations.ForeignKey.Action.NoAction;
 
 public abstract class AbstractDriver {
 
@@ -25,11 +29,17 @@ public abstract class AbstractDriver {
     }
 
     @SneakyThrows
-    public List<String> getPrimaryKeys(Connection connection, String tableName) {
+    public ResultSet getForeignKeys(Connection connection, String tableName) {
+        DatabaseMetaData dm = connection.getMetaData();
+        return dm.getImportedKeys(connection.getCatalog(), connection.getSchema(), tableName);
+    }
+
+    @SneakyThrows
+    public Strings getPrimaryKeys(Connection connection, String tableName) {
         try (ResultSet rs = connection.getMetaData().getPrimaryKeys(connection.getCatalog()
                 , connection.getSchema(), tableName)) {
             List<List> keys = SQLHelper.query(rs, new Class[]{String.class}, new String[]{"COLUMN_NAME"});
-            return keys.stream().map(s -> (String) s.get(0)).collect(Collectors.toList());
+            return keys.stream().map(s -> (String) s.get(0)).collect(Collectors.toCollection(Strings::new));
         }
     }
 
@@ -76,6 +86,41 @@ public abstract class AbstractDriver {
     public String getDropColumnColumnDefinition(AtkEnField field) {
         return String.format("alter table %s drop column %s", field.getEntity().getTableName()
                 , field.getColName());
+    }
+
+    public String getAddPrimaryKeyDefinition(AtkEnFieldList ids) {
+        Assert.isTrue(!ids.isEmpty(), "Expected non empty list");
+        return String.format("alter table %s add primary key (%s)", ids.get(0).getEntity().getTableName()
+                , ids.getColNames().toString(","));
+    }
+
+    @SneakyThrows
+    public String addForeignKey(AtkEnField field) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    public String dropForeignKey(String tableName, FrKey frKey) {
+        return String.format("alter table %s drop foreign key %s", tableName, frKey.getFK_NAME());
+    }
+
+    public String getCascadeRule(ForeignKey.Action action) {
+        if (action.equals(ForeignKey.Action.Cascade)) {
+            return "cascade";
+        } else if (action.equals(NoAction)) {
+            return "no action";
+        } else if (action.equals(ForeignKey.Action.SetNull)) {
+            return "set null";
+        } else if (action.equals(ForeignKey.Action.SetDefault)) {
+            return "set default";
+        } else if (action.equals(ForeignKey.Action.Restrict)) {
+            return "restrict";
+        } else {
+            throw new UnsupportedOperationException("Unknown cascade type " + action);
+        }
+    }
+
+    public String getDeferRule(ForeignKey.Deferrability deferrable) {
+        return "";
     }
 
     /**

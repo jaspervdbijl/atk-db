@@ -25,6 +25,7 @@ public class SQLConstants {
         put(java.sql.Timestamp.class, handle(() -> ResultSet.class.getMethod("getTimestamp", int.class)));
         put(java.util.Date.class, handle(() -> ResultSet.class.getMethod("getTimestamp", int.class)));
     }};
+
     public static final Map<Class, Method> RS_FUNC_INT_STR = new HashMap<Class, Method>() {{
         put(Integer.class, handle(() -> ResultSet.class.getMethod("getInt", String.class)));
         put(Long.class, handle(() -> ResultSet.class.getMethod("getLong", String.class)));

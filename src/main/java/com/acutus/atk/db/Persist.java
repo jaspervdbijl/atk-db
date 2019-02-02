@@ -1,6 +1,6 @@
 package com.acutus.atk.db;
 
-import com.acutus.atk.db.util.DriverFactory;
+import com.acutus.atk.db.driver.DriverFactory;
 import com.acutus.atk.util.Assert;
 import lombok.SneakyThrows;
 

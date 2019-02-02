@@ -1,7 +1,7 @@
 package com.acutus.atk.db.fe;
 
 import com.acutus.atk.db.AbstractAtkEntity;
-import com.acutus.atk.db.util.DriverFactory;
+import com.acutus.atk.db.driver.DriverFactory;
 import com.acutus.atk.util.collection.One;
 import lombok.Synchronized;
 
