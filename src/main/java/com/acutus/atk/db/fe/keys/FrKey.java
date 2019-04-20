@@ -2,9 +2,8 @@ package com.acutus.atk.db.fe.keys;
 
 import com.acutus.atk.db.AbstractAtkEntity;
 import com.acutus.atk.db.AtkEnField;
-import com.acutus.atk.db.AtkEnFieldList;
+import com.acutus.atk.db.AtkEnFields;
 import com.acutus.atk.db.annotations.ForeignKey;
-import com.acutus.atk.db.fe.FEHelper;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -15,7 +14,7 @@ import static com.acutus.atk.db.constants.EnvProperties.DB_FE_STRICT;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class FrKey implements FEHelper.PopulateStringsFromResultSet {
+public class FrKey {
 
     private String PKTABLE_CAT;
     private String PKTABLE_SCHEM;
@@ -65,7 +64,7 @@ public class FrKey implements FEHelper.PopulateStringsFromResultSet {
                 getDEFERRABILITY() == key.deferrable().getCode();
     }
 
-    public boolean isPresentIn(AtkEnFieldList fKeys) {
+    public boolean isPresentIn(AtkEnFields fKeys) {
         return fKeys.stream().filter(f -> equals(f)).findAny().isPresent();
     }
 

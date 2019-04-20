@@ -7,6 +7,8 @@ import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.function.Predicate;
 
+import static com.acutus.atk.db.Query.populateFrom;
+
 public class FrKeys extends ArrayList<FrKey> {
 
     @SneakyThrows
@@ -14,7 +16,7 @@ public class FrKeys extends ArrayList<FrKey> {
         FrKeys keys = new FrKeys();
         while (rs.next()) {
             FrKey fk = new FrKey();
-            keys.add(fk.populate(rs, fk));
+            keys.add(populateFrom(rs, fk));
         }
         return keys;
     }

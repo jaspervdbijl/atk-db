@@ -19,6 +19,9 @@ public class Vehicle {
     @ForeignKey(table = Person.class, field = "id", name = "personIdFk")
     private String personId;
 
+    public void tester() {
+        System.out.println("Hello");
+    }
 
     public static void main(String[] args) {
         System.out.println("@For (".replaceAll("\\s\\(", "("));

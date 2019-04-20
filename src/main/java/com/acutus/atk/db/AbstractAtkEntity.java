@@ -7,6 +7,8 @@ import lombok.Setter;
 
 import javax.persistence.Table;
 import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.List;
 
 public class AbstractAtkEntity<T> extends AbstractAtk<T> {
 
@@ -14,8 +16,16 @@ public class AbstractAtkEntity<T> extends AbstractAtk<T> {
     @Setter
     private transient boolean isLoadedFromDB;
 
+    @Getter
+    private transient List<AtkEnIndex> indexes = new ArrayList<>();
+
     // entities created as child classes will have this reference set to the parent
-    private AbstractAtkEntity parentEntity;
+    @Getter
+    private transient AbstractAtkEntity parentEntity;
+
+    protected void addIndex(AtkEnIndex index) {
+        indexes.add(index);
+    }
 
     public String getTableName() {
         Table table = getClass().getAnnotation(Table.class);
@@ -26,8 +36,8 @@ public class AbstractAtkEntity<T> extends AbstractAtk<T> {
         return 0;
     }
 
-    public AtkEnFieldList getEnFields() {
-        return new AtkEnFieldList(getFields());
+    public AtkEnFields getEnFields() {
+        return new AtkEnFields(getFields());
     }
 
     public AbstractAtkEntity set(ResultSet rs) {

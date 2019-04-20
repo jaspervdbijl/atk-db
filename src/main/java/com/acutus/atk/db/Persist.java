@@ -39,12 +39,12 @@ public class Persist<T extends AbstractAtkEntity> {
     public T insert(Connection connection) {
         // no id
         boolean autoInc = false;
-        AtkEnFieldList ids = entity.getEnFields().getIds();
+        AtkEnFields ids = entity.getEnFields().getIds();
         if (ids.size() == 1) {
             autoInc = populateIdAndReturnIsAutoIncrement(ids.get(0));
         }
         // exclude id is its a auto generated value
-        AtkEnFieldList clone = entity.getEnFields().clone();
+        AtkEnFields clone = entity.getEnFields().clone();
         if (autoInc) {
             clone.removeAll(ids);
         }
@@ -81,7 +81,7 @@ public class Persist<T extends AbstractAtkEntity> {
      * @return
      */
     @SneakyThrows
-    private T update(Connection connection, AtkEnFieldList updateFields) {
+    private T update(Connection connection, AtkEnFields updateFields) {
         assertIdIsPresent();
         List updateValues = updateFields.getValues();
         updateFields.addAll(entity.getEnFields().getIds().getValues());

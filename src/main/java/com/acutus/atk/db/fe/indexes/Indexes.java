@@ -7,6 +7,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.acutus.atk.db.Query.populateFrom;
+
 public class Indexes extends ArrayList<Index> {
 
     @SneakyThrows
@@ -14,7 +16,7 @@ public class Indexes extends ArrayList<Index> {
         Indexes indexes = new Indexes();
         while (rs.next()) {
             Index index = new Index();
-            indexes.add(index.populate(rs, index));
+            indexes.add(populateFrom(rs, index));
         }
         return indexes;
     }

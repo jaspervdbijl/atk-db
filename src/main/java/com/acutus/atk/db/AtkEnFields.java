@@ -13,42 +13,42 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 @NoArgsConstructor
-public class AtkEnFieldList extends AtkFieldList<AtkEnField> {
+public class AtkEnFields extends AtkFieldList<AtkEnField> {
 
-    public AtkEnFieldList(Collection<AtkEnField> collection) {
+    public AtkEnFields(Collection<AtkEnField> collection) {
         addAll(collection);
     }
 
-    public AtkEnFieldList(AtkEnField ... fields) {
+    public AtkEnFields(AtkEnField... fields) {
         this(Arrays.asList(fields));
     }
 
     @Override
-    public AtkEnFieldList getChanged() {
-        return stream().filter(f -> f.isChanged()).collect(Collectors.toCollection(AtkEnFieldList::new));
+    public AtkEnFields getChanged() {
+        return stream().filter(f -> f.isChanged()).collect(Collectors.toCollection(AtkEnFields::new));
     }
 
     @Override
-    public AtkEnFieldList getSet() {
-        return stream().filter(f -> f.isSet()).collect(Collectors.toCollection(AtkEnFieldList::new));
+    public AtkEnFields getSet() {
+        return stream().filter(f -> f.isSet()).collect(Collectors.toCollection(AtkEnFields::new));
     }
 
     public void reset() {
         stream().forEach(f -> f.reset());
     }
 
-    public AtkEnFieldList getIds() {
-        return this.stream().filter(f -> f.isId()).collect(Collectors.toCollection(AtkEnFieldList::new));
+    public AtkEnFields getIds() {
+        return this.stream().filter(f -> f.isId()).collect(Collectors.toCollection(AtkEnFields::new));
     }
 
     public AtkEnField getSingleId() {
-        AtkEnFieldList ids = getIds();
+        AtkEnFields ids = getIds();
         Assert.isTrue(ids.size() == 1, "Expected a single id");
         return ids.get(0);
     }
 
-    public AtkEnFieldList getForeignKeys() {
-        return this.stream().filter(f -> f.isForeignKey()).collect(Collectors.toCollection(AtkEnFieldList::new));
+    public AtkEnFields getForeignKeys() {
+        return this.stream().filter(f -> f.isForeignKey()).collect(Collectors.toCollection(AtkEnFields::new));
     }
 
     public List getValues() {
@@ -64,16 +64,21 @@ public class AtkEnFieldList extends AtkFieldList<AtkEnField> {
         return field;
     }
 
-    public AtkEnFieldList clone() {
-        return new AtkEnFieldList(this);
+    public Optional<AtkEnField> getByFieldName(String name) {
+        Optional<AtkEnField> field = stream().filter(f -> f.getField().getName().equalsIgnoreCase(name)).findAny();
+        return field;
+    }
+
+    public AtkEnFields clone() {
+        return new AtkEnFields(this);
     }
 
     /**
      * @param filter
      * @return a new instance with items matching filter removed
      */
-    public AtkEnFieldList removeWhen(Predicate<AtkEnField> filter) {
-        AtkEnFieldList clone = clone();
+    public AtkEnFields removeWhen(Predicate<AtkEnField> filter) {
+        AtkEnFields clone = clone();
         clone.removeIf(filter);
         return clone;
     }

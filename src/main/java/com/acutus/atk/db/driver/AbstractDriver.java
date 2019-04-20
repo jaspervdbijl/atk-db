@@ -2,8 +2,9 @@ package com.acutus.atk.db.driver;
 
 import com.acutus.atk.db.AbstractAtkEntity;
 import com.acutus.atk.db.AtkEnField;
-import com.acutus.atk.db.AtkEnFieldList;
+import com.acutus.atk.db.AtkEnFields;
 import com.acutus.atk.db.annotations.ForeignKey;
+import com.acutus.atk.db.fe.indexes.Indexes;
 import com.acutus.atk.db.fe.keys.FrKey;
 import com.acutus.atk.db.sql.SQLHelper;
 import com.acutus.atk.util.Assert;
@@ -41,6 +42,11 @@ public abstract class AbstractDriver {
             List<List> keys = SQLHelper.query(rs, new Class[]{String.class}, new String[]{"COLUMN_NAME"});
             return keys.stream().map(s -> (String) s.get(0)).collect(Collectors.toCollection(Strings::new));
         }
+    }
+
+    @SneakyThrows
+    public Indexes getIndexes(Connection connection, String tableName) {
+        return Indexes.load(connection.getMetaData().getIndexInfo(null, null, tableName, false, false));
     }
 
     @SneakyThrows
@@ -88,7 +94,7 @@ public abstract class AbstractDriver {
                 , field.getColName());
     }
 
-    public String getAddPrimaryKeyDefinition(AtkEnFieldList ids) {
+    public String getAddPrimaryKeyDefinition(AtkEnFields ids) {
         Assert.isTrue(!ids.isEmpty(), "Expected non empty list");
         return String.format("alter table %s add primary key (%s)", ids.get(0).getEntity().getTableName()
                 , ids.getColNames().toString(","));

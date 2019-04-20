@@ -2,9 +2,10 @@ package com.acutus.atk.db.fe;
 
 import com.acutus.atk.db.AbstractAtkEntity;
 import com.acutus.atk.db.AtkEnField;
-import com.acutus.atk.db.AtkEnFieldList;
+import com.acutus.atk.db.AtkEnFields;
 import com.acutus.atk.db.driver.AbstractDriver;
 import com.acutus.atk.db.driver.DriverFactory;
+import com.acutus.atk.db.fe.indexes.Indexes;
 import com.acutus.atk.db.fe.keys.FrKeys;
 import com.acutus.atk.util.Assert;
 import com.acutus.atk.util.Strings;
@@ -25,11 +26,15 @@ import static com.acutus.atk.util.AtkUtil.handle;
 @Log
 public class FEHelper {
 
-    public static void maintainDataDefinition(Connection connection, Class<? extends AbstractAtkEntity>... classes) {
-        List<AbstractAtkEntity> entities = Arrays.stream(classes)
+    public static void maintainDataDefinition(Connection connection, List<Class<? extends AbstractAtkEntity>> classes) {
+        List<AbstractAtkEntity> entities = classes.stream()
                 .map(c -> handle(() -> c.newInstance()))
                 .collect(Collectors.toList());
         maintainDataDefinition(connection, entities.toArray(new AbstractAtkEntity[]{}));
+    }
+
+    public static void maintainDataDefinition(Connection connection, Class<? extends AbstractAtkEntity>... classes) {
+        maintainDataDefinition(connection, Arrays.asList(classes));
     }
 
     @SneakyThrows
@@ -112,7 +117,7 @@ public class FEHelper {
             }
         }
         // add all the missing columns
-        AtkEnFieldList toAdd = entity.getEnFields().clone();
+        AtkEnFields toAdd = entity.getEnFields().clone();
         toAdd.removeIf(p -> colNames.contains(p.getColName()));
         for (AtkEnField field : toAdd) {
             logAndExecute(connection, DriverFactory.getDriver(connection)
@@ -123,7 +128,7 @@ public class FEHelper {
     private static void maintainPrimaryKeys(Connection connection, AbstractDriver driver, AbstractAtkEntity entity) {
         Strings dbPks = driver.getPrimaryKeys(connection, entity.getTableName());
 
-        AtkEnFieldList pkToAdd = entity.getEnFields().getIds()
+        AtkEnFields pkToAdd = entity.getEnFields().getIds()
                 .removeWhen(f -> dbPks.containsIgnoreCase(f.getColName()));
         if (!pkToAdd.isEmpty()) {
             logAndExecute(connection, driver.getAddPrimaryKeyDefinition(pkToAdd));
@@ -142,10 +147,10 @@ public class FEHelper {
         // **** Foreign Keys
 
         FrKeys dbKeys = FrKeys.load(driver.getForeignKeys(connection, entity.getTableName()));
-        AtkEnFieldList enKeys = entity.getEnFields().getForeignKeys();
+        AtkEnFields enKeys = entity.getEnFields().getForeignKeys();
 
         // add missing
-        AtkEnFieldList missing = enKeys.removeWhen(k -> dbKeys.containsField(k));
+        AtkEnFields missing = enKeys.removeWhen(k -> dbKeys.containsField(k));
         missing.stream().forEach(k -> logAndExecute(connection, driver.addForeignKey(k)));
 
         // remove redundant
@@ -153,17 +158,11 @@ public class FEHelper {
         remove.stream().forEach(k -> logAndExecute(connection, driver.dropForeignKey(entity.getTableName(), k)));
     }
 
-    public interface PopulateStringsFromResultSet {
-
-        public default <T> T populate(ResultSet rs, T bean) {
-            Arrays.stream(bean.getClass().getDeclaredFields()).forEach(f -> handle(() -> {
-                f.setAccessible(true);
-                f.set(bean, rs.getString(f.getName()));
-            }));
-            return bean;
-        }
+    @SneakyThrows
+    public void maintainIndexes(Connection connection, AbstractDriver driver, AbstractAtkEntity entity) {
+        Indexes indexes = driver.getIndexes(connection, entity.getTableName());
+        // add missing
     }
-
 
 
 }

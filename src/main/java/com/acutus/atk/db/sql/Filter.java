@@ -1,7 +1,7 @@
 package com.acutus.atk.db.sql;
 
 import com.acutus.atk.db.AtkEnField;
-import com.acutus.atk.db.AtkEnFieldList;
+import com.acutus.atk.db.AtkEnFields;
 import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
 
@@ -15,14 +15,14 @@ public class Filter {
         AND, OR, NOT
     }
 
-    private AtkEnFieldList fields;
+    private AtkEnFields fields;
     private Filter s1, s2;
     private Type type;
 
 
     public Filter(Type type, AtkEnField[] fields) {
         this.type = type;
-        this.fields = new AtkEnFieldList(fields);
+        this.fields = new AtkEnFields(fields);
     }
 
     public Filter(Type type, Filter s1, Filter s2) {
