@@ -3,6 +3,7 @@ package com.acutus.atk.db.constants;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.sql.ResultSet;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -40,6 +41,7 @@ public class SQLConstants {
         put(Short.class, handle(() -> ResultSet.class.getMethod("getShort", String.class)));
         put(java.sql.Time.class, handle(() -> ResultSet.class.getMethod("getTime", String.class)));
         put(java.sql.Timestamp.class, handle(() -> ResultSet.class.getMethod("getTimestamp", String.class)));
+        put(LocalDateTime.class, handle(() -> ResultSet.class.getMethod("getTimestamp", String.class)));
         put(java.util.Date.class, handle(() -> ResultSet.class.getMethod("getTimestamp", String.class)));
     }};
 

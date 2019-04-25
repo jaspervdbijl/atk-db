@@ -7,8 +7,10 @@ import com.acutus.atk.util.Assert;
 import com.acutus.atk.util.collection.One;
 import lombok.SneakyThrows;
 
+import javax.persistence.Column;
 import java.sql.Connection;
 import java.util.List;
+import java.util.Optional;
 
 import static com.acutus.atk.db.annotations.ForeignKey.Action.NoAction;
 import static com.acutus.atk.db.sql.SQLHelper.query;
@@ -33,4 +35,10 @@ public class MysqlDriver extends AbstractDriver {
                 (key.onDeleteAction() != NoAction ? ("on delete " + getCascadeRule(key.onDeleteAction())) : " ")
                         + " " + getDeferRule(key.deferrable()));
     }
+
+    @Override
+    public String getFieldTypeForClob(Optional<Column> column) {
+        return "longtext";
+    }
+
 }

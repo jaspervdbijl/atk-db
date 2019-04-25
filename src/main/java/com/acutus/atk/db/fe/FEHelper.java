@@ -111,9 +111,9 @@ public class FEHelper {
             } else {
                 // drop the extra column
                 Assert.isTrue(DB_FE_ALLOW_DROP.get(), "Dropping of columns %s not allowed"
-                        , atkField.get().getTableAndColName());
+                        , meta.getColumnName(i + 1));
                 logAndExecute(connection, DriverFactory.getDriver(connection)
-                        .getDropColumnColumnDefinition(atkField.get()));
+                        .getDropColumnColumnDefinition(entity.getTableName(), meta.getColumnName(i + 1)));
             }
         }
         // add all the missing columns

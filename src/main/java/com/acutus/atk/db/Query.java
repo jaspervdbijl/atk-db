@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import static com.acutus.atk.db.sql.Filter.Type.AND;
 import static com.acutus.atk.db.sql.Filter.and;
 import static com.acutus.atk.db.sql.SQLHelper.*;
 import static com.acutus.atk.util.AtkUtil.handle;
@@ -82,6 +83,14 @@ public class Query<T extends AbstractAtkEntity> {
         return runAndReturn(dataSource, c -> getAll(c, filter));
     }
 
+    public List<T> getAll(DataSource dataSource) {
+        return runAndReturn(dataSource, c -> getAll(c, new Filter()));
+    }
+
+    public List<T> getAllBySet(DataSource dataSource) {
+        return runAndReturn(dataSource, c -> getAll(c, new Filter(AND, entity.getEnFields().getSet())));
+    }
+
     public Optional<T> getBySet(Connection connection) {
         return getBySet(connection, entity.getEnFields().getSet());
     }
@@ -108,7 +117,7 @@ public class Query<T extends AbstractAtkEntity> {
     @SneakyThrows
     public Optional<T> findById(Connection connection) {
         AtkEnFields ids = entity.getEnFields().getIds();
-        Assert.isTrue(ids.isEmpty(), "No Primary keys defined for entity %s ", entity.getTableName());
+        Assert.isTrue(!ids.isEmpty(), "No Primary keys defined for entity %s ", entity.getTableName());
         Assert.isTrue(ids.getSet().size() == ids.size(), "Null id values. entity %s ", entity.getTableName());
         return getBySet(connection, ids);
 

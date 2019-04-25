@@ -8,10 +8,10 @@ import com.acutus.atk.util.collection.*;
 import lombok.SneakyThrows;
 
 import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.Statement;
+import java.sql.*;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -47,10 +47,24 @@ public class SQLHelper {
         return (T) RS_FUNC_INT_MAP.get(type).invoke(rs, index);
     }
 
+    private static <T> T unwrap(Class<T> type, Object value) {
+        if (value == null) return (T) value;
+        if (type.equals(value.getClass())) return (T) value;
+        if (LocalDateTime.class.equals(type) && value.getClass().equals(Timestamp.class))
+            return (T) ((Timestamp) value).toLocalDateTime();
+        if (LocalDate.class.equals(type) && value.getClass().equals(Timestamp.class))
+            return (T) ((Timestamp) value).toLocalDateTime().toLocalDate();
+        if (LocalTime.class.equals(type) && value.getClass().equals(Time.class))
+            return (T) ((Time) value).toLocalTime();
+
+        throw new UnsupportedOperationException(
+                String.format("Could not unwrap types from %s to %s", type.getName(), value.getClass().getName()));
+    }
+
     @SneakyThrows
     public static <T> T mapFromRs(ResultSet rs, Class<T> type, String colName) {
-        Assert.isTrue(RS_FUNC_INT_STR.containsKey(type), "Type not supprted %s", type);
-        return (T) RS_FUNC_INT_STR.get(type).invoke(rs, colName);
+        Assert.isTrue(RS_FUNC_INT_STR.containsKey(type), "Type not supported %s", type);
+        return (T) unwrap(type, RS_FUNC_INT_STR.get(type).invoke(rs, colName));
     }
 
     /**

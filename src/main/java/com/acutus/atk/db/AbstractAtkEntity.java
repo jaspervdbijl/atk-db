@@ -10,7 +10,7 @@ import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 
-public class AbstractAtkEntity<T> extends AbstractAtk<T> {
+public class AbstractAtkEntity<T, O> extends AbstractAtk<T, O> {
 
     @Getter
     @Setter
@@ -40,10 +40,10 @@ public class AbstractAtkEntity<T> extends AbstractAtk<T> {
         return new AtkEnFields(getFields());
     }
 
-    public AbstractAtkEntity set(ResultSet rs) {
+    public T set(ResultSet rs) {
         isLoadedFromDB = true;
         getEnFields().stream().forEach(f -> f.setFromRs(rs));
-        return this;
+        return (T) this;
     }
 
 }

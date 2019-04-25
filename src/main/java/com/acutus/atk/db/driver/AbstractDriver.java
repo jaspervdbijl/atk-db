@@ -17,6 +17,9 @@ import javax.persistence.Lob;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.*;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -89,9 +92,8 @@ public abstract class AbstractDriver {
                 , field.getColName(), getColumnDefinition(field));
     }
 
-    public String getDropColumnColumnDefinition(AtkEnField field) {
-        return String.format("alter table %s drop column %s", field.getEntity().getTableName()
-                , field.getColName());
+    public String getDropColumnColumnDefinition(String table, String column) {
+        return String.format("alter table %s drop column %s", table, column);
     }
 
     public String getAddPrimaryKeyDefinition(AtkEnFields ids) {
@@ -165,9 +167,35 @@ public abstract class AbstractDriver {
             return "blob";
         } else if (Byte[].class.equals(field.getType())) {
             return String.format("varchar2(%d)", column.isPresent() ? column.get().length() : 255);
+        } else if (Timestamp.class.equals(field.getType()) || LocalDateTime.class.equals(field.getType())) {
+            return getFieldTypeForTimestamp(column);
+        } else if (java.sql.Date.class.equals(field.getType()) || LocalDate.class.equals(field.getType())) {
+            return getFieldTypeForDate(column);
+        } else if (java.sql.Time.class.equals(field.getType()) || LocalTime.class.equals(field.getType())) {
+            return getFieldTypeForTime(column);
         } else {
             throw new UnsupportedOperationException("Unsupported type " + field.getType());
         }
+    }
+
+    public String getFieldTypeForString(Optional<Column> column) {
+        return String.format("varchar(%d)", column.isPresent() ? column.get().length() : 255);
+    }
+
+    public String getFieldTypeForClob(Optional<Column> column) {
+        return "clob";
+    }
+
+    public String getFieldTypeForTimestamp(Optional<Column> column) {
+        return "timestamp";
+    }
+
+    public String getFieldTypeForDate(Optional<Column> column) {
+        return "date";
+    }
+
+    public String getFieldTypeForTime(Optional<Column> column) {
+        return "time";
     }
 
     public abstract <T> T getLastInsertValue(Connection connection, Class<T> clazz);

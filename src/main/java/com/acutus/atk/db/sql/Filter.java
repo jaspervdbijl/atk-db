@@ -21,6 +21,10 @@ public class Filter {
 
 
     public Filter(Type type, AtkEnField[] fields) {
+        this(type, new AtkEnFields(fields));
+    }
+
+    public Filter(Type type, AtkEnFields fields) {
         this.type = type;
         this.fields = new AtkEnFields(fields);
     }
@@ -59,8 +63,11 @@ public class Filter {
         if (fields != null) {
             return fields.getColNames().append(" = ? ")
                     .toString(String.format(" %s ", type.name().toLowerCase()));
-        } else {
+        } else if (s1 != null) {
             return String.format("((%s) %s (%s))", s1.getSql(), type.name().toLowerCase(), s2.getSql());
+        } else {
+            // find all
+            return "1 = 1";
         }
     }
 
@@ -70,7 +77,7 @@ public class Filter {
             for (AtkEnField f : fields) {
                 ps.setObject(index.getAndIncrement(), f.get());
             }
-        } else {
+        } else if (s1 != null) {
             s1.set(ps, index);
             s2.set(ps, index);
         }

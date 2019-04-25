@@ -67,10 +67,9 @@ public class Persist<T extends AbstractAtkEntity> {
         return runAndReturn(dataSource, c -> insert(c));
     }
 
-    private void assertIdIsPresent() {
-        Assert.isTrue(!entity.getEnFields().getIds().isEmpty(), "No Id fields defined for entity " + entity.getTableName());
-        Assert.isTrue(!entity.getEnFields().getIds().getValues()
-                        .stream().filter(c -> c == null).findAny().isPresent()
+    private void assertIdIsPresent(AtkEnFields ids) {
+        Assert.isTrue(!ids.isEmpty(), "No Id fields defined for entity " + entity.getTableName());
+        Assert.isTrue(!ids.stream().filter(f -> f.get() == null).findAny().isPresent()
                 , "Ids can not be null %s %s", entity.getTableName(), entity.getEnFields().getIds());
 
     }
@@ -82,9 +81,13 @@ public class Persist<T extends AbstractAtkEntity> {
      */
     @SneakyThrows
     private T update(Connection connection, AtkEnFields updateFields) {
-        assertIdIsPresent();
+        AtkEnFields ids = entity.getEnFields().getIds();
+        assertIdIsPresent(ids);
+        // remove the ids
+        updateFields = updateFields.removeWhen(f -> ids.contains(f));
         List updateValues = updateFields.getValues();
-        updateFields.addAll(entity.getEnFields().getIds().getValues());
+        // add the ids to the end
+        updateValues.addAll(ids.getValues());
         try (PreparedStatement ps = prepare(connection,
                 String.format("update %s set %s where %s"
                         , entity.getTableName(), updateFields.getColNames().append("= ?").toString(",")
@@ -151,7 +154,7 @@ public class Persist<T extends AbstractAtkEntity> {
      */
     @SneakyThrows
     public void delete(Connection connection) {
-        assertIdIsPresent();
+        assertIdIsPresent(entity.getEnFields().getIds());
         try (PreparedStatement ps = prepare(connection,
                 String.format("delete from %s where %s"
                         , entity.getTableName()

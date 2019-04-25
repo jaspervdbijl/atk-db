@@ -1,5 +1,6 @@
 package com.acutus.atk.db;
 
+import com.acutus.atk.db.annotations.ForeignKey;
 import com.acutus.atk.entity.AtkFieldList;
 import com.acutus.atk.util.Assert;
 import com.acutus.atk.util.Strings;
@@ -49,6 +50,12 @@ public class AtkEnFields extends AtkFieldList<AtkEnField> {
 
     public AtkEnFields getForeignKeys() {
         return this.stream().filter(f -> f.isForeignKey()).collect(Collectors.toCollection(AtkEnFields::new));
+    }
+
+    public AtkEnFields getForeignKeys(Class table) {
+        return this.stream()
+                .filter(f -> f.isForeignKey() && f.getField().getAnnotation(ForeignKey.class).table().equals(table))
+                .collect(Collectors.toCollection(AtkEnFields::new));
     }
 
     public List getValues() {

@@ -5,6 +5,7 @@ import com.acutus.atk.db.annotations.Index;
 import com.acutus.atk.entity.processor.AtkProcessor;
 import com.acutus.atk.util.Strings;
 import com.google.auto.service.AutoService;
+import lombok.SneakyThrows;
 
 import javax.annotation.processing.Processor;
 import javax.annotation.processing.SupportedAnnotationTypes;
@@ -12,12 +13,14 @@ import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
+import javax.persistence.OneToMany;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.OptionalInt;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static com.acutus.atk.db.processor.ProcessorHelper.getExecuteMethod;
 import static com.acutus.atk.util.StringUtils.removeAllASpaces;
 
 @SupportedAnnotationTypes(
@@ -35,7 +38,11 @@ public class AtkEntityProcessor extends AtkProcessor {
 
     @Override
     protected String getClassNameLine(Element element) {
-        return String.format("public class %s extends AbstractAtkEntity {", getClassName(element));
+        String className = super.getClassNameLine(element);
+        className = className.replace("@com.acutus.atk.db.processor.AtkEntity", "");
+        return className.substring(0, className.indexOf("public class "))
+                + String.format("public class %s extends AbstractAtkEntity<%s,%s> {"
+                , getClassName(element), getClassName(element), element.getSimpleName());
     }
 
     @Override
@@ -53,7 +60,10 @@ public class AtkEntityProcessor extends AtkProcessor {
 
     @Override
     protected Strings getImports() {
-        return super.getImports().plus("import com.acutus.atk.db.*").plus("import com.acutus.atk.db.annotations.*");
+        return super.getImports().plus("import com.acutus.atk.db.*").plus("import com.acutus.atk.db.annotations.*")
+                .plus("import static com.acutus.atk.db.sql.SQLHelper.runAndReturn")
+                .plus("import static com.acutus.atk.util.AtkUtil.handle")
+                .plus("import java.sql.PreparedStatement");
     }
 
     private String formatIndexName(String idxName) {
@@ -126,6 +136,43 @@ public class AtkEntityProcessor extends AtkProcessor {
         return methods;
     }
 
+    @SneakyThrows
+    protected String getExecute(Execute execute, Element element) {
+        return "\n\n" + getExecuteMethod(element.getSimpleName().toString(), execute.value());
+    }
+
+    protected Strings getExecutes(Element element) {
+        return element.getEnclosedElements().stream()
+                .filter(f -> ElementKind.METHOD.equals(f.getKind()))
+                .filter(f -> f.getAnnotation(Execute.class) != null)
+                .map(f -> getExecute(((Element) f).getAnnotation(Execute.class), f))
+                .collect(Collectors.toCollection(Strings::new));
+    }
+
+    protected String getOneToManyImp(AtkEntity atk, Element element) {
+        String type = element.asType().toString();
+        // check that type is List
+        if (!type.startsWith("java.util.List")) {
+            error(String.format("OneToMany field must be a list [%s]", element.toString()));
+        }
+        // get the generic type
+        if (!type.contains("<")) {
+            error(String.format("OneToMany Expected a generic type for [%s]", element.toString()));
+        }
+        String className = type.substring(type.indexOf("<") + 1, type.indexOf(">")) + atk.classNameExt();
+        return String.format("public transient AtkEnRelation<%s> %sRef = new AtkEnRelation<>(%s.class, this);"
+                , className, element.toString(), className);
+    }
+
+    protected Strings getOneToMany(AtkEntity atk, Element element) {
+        return element.getEnclosedElements().stream()
+                .filter(f -> ElementKind.FIELD.equals(f.getKind()))
+                .filter(f -> f.getAnnotation(OneToMany.class) != null)
+                .map(f -> getOneToManyImp(atk, f))
+                .collect(Collectors.toCollection(Strings::new));
+
+    }
+
     @Override
     protected Strings getMethods(String className, Element element) {
         AtkEntity atk = element.getAnnotation(AtkEntity.class);
@@ -134,6 +181,10 @@ public class AtkEntityProcessor extends AtkProcessor {
         methods.add(String.format("public Query<%s> query() {return new Query(this);}", getClassName(element)));
         methods.add(String.format("public Persist<%s> persist() {return new Persist(this);}", getClassName(element)));
         methods.add(String.format("public int version() {return %d;}", atk.version()));
+
+        // add Execute methods
+        methods.addAll(getExecutes(element));
+        methods.addAll(getOneToMany(atk, element));
         return methods;
     }
 }

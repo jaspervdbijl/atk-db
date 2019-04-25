@@ -22,7 +22,8 @@ public class Indexes extends ArrayList<Index> {
     }
 
     public List<String> getPrimaryKeyNames() {
-        return stream().filter(i -> i.getPK_NAME() != null).map(i -> i.getCOLUMN_NAME()).collect(Collectors.toList());
+        return stream().filter(i -> i.getPK_NAME() != null)
+                .map(i -> i.getCOLUMN_NAME()).collect(Collectors.toList());
     }
 
 }
