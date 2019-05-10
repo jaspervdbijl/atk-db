@@ -42,7 +42,10 @@ public class AbstractAtkEntity<T, O> extends AbstractAtk<T, O> {
 
     public T set(ResultSet rs) {
         isLoadedFromDB = true;
-        getEnFields().stream().forEach(f -> f.setFromRs(rs));
+        getEnFields().stream().forEach(f -> {
+            f.setFromRs(rs);
+            f.setSet(false);
+        });
         return (T) this;
     }
 

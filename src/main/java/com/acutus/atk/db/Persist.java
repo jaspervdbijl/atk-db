@@ -1,6 +1,7 @@
 package com.acutus.atk.db;
 
 import com.acutus.atk.db.driver.DriverFactory;
+import com.acutus.atk.db.util.AtkEnUtil;
 import com.acutus.atk.util.Assert;
 import lombok.SneakyThrows;
 
@@ -8,6 +9,7 @@ import javax.persistence.GeneratedValue;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -52,7 +54,7 @@ public class Persist<T extends AbstractAtkEntity> {
                 String.format("insert into %s (%s) values(%s)"
                         , entity.getTableName(), clone.getColNames().toString(",")
                         , clone.stream().map(f -> "?").reduce((s1, s2) -> s1 + "," + s2).get())
-                , clone.getValues().toArray())) {
+                , wrapEnumerated(clone))) {
             ps.executeUpdate();
         }
         // load any auto inc fields
@@ -61,6 +63,15 @@ public class Persist<T extends AbstractAtkEntity> {
                     .getLastInsertValue(connection, ids.get(0).getType()));
         }
         return entity;
+    }
+
+    private List wrapEnumerated(AtkEnFields fields) {
+        // note that a lambda stream will remove null values
+        List values = new ArrayList();
+        for (AtkEnField field : fields) {
+            values.add(AtkEnUtil.wrapEnumerated(field));
+        }
+        return values;
     }
 
     public T insert(DataSource dataSource) {
@@ -85,14 +96,14 @@ public class Persist<T extends AbstractAtkEntity> {
         assertIdIsPresent(ids);
         // remove the ids
         updateFields = updateFields.removeWhen(f -> ids.contains(f));
-        List updateValues = updateFields.getValues();
+        AtkEnFields updateValues = updateFields.clone();
         // add the ids to the end
-        updateValues.addAll(ids.getValues());
+        updateValues.addAll(ids);
         try (PreparedStatement ps = prepare(connection,
                 String.format("update %s set %s where %s"
                         , entity.getTableName(), updateFields.getColNames().append("= ?").toString(",")
                         , entity.getEnFields().getIds().getColNames().append("= ?").toString(","))
-                , updateValues.toArray())) {
+                , wrapEnumerated(updateValues).toArray(new Object[]{}))) {
             int updated = ps.executeUpdate();
             Assert.isTrue(updated == 1, "Failed to update %s on %s", entity.getTableName(), entity.getEnFields().getIds());
             entity.getEnFields().reset();

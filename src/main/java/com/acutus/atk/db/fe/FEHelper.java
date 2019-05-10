@@ -12,7 +12,9 @@ import com.acutus.atk.util.Strings;
 import lombok.SneakyThrows;
 import lombok.extern.java.Log;
 
+import javax.persistence.Enumerated;
 import java.sql.*;
+import java.time.temporal.Temporal;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -97,11 +99,13 @@ public class FEHelper {
             if (atkField.isPresent()) {
                 boolean typeMatch =
                         driver.getFieldType(atkField.get()).equalsIgnoreCase(meta.getColumnTypeName(i + 1))
-                                || atkField.get().getType().getName().equals(meta.getColumnClassName(i + 1));
+                                || atkField.get().getColumnType(driver).getName().equals(meta.getColumnClassName(i + 1));
                 boolean sizeMatch = Clob.class.equals(atkField.get().getColumnType(driver))
                         || Blob.class.equals(atkField.get().getColumnType(driver))
-                        || atkField.get()
-                        .getColLength() == meta.getColumnDisplaySize(i + 1);
+                        || Date.class.isAssignableFrom(atkField.get().getColumnType(driver))
+                        || Temporal.class.isAssignableFrom(atkField.get().getColumnType(driver))
+                        || atkField.get().getField().getAnnotation(Enumerated.class) != null
+                        || atkField.get().getColLength() == meta.getColumnDisplaySize(i + 1);
                 boolean nullMatch = atkField.get().isNullable() == (meta.isNullable(i + 1) == 1);
                 if (!(typeMatch && (sizeMatch || !DB_FE_STRICT.get()) && nullMatch)) {
                     // alter the column

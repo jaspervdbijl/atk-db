@@ -2,10 +2,12 @@ package com.acutus.atk.db;
 
 import com.acutus.atk.db.annotations.ForeignKey;
 import com.acutus.atk.db.driver.AbstractDriver;
+import com.acutus.atk.db.driver.DriverFactory;
 import com.acutus.atk.entity.AtkField;
 import lombok.SneakyThrows;
 
 import javax.persistence.Column;
+import javax.persistence.Enumerated;
 import javax.persistence.Id;
 import javax.persistence.Lob;
 import java.lang.reflect.Field;
@@ -15,7 +17,9 @@ import java.sql.ResultSet;
 import java.util.Optional;
 
 import static com.acutus.atk.db.sql.SQLHelper.mapFromRs;
+import static com.acutus.atk.db.util.AtkEnUtil.unwrapEnumerated;
 import static com.acutus.atk.util.StringUtils.isEmpty;
+import static javax.persistence.EnumType.STRING;
 
 public class AtkEnField<T, R extends AbstractAtkEntity> extends AtkField<T, R> {
 
@@ -66,11 +70,17 @@ public class AtkEnField<T, R extends AbstractAtkEntity> extends AtkField<T, R> {
                 && (getField().getAnnotation(Lob.class) != null || getColLength() >= driver.getMaxVarcharLength())) {
             return Clob.class;
         }
+        Enumerated enumerated = getField().getAnnotation(Enumerated.class);
+        if (enumerated != null) {
+            return enumerated.value().equals(STRING) ? String.class : Integer.class;
+        }
         return getType();
     }
 
+
     @SneakyThrows
     public void setFromRs(ResultSet rs) {
-        set(mapFromRs(rs, getType(), getColName()));
+        set((T) unwrapEnumerated(getField(), mapFromRs(rs
+                , getColumnType(DriverFactory.getDriver(rs.getStatement().getConnection())), getColName())));
     }
 }

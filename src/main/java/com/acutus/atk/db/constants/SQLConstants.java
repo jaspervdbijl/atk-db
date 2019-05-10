@@ -3,7 +3,9 @@ package com.acutus.atk.db.constants;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.sql.ResultSet;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -25,6 +27,9 @@ public class SQLConstants {
         put(java.sql.Time.class, handle(() -> ResultSet.class.getMethod("getTime", int.class)));
         put(java.sql.Timestamp.class, handle(() -> ResultSet.class.getMethod("getTimestamp", int.class)));
         put(java.util.Date.class, handle(() -> ResultSet.class.getMethod("getTimestamp", int.class)));
+        put(LocalDateTime.class, handle(() -> ResultSet.class.getMethod("getTimestamp", int.class)));
+        put(LocalDate.class, handle(() -> ResultSet.class.getMethod("getTimestamp", int.class)));
+        put(LocalTime.class, handle(() -> ResultSet.class.getMethod("getTimestamp", int.class)));
     }};
 
     public static final Map<Class, Method> RS_FUNC_INT_STR = new HashMap<Class, Method>() {{
@@ -42,6 +47,8 @@ public class SQLConstants {
         put(java.sql.Time.class, handle(() -> ResultSet.class.getMethod("getTime", String.class)));
         put(java.sql.Timestamp.class, handle(() -> ResultSet.class.getMethod("getTimestamp", String.class)));
         put(LocalDateTime.class, handle(() -> ResultSet.class.getMethod("getTimestamp", String.class)));
+        put(LocalDate.class, handle(() -> ResultSet.class.getMethod("getTimestamp", String.class)));
+        put(LocalTime.class, handle(() -> ResultSet.class.getMethod("getTimestamp", String.class)));
         put(java.util.Date.class, handle(() -> ResultSet.class.getMethod("getTimestamp", String.class)));
     }};
 

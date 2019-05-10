@@ -13,6 +13,7 @@ import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
+import javax.persistence.Enumerated;
 import javax.persistence.OneToMany;
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -28,6 +29,11 @@ import static com.acutus.atk.util.StringUtils.removeAllASpaces;
 @SupportedSourceVersion(SourceVersion.RELEASE_8)
 @AutoService(Processor.class)
 public class AtkEntityProcessor extends AtkProcessor {
+
+    @Override
+    public boolean isPrimitive(Element e) {
+        return super.isPrimitive(e) || e.getAnnotation(Enumerated.class) != null;
+    }
 
     @Override
     protected String getClassName(Element element) {

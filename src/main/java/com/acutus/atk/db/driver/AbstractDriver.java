@@ -147,34 +147,35 @@ public abstract class AbstractDriver {
 
     public String getFieldType(AtkEnField field) {
         Optional<Column> column = field.getColumn();
-        if (String.class.equals(field.getType()) && !isClob(field)) {
+        Class type = field.getColumnType(this);
+        if (String.class.equals(type)) {
             return String.format("varchar(%d)", column.isPresent() ? column.get().length() : 255);
-        } else if (String.class.equals(field.getType()) && isClob(field)) {
+        } else if (Clob.class.equals(type)) {
             return "longtext";
-        } else if (Integer.class.equals(field.getType())) {
+        } else if (Integer.class.equals(type)) {
             return "int";
-        } else if (Long.class.equals(field.getType()) || BigInteger.class.equals(field.getType())) {
+        } else if (Long.class.equals(type) || BigInteger.class.equals(type)) {
             return "long";
-        } else if (BigDecimal.class.equals(field.getType()) || Double.class.equals(field.getType())) {
+        } else if (BigDecimal.class.equals(type) || Double.class.equals(type)) {
             return "double";
-        } else if (Float.class.equals(field.getType())) {
+        } else if (Float.class.equals(type)) {
             return "float";
-        } else if (Short.class.equals(field.getType())) {
+        } else if (Short.class.equals(type)) {
             return "shortint";
-        } else if (Boolean.class.equals(field.getType())) {
+        } else if (Boolean.class.equals(type)) {
             return "bool";
-        } else if (byte[].class.equals(field.getType()) || Byte[].class.equals(field.getType())) {
+        } else if (Blob.class.equals(type)) {
             return "blob";
-        } else if (Byte[].class.equals(field.getType())) {
+        } else if (Byte[].class.equals(type)) {
             return String.format("varchar2(%d)", column.isPresent() ? column.get().length() : 255);
-        } else if (Timestamp.class.equals(field.getType()) || LocalDateTime.class.equals(field.getType())) {
+        } else if (Timestamp.class.equals(type) || LocalDateTime.class.equals(type)) {
             return getFieldTypeForTimestamp(column);
-        } else if (java.sql.Date.class.equals(field.getType()) || LocalDate.class.equals(field.getType())) {
+        } else if (java.sql.Date.class.equals(type) || LocalDate.class.equals(type)) {
             return getFieldTypeForDate(column);
-        } else if (java.sql.Time.class.equals(field.getType()) || LocalTime.class.equals(field.getType())) {
+        } else if (java.sql.Time.class.equals(type) || LocalTime.class.equals(type)) {
             return getFieldTypeForTime(column);
         } else {
-            throw new UnsupportedOperationException("Unsupported type " + field.getType());
+            throw new UnsupportedOperationException("Unsupported type " + type);
         }
     }
 

@@ -1,6 +1,7 @@
 package com.acutus.atk.db.util;
 
 import com.acutus.atk.db.AbstractAtkEntity;
+import com.acutus.atk.db.AtkEnField;
 import com.acutus.atk.db.Persist;
 import com.acutus.atk.db.Query;
 import com.acutus.atk.reflection.Reflect;
@@ -8,7 +9,11 @@ import com.acutus.atk.reflection.ReflectMethods;
 import com.acutus.atk.util.Assert;
 import lombok.SneakyThrows;
 
+import javax.persistence.Enumerated;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+
+import static javax.persistence.EnumType.STRING;
 
 public class AtkEnUtil {
 
@@ -28,4 +33,42 @@ public class AtkEnUtil {
     public static Persist getPersist(AbstractAtkEntity entity) {
         return (Persist) getMethod(entity.getClass(), "persist").invoke(entity);
     }
+
+    @SneakyThrows
+    public static <T> T unwrapEnumerated(Field field, Object value) {
+        if (value != null) {
+            Enumerated enumerated = field.getAnnotation(Enumerated.class);
+            if (enumerated == null) {
+                return (T) value;
+            } else if (enumerated != null && enumerated.value().equals(STRING)) {
+                Method valueOf = Reflect.getMethods(field.getType()).get(false, "valueOf");
+                return (T) valueOf.invoke(null, value);
+            } else {
+                throw new UnsupportedOperationException("Enum Oridinal Type Not implemented");
+            }
+        } else {
+            return null;
+        }
+    }
+
+    @SneakyThrows
+    public static Object wrapEnumerated(AtkEnField field) {
+        Enumerated enumerated = field.getField().getAnnotation(Enumerated.class);
+        if (enumerated == null) {
+            return field.get();
+        }
+        if (enumerated != null && enumerated.value().equals(STRING)) {
+            return field.get().toString();
+        } else {
+            throw new UnsupportedOperationException("Enum Ordinal Type Not implemented");
+        }
+    }
+
+    @SneakyThrows
+    public static void main(String[] args) {
+        Gender gender = Gender.MALE;
+        Reflect.getMethods(Gender.class).getByName("name", false).get().invoke(null, gender);
+    }
+
+    enum Gender {MALE}
 }

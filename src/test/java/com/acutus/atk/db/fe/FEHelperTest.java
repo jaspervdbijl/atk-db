@@ -26,4 +26,5 @@ public class FEHelperTest {
     void maintainTable() {
         FEHelper.maintainDataDefinition(conn, PersonEntity.class, VehicleEntity.class);
     }
+
 }
