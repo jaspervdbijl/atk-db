@@ -2,6 +2,8 @@ package com.acutus.atk.db.constants;
 
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
+import java.sql.Blob;
+import java.sql.Clob;
 import java.sql.ResultSet;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -39,8 +41,9 @@ public class SQLConstants {
         put(BigDecimal.class, handle(() -> ResultSet.class.getMethod("getBigDecimal", String.class)));
         put(Boolean.class, handle(() -> ResultSet.class.getMethod("getBoolean", String.class)));
         put(Byte.class, handle(() -> ResultSet.class.getMethod("getByte", String.class)));
-        put(Byte[].class, handle(() -> ResultSet.class.getMethod("getBytes", String.class)));
-        put(byte[].class, handle(() -> ResultSet.class.getMethod("getBytes", String.class)));
+        put(Blob.class, handle(() -> ResultSet.class.getMethod("getBytes", String.class)));
+        put(Blob.class, handle(() -> ResultSet.class.getMethod("getBytes", String.class)));
+        put(Clob.class, handle(() -> ResultSet.class.getMethod("getString", String.class)));
         put(java.sql.Date.class, handle(() -> ResultSet.class.getMethod("getDate", String.class)));
         put(Double.class, handle(() -> ResultSet.class.getMethod("getDouble", String.class)));
         put(Short.class, handle(() -> ResultSet.class.getMethod("getShort", String.class)));

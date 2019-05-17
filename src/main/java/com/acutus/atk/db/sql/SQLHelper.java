@@ -47,9 +47,12 @@ public class SQLHelper {
         return (T) RS_FUNC_INT_MAP.get(type).invoke(rs, index);
     }
 
+    @SneakyThrows
     private static <T> T unwrap(Class<T> type, Object value) {
         if (value == null) return (T) value;
         if (type.equals(value.getClass())) return (T) value;
+        if (Clob.class.equals(type)) return (T) value;
+        if (Blob.class.equals(type)) return (T) value;
         if (LocalDateTime.class.equals(type) && value.getClass().equals(Timestamp.class))
             return (T) ((Timestamp) value).toLocalDateTime();
         if (LocalDate.class.equals(type) && value.getClass().equals(Timestamp.class))
@@ -86,7 +89,7 @@ public class SQLHelper {
     }
 
     public static List<List> query(ResultSet rs, Class type[]) {
-        return query(rs, type);
+        return query(rs, type, null);
     }
 
     @SneakyThrows

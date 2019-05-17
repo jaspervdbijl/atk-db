@@ -13,6 +13,7 @@ import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
+import javax.persistence.Column;
 import javax.persistence.Enumerated;
 import javax.persistence.OneToMany;
 import java.lang.reflect.Method;
@@ -21,6 +22,7 @@ import java.util.OptionalInt;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static com.acutus.atk.db.processor.AtkEntity.ColumnNamingStrategy.CAMEL_CASE_UNDERSCORE;
 import static com.acutus.atk.db.processor.ProcessorHelper.getExecuteMethod;
 import static com.acutus.atk.util.StringUtils.removeAllASpaces;
 
@@ -42,26 +44,69 @@ public class AtkEntityProcessor extends AtkProcessor {
                 atk.className();
     }
 
+    private static int UPPER_OFFSET = ((int) 'a') - ((int) 'A');
+
+    private static String convertCamelCaseToUnderscore(String name) {
+        String under = "";
+        for (char c : name.toCharArray()) {
+            int dec = (int) c;
+            if (dec >= 65 && dec <= 90) {
+                under += "_" + ((char) (((int) c) + UPPER_OFFSET));
+            } else {
+                under += c;
+            }
+        }
+        return under;
+    }
+
     @Override
     protected String getClassNameLine(Element element) {
         String className = super.getClassNameLine(element);
+        info("class name = " + className);
         className = className.replace("@com.acutus.atk.db.processor.AtkEntity", "");
+        if (className.trim().startsWith("(")) {
+            info("mk2");
+            className = className.substring(className.indexOf(")") + 1);
+            info("mk3 " + className);
+        }
+
         return className.substring(0, className.indexOf("public class "))
                 + String.format("public class %s extends AbstractAtkEntity<%s,%s> {"
                 , getClassName(element), getClassName(element), element.getSimpleName());
     }
 
+    private String copyColumn(String colName, Column column) {
+        return String.format("name = \"%s\", unique = %s, nullable = %s, insertable = %s, updatable = %s, columnDefinition = \"%s\"" +
+                        ", table = \"%s\", length = %d, precision = %d, scale = %d"
+                , column.name().isEmpty() ? colName : column.name()
+                , column.unique() + "", column.nullable() + "", column.insertable() + "", column.updatable() + "", column.columnDefinition()
+                , column.table(), column.length(), column.precision(), column.scale());
+    }
+
     @Override
-    protected String getField(Element element) {
-        String value = super.getField(element);
+    protected String getField(Element root, Element element) {
+        String value = super.getField(root, element);
         Strings lines = new Strings(Arrays.asList(value.split("\n")));
         OptionalInt fKindex = lines.transform(s -> removeAllASpaces(s)).getInsideIndex("ForeignKey");
         if (fKindex.isPresent()) {
-            info("Got fKindex + " + fKindex.getAsInt() + "-> " + lines.get(fKindex.getAsInt()));
             lines.set(fKindex.getAsInt(), lines.get(fKindex.getAsInt()).replace(".class", "Entity.class"));
-            value = lines.toString("\n");
         }
-        return value;
+        AtkEntity atkEntity = root.getAnnotation(AtkEntity.class);
+        if (atkEntity != null && atkEntity.columnNamingStratergy().equals(CAMEL_CASE_UNDERSCORE)) {
+            info("has column " + (element.getAnnotation(Column.class) == null));
+            Column column = element.getAnnotation(Column.class);
+            if (column == null || column.name().isEmpty()) {
+                // column
+                String colName = convertCamelCaseToUnderscore(element.getSimpleName().toString());
+                String columnStr = String.format("@Column(%s)", column != null
+                        ? copyColumn(colName, column)
+                        : String.format("name=\"%s\"", colName));
+                info("Column is " + column);
+                lines.plus(columnStr);
+            }
+        }
+
+        return lines.toString("\n");
     }
 
     @Override
@@ -69,7 +114,10 @@ public class AtkEntityProcessor extends AtkProcessor {
         return super.getImports().plus("import com.acutus.atk.db.*").plus("import com.acutus.atk.db.annotations.*")
                 .plus("import static com.acutus.atk.db.sql.SQLHelper.runAndReturn")
                 .plus("import static com.acutus.atk.util.AtkUtil.handle")
-                .plus("import java.sql.PreparedStatement");
+                .plus("import java.sql.PreparedStatement")
+                .plus("import com.acutus.atk.db.annotations.audit.*")
+                .plus("import java.time.LocalDateTime")
+                .plus("import javax.persistence.Column");
     }
 
     private String formatIndexName(String idxName) {
@@ -88,15 +136,33 @@ public class AtkEntityProcessor extends AtkProcessor {
                 , formatIndexName(index.name()), field.getSimpleName());
     }
 
+
+    private Strings getAuditFields(Element element) {
+        Strings append = new Strings();
+        AtkEntity atk = element.getAnnotation(AtkEntity.class);
+        if (atk.addAuditFields()) {
+            Strings fNames = getFieldNames(element);
+            if (!fNames.contains("createdBy")) {
+                append.add("@CreatedBy @Column(name = \"created_by\") private String createdBy");
+            }
+            if (!fNames.contains("createdDate")) {
+                append.add("@CreatedDate @Column(name = \"created_date\") private LocalDateTime createdDate;");
+            }
+            if (!fNames.contains("lastModifiedBy")) {
+                append.add("@LastModifiedBy @Column(name = \"last_modified_by\") private String lastModifiedBy;");
+            }
+            if (!fNames.contains("lastModifiedDate")) {
+                append.add("@LastModifiedDate @Column(name = \"last_modified_date\") private LocalDateTime lastModifiedDate;");
+            }
+        }
+        return append;
+    }
+
     private Strings getIndexes(Element element) {
         // add all indexes
         Strings indexes = new Strings();
-        Strings fNames = element.getEnclosedElements().stream()
-                .filter(f -> ElementKind.FIELD.equals(f.getKind()))
-                .map(f -> f.getSimpleName().toString())
-                .collect(Collectors.toCollection(Strings::new));
-        element.getEnclosedElements().stream()
-                .filter(f -> ElementKind.FIELD.equals(f.getKind()))
+        Strings fNames = getFieldNames(element);
+        getFields(element)
                 .filter(f -> f.getAnnotation(Index.class) != null)
                 .forEach(f -> indexes.add(getIndex(f, f.getAnnotation(Index.class), fNames)));
         return indexes;
@@ -104,7 +170,7 @@ public class AtkEntityProcessor extends AtkProcessor {
 
     @Override
     protected Strings getExtraFields(Element element) {
-        return getIndexes(element);
+        return getIndexes(element).plus(getAuditFields(element));
     }
 
     @Override
@@ -193,4 +259,5 @@ public class AtkEntityProcessor extends AtkProcessor {
         methods.addAll(getOneToMany(atk, element));
         return methods;
     }
+
 }

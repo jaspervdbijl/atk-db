@@ -54,7 +54,7 @@ public class AtkEnUtil {
     @SneakyThrows
     public static Object wrapEnumerated(AtkEnField field) {
         Enumerated enumerated = field.getField().getAnnotation(Enumerated.class);
-        if (enumerated == null) {
+        if (enumerated == null || field.get() == null) {
             return field.get();
         }
         if (enumerated != null && enumerated.value().equals(STRING)) {
@@ -64,11 +64,4 @@ public class AtkEnUtil {
         }
     }
 
-    @SneakyThrows
-    public static void main(String[] args) {
-        Gender gender = Gender.MALE;
-        Reflect.getMethods(Gender.class).getByName("name", false).get().invoke(null, gender);
-    }
-
-    enum Gender {MALE}
 }

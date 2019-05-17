@@ -46,7 +46,7 @@ public class Persist<T extends AbstractAtkEntity> {
             autoInc = populateIdAndReturnIsAutoIncrement(ids.get(0));
         }
         // exclude id is its a auto generated value
-        AtkEnFields clone = entity.getEnFields().clone();
+        AtkEnFields clone = entity.getEnFields().clone().removeWhen(c -> c.get() == null);
         if (autoInc) {
             clone.removeAll(ids);
         }
@@ -54,7 +54,7 @@ public class Persist<T extends AbstractAtkEntity> {
                 String.format("insert into %s (%s) values(%s)"
                         , entity.getTableName(), clone.getColNames().toString(",")
                         , clone.stream().map(f -> "?").reduce((s1, s2) -> s1 + "," + s2).get())
-                , wrapEnumerated(clone))) {
+                , wrapEnumerated(clone).toArray())) {
             ps.executeUpdate();
         }
         // load any auto inc fields

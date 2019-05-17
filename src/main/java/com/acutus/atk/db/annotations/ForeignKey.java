@@ -23,7 +23,7 @@ public @interface ForeignKey {
 
     String field();
 
-    String name();
+    String name() default "";
 
     Action onDeleteAction() default Action.SetNull;
 
