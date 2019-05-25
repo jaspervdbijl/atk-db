@@ -10,7 +10,10 @@ import java.lang.annotation.Target;
 public @interface AtkEntity {
 
     // if no column name is defined, what naming stratergy should be used
-    ColumnNamingStrategy columnNamingStratergy() default ColumnNamingStrategy.NONE;
+    ColumnNamingStrategy columnNamingStrategy() default ColumnNamingStrategy.NONE;
+
+    // if no table name is defined, what naming stratergy should be used
+    TableNamingStrategy tableNamingStrategy() default TableNamingStrategy.CAMEL_CASE_UNDERSCORE;
 
     String className() default "";
 
@@ -26,4 +29,7 @@ public @interface AtkEntity {
         NONE, CAMEL_CASE_UNDERSCORE
     }
 
+    enum TableNamingStrategy {
+        NONE, CAMEL_CASE_UNDERSCORE
+    }
 }

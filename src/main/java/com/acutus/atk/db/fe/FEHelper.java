@@ -104,6 +104,8 @@ public class FEHelper {
                         || Blob.class.equals(atkField.get().getColumnType(driver))
                         || Date.class.isAssignableFrom(atkField.get().getColumnType(driver))
                         || Temporal.class.isAssignableFrom(atkField.get().getColumnType(driver))
+                        || Boolean.class.isAssignableFrom(atkField.get().getColumnType(driver))
+                        || Number.class.isAssignableFrom(atkField.get().getColumnType(driver))
                         || atkField.get().getField().getAnnotation(Enumerated.class) != null
                         || atkField.get().getColLength() == meta.getColumnDisplaySize(i + 1);
                 boolean nullMatch = atkField.get().isNullable() == (meta.isNullable(i + 1) == 1);
@@ -114,6 +116,7 @@ public class FEHelper {
                 }
             } else {
                 // drop the extra column
+                entity.getEnFields().getByColName(meta.getColumnName(i + 1));
                 Assert.isTrue(DB_FE_ALLOW_DROP.get(), "Dropping of columns %s not allowed"
                         , meta.getColumnName(i + 1));
                 logAndExecute(connection, DriverFactory.getDriver(connection)

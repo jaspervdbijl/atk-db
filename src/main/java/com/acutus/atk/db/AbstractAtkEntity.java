@@ -1,6 +1,7 @@
 package com.acutus.atk.db;
 
 import com.acutus.atk.entity.AbstractAtk;
+import com.acutus.atk.entity.AtkFieldList;
 import com.acutus.atk.util.StringUtils;
 import lombok.Getter;
 import lombok.Setter;
@@ -10,7 +11,7 @@ import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 
-public class AbstractAtkEntity<T, O> extends AbstractAtk<T, O> {
+public class AbstractAtkEntity<T extends AbstractAtkEntity, O> extends AbstractAtk<T, O> {
 
     @Getter
     @Setter
@@ -47,6 +48,24 @@ public class AbstractAtkEntity<T, O> extends AbstractAtk<T, O> {
             f.setSet(false);
         });
         return (T) this;
+    }
+
+    public T initFrom(O base) {
+        return super.initFrom(base, new AtkFieldList());
+    }
+
+    @Override
+    public T restoreSet() {
+        getFields().restoreSet();
+        return (T) this;
+    }
+
+    public Persist<T> persist() {
+        return new Persist(this);
+    }
+
+    public Query<T> query() {
+        return new Query(this);
     }
 
 }

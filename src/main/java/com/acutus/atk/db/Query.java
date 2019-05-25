@@ -69,7 +69,7 @@ public class Query<T extends AbstractAtkEntity> {
 
     public List<T> getAll(Connection connection, Filter filter) {
         List<T> list = new ArrayList<>();
-        iterate(connection, filter, e -> list.add(e));
+        iterate(connection, filter, e -> list.add((T) e.clone()));
         return list;
     }
 

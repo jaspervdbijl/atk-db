@@ -16,6 +16,7 @@ import javax.lang.model.element.ElementKind;
 import javax.persistence.Column;
 import javax.persistence.Enumerated;
 import javax.persistence.OneToMany;
+import javax.persistence.Table;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.OptionalInt;
@@ -48,31 +49,30 @@ public class AtkEntityProcessor extends AtkProcessor {
 
     private static String convertCamelCaseToUnderscore(String name) {
         String under = "";
+        int index = 0;
         for (char c : name.toCharArray()) {
             int dec = (int) c;
             if (dec >= 65 && dec <= 90) {
-                under += "_" + ((char) (((int) c) + UPPER_OFFSET));
+                under += (index > 0 ? "_" : "") + ((char) (((int) c) + UPPER_OFFSET));
             } else {
                 under += c;
             }
+            index++;
         }
         return under;
     }
 
-    @Override
-    protected String getClassNameLine(Element element) {
-        String className = super.getClassNameLine(element);
-        info("class name = " + className);
-        className = className.replace("@com.acutus.atk.db.processor.AtkEntity", "");
-        if (className.trim().startsWith("(")) {
-            info("mk2");
-            className = className.substring(className.indexOf(")") + 1);
-            info("mk3 " + className);
-        }
+    private static String removeColumnAnnotation(String line) {
+        String header = line.substring(0, line.indexOf("@javax.persistence.Column"));
+        line = line.substring(line.indexOf("@Column") + "@javax.persistence.Column".length());
+        line = line.substring(line.indexOf(")") + 1);
+        return header + line;
+    }
 
-        return className.substring(0, className.indexOf("public class "))
-                + String.format("public class %s extends AbstractAtkEntity<%s,%s> {"
-                , getClassName(element), getClassName(element), element.getSimpleName());
+    private static Strings removeColumnAnnotation(Strings lines) {
+        lines.firstIndexesOfContains("@javax.persistence.Column")
+                .ifPresent(l -> lines.set(l, removeColumnAnnotation(lines.get(l))));
+        return lines;
     }
 
     private String copyColumn(String colName, Column column) {
@@ -81,6 +81,34 @@ public class AtkEntityProcessor extends AtkProcessor {
                 , column.name().isEmpty() ? colName : column.name()
                 , column.unique() + "", column.nullable() + "", column.insertable() + "", column.updatable() + "", column.columnDefinition()
                 , column.table(), column.length(), column.precision(), column.scale());
+    }
+
+    public static void main(String[] args) {
+        System.out.println(removeColumnAnnotation("@Id @Column(fasdljsakdjl) @ Id"));
+    }
+
+    // TODO support other Table features
+    private String copyTable(String tableName, Table table) {
+        return String.format("name = \"%s\""
+                , table.name().isEmpty() ? tableName : table.name());
+    }
+
+    @Override
+    protected String getClassNameLine(Element element, String... removeStrings) {
+
+        String className = super.getClassNameLine(element
+                , "@Table", "@javax.persistence.Table", "@com.acutus.atk.db.processor.AtkEntity");
+
+        Table table = element.getAnnotation(Table.class);
+        String tableName = convertCamelCaseToUnderscore(element.getSimpleName().toString());
+        String tableAno = String.format("@Table(%s)", table != null
+                ? copyTable(tableName, table)
+                : String.format("name=\"%s\"", tableName));
+
+        return className.substring(0, className.indexOf("public class "))
+                + tableAno + " " + String.format("public class %s extends AbstractAtkEntity<%s,%s> {"
+                , getClassName(element), getClassName(element), element.getSimpleName());
+
     }
 
     @Override
@@ -92,32 +120,19 @@ public class AtkEntityProcessor extends AtkProcessor {
             lines.set(fKindex.getAsInt(), lines.get(fKindex.getAsInt()).replace(".class", "Entity.class"));
         }
         AtkEntity atkEntity = root.getAnnotation(AtkEntity.class);
-        if (atkEntity != null && atkEntity.columnNamingStratergy().equals(CAMEL_CASE_UNDERSCORE)) {
-            info("has column " + (element.getAnnotation(Column.class) == null));
+        if (atkEntity.columnNamingStrategy().equals(CAMEL_CASE_UNDERSCORE)) {
             Column column = element.getAnnotation(Column.class);
             if (column == null || column.name().isEmpty()) {
-                // column
+                // remove the previous column annotation
+                lines = removeColumnAnnotation(lines);
                 String colName = convertCamelCaseToUnderscore(element.getSimpleName().toString());
                 String columnStr = String.format("@Column(%s)", column != null
                         ? copyColumn(colName, column)
                         : String.format("name=\"%s\"", colName));
-                info("Column is " + column);
-                lines.plus(columnStr);
+                lines.add(0, columnStr);
             }
         }
-
         return lines.toString("\n");
-    }
-
-    @Override
-    protected Strings getImports() {
-        return super.getImports().plus("import com.acutus.atk.db.*").plus("import com.acutus.atk.db.annotations.*")
-                .plus("import static com.acutus.atk.db.sql.SQLHelper.runAndReturn")
-                .plus("import static com.acutus.atk.util.AtkUtil.handle")
-                .plus("import java.sql.PreparedStatement")
-                .plus("import com.acutus.atk.db.annotations.audit.*")
-                .plus("import java.time.LocalDateTime")
-                .plus("import javax.persistence.Column");
     }
 
     private String formatIndexName(String idxName) {
@@ -179,7 +194,6 @@ public class AtkEntityProcessor extends AtkProcessor {
     }
 
     private String cloneQueryMethod(Element e, Method m) {
-        info(m.getName());
         return String.format(
                 "public %s<%s> %s(%s) {return new Query<%s>(this).%s(%s);}"
                 , m.getReturnType().getName(), getClassName(e), m.getName()
@@ -260,4 +274,15 @@ public class AtkEntityProcessor extends AtkProcessor {
         return methods;
     }
 
+    @Override
+    protected Strings getImports() {
+        return super.getImports().plus("import com.acutus.atk.db.*").plus("import com.acutus.atk.db.annotations.*")
+                .plus("import static com.acutus.atk.db.sql.SQLHelper.runAndReturn")
+                .plus("import static com.acutus.atk.util.AtkUtil.handle")
+                .plus("import java.sql.PreparedStatement")
+                .plus("import com.acutus.atk.db.annotations.audit.*")
+                .plus("import java.time.LocalDateTime")
+                .plus("import javax.persistence.Column")
+                .plus("import javax.persistence.Table");
+    }
 }
