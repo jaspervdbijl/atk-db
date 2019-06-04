@@ -40,7 +40,7 @@ public class Query<T extends AbstractAtkEntity> {
         try (PreparedStatement ps = prepareStatementFromFilter(connection, filter)) {
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    return Optional.of((T) entity.set(rs));
+                    return Optional.of((T) ((T) entity.clone()).set(rs));
                 }
             }
         }

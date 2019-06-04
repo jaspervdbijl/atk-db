@@ -20,7 +20,7 @@ public class AtkEnUtil {
     @SneakyThrows
     public static Method getMethod(Class type, String name) {
         ReflectMethods methods = Reflect.getMethods(type).filter(name).filterParams();
-        Assert.isTrue(methods.size() == 1, "Expected a %s method in %s ", name, type.getName());
+        Assert.isTrue(methods.size() > 0, "Expected a %s method in %s ", name, type.getName());
         return methods.get(0);
     }
 
