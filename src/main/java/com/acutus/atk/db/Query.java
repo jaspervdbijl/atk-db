@@ -1,6 +1,8 @@
 package com.acutus.atk.db;
 
 import com.acutus.atk.db.sql.Filter;
+import com.acutus.atk.entity.AtkField;
+import com.acutus.atk.entity.AtkFieldList;
 import com.acutus.atk.reflection.Reflect;
 import com.acutus.atk.util.Assert;
 import com.acutus.atk.util.call.CallOne;
@@ -11,17 +13,28 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+import static com.acutus.atk.db.Query.OrderBy.DESC;
+import static com.acutus.atk.db.driver.DriverFactory.getDriver;
 import static com.acutus.atk.db.sql.Filter.Type.AND;
 import static com.acutus.atk.db.sql.Filter.and;
+import static com.acutus.atk.db.sql.Filter.or;
 import static com.acutus.atk.db.sql.SQLHelper.*;
 import static com.acutus.atk.util.AtkUtil.handle;
 
 public class Query<T extends AbstractAtkEntity> {
 
+    public enum OrderBy {
+        ASC, DESC
+    }
+
     private T entity;
+    private Integer limit;
+    private AtkEnFields orderBy;
+    private OrderBy orderByType;
 
     public Query(T entity) {
         this.entity = entity;
@@ -29,10 +42,15 @@ public class Query<T extends AbstractAtkEntity> {
 
     @SneakyThrows
     private PreparedStatement prepareStatementFromFilter(Connection connection, Filter filter) {
-        return filter.prepare(connection.prepareStatement(
-                String.format("select %s from %s where %s"
-                        , entity.getEnFields().getColNames().toString(",")
-                        , entity.getTableName(), filter.getSql())));
+        String sql = String.format("select %s from %s where %s %s"
+                , entity.getEnFields().getColNames().toString(",")
+                , entity.getTableName(), filter.getSql(),
+                orderBy != null
+                        ? "order by " + orderBy.getColNames().toString(",") + " " + orderByType.name()
+                        : ""
+        );
+        return filter.prepare(connection.prepareStatement(limit != null
+                ? getDriver(connection).limit(sql, limit) : sql));
     }
 
     @SneakyThrows
@@ -65,6 +83,10 @@ public class Query<T extends AbstractAtkEntity> {
 
     public void iterate(DataSource dataSource, Filter filter, CallOne<T> call) {
         run(dataSource, c -> iterate(c, filter, call));
+    }
+
+    public void iterateBySet(DataSource dataSource, CallOne<T> call) {
+        run(dataSource, c -> iterate(c, and(entity.getEnFields().getSet().toArray(new AtkEnField[]{})), call));
     }
 
     public List<T> getAll(Connection connection, Filter filter) {
@@ -120,7 +142,20 @@ public class Query<T extends AbstractAtkEntity> {
         Assert.isTrue(!ids.isEmpty(), "No Primary keys defined for entity %s ", entity.getTableName());
         Assert.isTrue(ids.getSet().size() == ids.size(), "Null id values. entity %s ", entity.getTableName());
         return getBySet(connection, ids);
-
     }
 
+    public Query setLimit(Integer limit) {
+        this.limit = limit;
+        return this;
+    }
+
+    public Query setOrderBy(OrderBy orderByType, AtkEnField... orderBys) {
+        this.orderByType = orderByType;
+        this.orderBy = new AtkEnFields(orderBys);
+        return this;
+    }
+
+    public Query setOrderBy(AtkEnField... orderBys) {
+        return setOrderBy(DESC,orderBys);
+    }
 }

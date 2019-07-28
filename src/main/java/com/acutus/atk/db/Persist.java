@@ -1,19 +1,22 @@
 package com.acutus.atk.db;
 
+import com.acutus.atk.db.annotations.audit.CreatedDate;
 import com.acutus.atk.db.driver.DriverFactory;
 import com.acutus.atk.db.util.AtkEnUtil;
 import com.acutus.atk.util.Assert;
+import com.acutus.atk.util.call.CallOne;
+import com.acutus.atk.util.collection.One;
 import lombok.SneakyThrows;
 
 import javax.persistence.GeneratedValue;
 import javax.sql.DataSource;
+import java.lang.annotation.Annotation;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 import static com.acutus.atk.db.sql.SQLHelper.*;
+import static com.acutus.atk.db.util.PersistHelper.preProcessInsert;
 import static javax.persistence.GenerationType.AUTO;
 import static javax.persistence.GenerationType.IDENTITY;
 
@@ -39,6 +42,7 @@ public class Persist<T extends AbstractAtkEntity> {
 
     @SneakyThrows
     public T insert(Connection connection) {
+        preProcessInsert(entity);
         // no id
         boolean autoInc = false;
         AtkEnFields ids = entity.getEnFields().getIds();

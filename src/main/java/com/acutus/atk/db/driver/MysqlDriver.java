@@ -23,6 +23,11 @@ public class MysqlDriver extends AbstractDriver {
         return id.get(0).getFirst();
     }
 
+    @Override
+    public String limit(String sql, int limit) {
+        return String.format("%s limit %d",sql,limit);
+    }
+
     @SneakyThrows
     public String addForeignKey(AtkEnField field) {
         ForeignKey key = field.getField().getAnnotation(ForeignKey.class);

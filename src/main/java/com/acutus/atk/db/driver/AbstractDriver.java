@@ -201,4 +201,6 @@ public abstract class AbstractDriver {
 
     public abstract <T> T getLastInsertValue(Connection connection, Class<T> clazz);
 
+    public abstract String limit(String sql,int limit);
+
 }

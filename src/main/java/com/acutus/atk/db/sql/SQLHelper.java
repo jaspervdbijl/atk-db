@@ -174,7 +174,7 @@ public class SQLHelper {
     @SneakyThrows
     public static void execute(Connection connection, String sql) {
         try (Statement smt = connection.createStatement()) {
-            ((Statement) smt).execute(sql);
+            smt.execute(sql);
         }
     }
 
