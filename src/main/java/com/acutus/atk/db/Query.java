@@ -131,6 +131,14 @@ public class Query<T extends AbstractAtkEntity> {
         return runAndReturn(dataSource, c -> findById(c));
     }
 
+    public T retrieveBySet(DataSource dataSource) {
+        Optional<T> optional = getBySet(dataSource);
+        Assert.isTrue(optional.isPresent(),"Unable to retrieve entity %s by set fields %s",entity.getTableName()
+                ,entity.getEnFields().getSet().toString());;
+        return optional.get();
+    }
+
+
     /**
      * find a single entity
      *
