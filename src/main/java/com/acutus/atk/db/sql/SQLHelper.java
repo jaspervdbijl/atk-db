@@ -171,6 +171,11 @@ public class SQLHelper {
         }
     }
 
+    public static void executeUpdate(DataSource dataSource, String sql, Object... params) {
+        run(dataSource, c -> executeUpdate(c, sql,params));
+    }
+
+
     @SneakyThrows
     public static void execute(Connection connection, String sql) {
         try (Statement smt = connection.createStatement()) {
