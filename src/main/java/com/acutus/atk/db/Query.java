@@ -5,6 +5,7 @@ import com.acutus.atk.entity.AtkField;
 import com.acutus.atk.entity.AtkFieldList;
 import com.acutus.atk.reflection.Reflect;
 import com.acutus.atk.util.Assert;
+import com.acutus.atk.util.call.CallNilRet;
 import com.acutus.atk.util.call.CallOne;
 import lombok.SneakyThrows;
 
@@ -131,11 +132,17 @@ public class Query<T extends AbstractAtkEntity> {
         return runAndReturn(dataSource, c -> findById(c));
     }
 
-    public T retrieveBySet(DataSource dataSource) {
+    public T retrieveBySet(DataSource dataSource, CallNilRet<RuntimeException> call) {
         Optional<T> optional = getBySet(dataSource);
-        Assert.isTrue(optional.isPresent(),"Unable to retrieve entity %s by set fields %s",entity.getTableName()
-                ,entity.getEnFields().getSet().toString());;
+        Assert.isTrue(optional.isPresent(),call);
         return optional.get();
+    }
+
+    public T retrieveBySet(DataSource dataSource) {
+        return retrieveBySet(dataSource,() ->
+                new RuntimeException(String.format(
+                        "Unable to retrieve entity %s by set fields %s",entity.getTableName()
+                ,entity.getEnFields().getSet().toString())));
     }
 
 
