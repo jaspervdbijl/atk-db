@@ -97,7 +97,7 @@ public class Query<T extends AbstractAtkEntity> {
     }
 
     public static <T> T populateFrom(ResultSet rs, T t) {
-        Reflect.getFields(t.getClass()).stream()
+        Reflect.getFields(t.getClass()).values().stream()
                 .forEach(f -> handle(() -> f.set(t, mapFromRs(rs, f.getType(), f.getName()))));
         return t;
     }
