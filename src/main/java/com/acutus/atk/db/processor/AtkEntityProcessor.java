@@ -84,7 +84,7 @@ public class AtkEntityProcessor extends AtkProcessor {
     }
 
     public static void main(String[] args) {
-        System.out.println(removeColumnAnnotation("@Id @Column(fasdljsakdjl) @ Id"));
+        System.out.println(removeColumnAnnotation("@Id @Column(length = 50) @Column(fasdljsakdjl) @ Id"));
     }
 
     // TODO support other Table features
