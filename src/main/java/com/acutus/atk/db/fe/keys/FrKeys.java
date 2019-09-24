@@ -25,6 +25,15 @@ public class FrKeys extends ArrayList<FrKey> {
         return stream().filter(k -> k.equals(field)).findAny().isPresent();
     }
 
+    public int indexOf(AtkEnField field) {
+        for (int i = 0;i < size();i++) {
+            if (get(i).equals(field)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
     /**
      * @param filter
      * @return a new instance with items matching filter removed

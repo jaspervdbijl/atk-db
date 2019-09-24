@@ -92,6 +92,9 @@ public class FEHelper {
     @SneakyThrows
     private static void maintainTable(Connection connection, AbstractDriver driver, AbstractAtkEntity entity
             , ResultSetMetaData meta) {
+
+        FrKeys dbKeys = driver.shouldDropConstraintPriorToAlter() ? FrKeys.load(driver.getForeignKeys(connection, entity.getTableName())) : null;
+
         Strings colNames = new Strings();
         for (int i = 0; i < meta.getColumnCount(); i++) {
             colNames.add(meta.getColumnName(i + 1));
@@ -111,6 +114,12 @@ public class FEHelper {
                 boolean nullMatch = atkField.get().isNullable() == (meta.isNullable(i + 1) == 1);
                 if (!(typeMatch && (sizeMatch || !DB_FE_STRICT.get()) && nullMatch)) {
                     // alter the column
+
+                    // drop any f-key constraints before changing the column size - this might only be necessary for mysql
+                    if (driver.shouldDropConstraintPriorToAlter() && dbKeys.containsField(atkField.get())) {
+                        logAndExecute(connection, driver.dropForeignKey(entity.getTableName()
+                                , dbKeys.get(dbKeys.indexOf(atkField.get()))));
+                    }
                     logAndExecute(connection, DriverFactory.getDriver(connection)
                             .getAlterColumnDefinition(atkField.get()));
                 }

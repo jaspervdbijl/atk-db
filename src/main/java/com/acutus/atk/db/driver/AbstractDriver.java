@@ -82,6 +82,10 @@ public abstract class AbstractDriver {
         return String.format("%s %s", getFieldType(field), field.isNullable() ? "null" : "not null");
     }
 
+    public boolean shouldDropConstraintPriorToAlter() {
+        return true;
+    }
+
     public String getAlterColumnDefinition(AtkEnField field) {
         return String.format("alter table %s modify column %s %s", field.getEntity().getTableName()
                 , field.getColName(), getColumnDefinition(field));
