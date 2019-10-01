@@ -13,7 +13,7 @@ public @interface AtkEntity {
     ColumnNamingStrategy columnNamingStrategy() default ColumnNamingStrategy.NONE;
 
     // if no table name is defined, what naming stratergy should be used
-    TableNamingStrategy tableNamingStrategy() default TableNamingStrategy.CAMEL_CASE_UNDERSCORE;
+    TableNamingStrategy tableNamingStrategy() default TableNamingStrategy.LOWER_CASE_UNDERSCORE;
 
     String className() default "";
 
@@ -30,6 +30,6 @@ public @interface AtkEntity {
     }
 
     enum TableNamingStrategy {
-        NONE, CAMEL_CASE_UNDERSCORE
+        NONE, LOWER_CASE_UNDERSCORE
     }
 }
