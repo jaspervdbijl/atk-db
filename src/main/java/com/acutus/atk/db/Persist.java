@@ -1,19 +1,17 @@
 package com.acutus.atk.db;
 
-import com.acutus.atk.db.annotations.audit.CreatedDate;
 import com.acutus.atk.db.driver.DriverFactory;
 import com.acutus.atk.db.util.AtkEnUtil;
 import com.acutus.atk.util.Assert;
-import com.acutus.atk.util.call.CallOne;
-import com.acutus.atk.util.collection.One;
 import lombok.SneakyThrows;
 
 import javax.persistence.GeneratedValue;
 import javax.sql.DataSource;
-import java.lang.annotation.Annotation;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
 import static com.acutus.atk.db.sql.SQLHelper.*;
 import static com.acutus.atk.db.util.PersistHelper.preProcessInsert;
@@ -88,6 +86,7 @@ public class Persist<T extends AbstractAtkEntity> {
                 , "Ids can not be null %s %s", entity.getTableName(), entity.getEnFields().getIds());
 
     }
+
     /**
      * update on the entity id
      *
@@ -162,13 +161,13 @@ public class Persist<T extends AbstractAtkEntity> {
     }
 
     /**
-     * update on the entity id
+     * delete on the entity id
      *
      * @param connection
      * @return
      */
     @SneakyThrows
-    public void delete(Connection connection) {
+    public void deleteOnId(Connection connection) {
         assertIdIsPresent(entity.getEnFields().getIds());
         try (PreparedStatement ps = prepare(connection,
                 String.format("delete from %s where %s"
@@ -180,8 +179,34 @@ public class Persist<T extends AbstractAtkEntity> {
         }
     }
 
-    public void delete(DataSource dataSource) {
-        run(dataSource, c -> delete(c));
+    /**
+     * delete on the entity set fields
+     *
+     * @param connection
+     * @return
+     */
+    @SneakyThrows
+    public void deleteOnset(Connection connection) {
+        Assert.notEmpty(entity.getEnFields().getSet(), "Atleast one fields must be set");
+        StringBuilder where = new StringBuilder();
+        entity.getEnFields().getSet().stream().forEach(field -> where.append(field.getColName()).append(" = ?").append(" and "));
+
+        try (PreparedStatement ps = prepare(connection,
+                String.format("delete from %s where %s"
+                        , entity.getTableName()
+                        , where.substring(0, where.lastIndexOf(" and ")))
+                , entity.getEnFields().getSet().getValues().toArray())) {
+
+            ps.executeUpdate();
+        }
+    }
+
+    public void deleteOnSet(DataSource dataSource) {
+        run(dataSource, c -> deleteOnset(c));
+    }
+
+    public void deleteOnId(DataSource dataSource) {
+        run(dataSource, c -> deleteOnId(c));
     }
 
 }
