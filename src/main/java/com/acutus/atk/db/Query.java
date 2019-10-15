@@ -43,7 +43,9 @@ public class Query<T extends AbstractAtkEntity> {
 
     @SneakyThrows
     private PreparedStatement prepareStatementFromFilter(Connection connection, Filter filter) {
-        String sql = String.format("select %s from %s where %s %s"
+        String sql = filter.isCustom()?
+                filter.getCustomSql()
+                : String.format("select %s from %s where %s %s"
                 , entity.getEnFields().getColNames().toString(",")
                 , entity.getTableName(), filter.getSql(),
                 orderBy != null
@@ -145,7 +147,6 @@ public class Query<T extends AbstractAtkEntity> {
                 ,entity.getEnFields().getSet().toString())));
     }
 
-
     /**
      * find a single entity
      *
@@ -173,4 +174,5 @@ public class Query<T extends AbstractAtkEntity> {
     public Query setOrderBy(AtkEnField... orderBys) {
         return setOrderBy(DESC,orderBys);
     }
+
 }

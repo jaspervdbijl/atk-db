@@ -2,6 +2,7 @@ package com.acutus.atk.db.sql;
 
 import com.acutus.atk.db.AtkEnField;
 import com.acutus.atk.db.AtkEnFields;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
 
@@ -15,13 +16,17 @@ import static com.acutus.atk.db.util.AtkEnUtil.wrapEnumerated;
 public class Filter {
 
     public enum Type {
-        AND, OR, NOT
+        CUSTOM, AND, OR, NOT
     }
 
     private AtkEnFields fields;
     private Filter s1, s2;
     private Type type;
 
+    @Getter
+    private String customSql;
+    @Getter
+    private Object customParams[];
 
     public Filter(Type type, AtkEnField[] fields) {
         this(type, new AtkEnFields(fields));
@@ -32,10 +37,20 @@ public class Filter {
         this.fields = new AtkEnFields(fields);
     }
 
+    public Filter(String sql,Object ... params) {
+        this.type = Type.CUSTOM;
+        this.customSql = sql;
+        this.customParams = params;
+    }
+
     public Filter(Type type, Filter s1, Filter s2) {
         this.type = type;
         this.s1 = s1;
         this.s2 = s2;
+    }
+
+    public boolean isCustom() {
+        return type == Type.CUSTOM;
     }
 
     public static Filter and(AtkEnField... fields) {
@@ -86,8 +101,15 @@ public class Filter {
         }
     }
 
+    @SneakyThrows
     public PreparedStatement prepare(PreparedStatement ps) {
-        set(ps, new AtomicInteger(1));
+        if (type == Type.CUSTOM) {
+            for (int i = 0;customParams != null && i < customParams.length;i++) {
+                ps.setObject(i+1,customParams[i]);
+            }
+        } else {
+            set(ps, new AtomicInteger(1));
+        }
         return ps;
     }
 
