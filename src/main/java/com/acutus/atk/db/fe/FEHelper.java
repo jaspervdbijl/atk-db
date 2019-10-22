@@ -3,8 +3,10 @@ package com.acutus.atk.db.fe;
 import com.acutus.atk.db.AbstractAtkEntity;
 import com.acutus.atk.db.AtkEnField;
 import com.acutus.atk.db.AtkEnFields;
+import com.acutus.atk.db.AtkEnIndex;
 import com.acutus.atk.db.driver.AbstractDriver;
 import com.acutus.atk.db.driver.DriverFactory;
+import com.acutus.atk.db.fe.indexes.Index;
 import com.acutus.atk.db.fe.indexes.Indexes;
 import com.acutus.atk.db.fe.keys.FrKeys;
 import com.acutus.atk.util.Assert;
@@ -30,7 +32,7 @@ public class FEHelper {
 
     public static void maintainDataDefinition(Connection connection, List<Class<? extends AbstractAtkEntity>> classes) {
         List<AbstractAtkEntity> entities = classes.stream()
-                .map(c -> handle(() -> c.newInstance()))
+                .map(c -> handle(() -> (AbstractAtkEntity) c.getConstructors()[0].newInstance()))
                 .collect(Collectors.toList());
         maintainDataDefinition(connection, entities.toArray(new AbstractAtkEntity[]{}));
     }
@@ -60,6 +62,10 @@ public class FEHelper {
             maintainForeignKeys(connection, driver, entity);
         }
 
+        // INDEXES
+        for (AbstractAtkEntity entity : entities) {
+            maintainIndexes(connection, driver, entity);
+        }
     }
 
     public static void createTableIfNoExists(Connection connection, AbstractAtkEntity entity) {
@@ -175,9 +181,41 @@ public class FEHelper {
     }
 
     @SneakyThrows
-    public void maintainIndexes(Connection connection, AbstractDriver driver, AbstractAtkEntity entity) {
+    public static void maintainIndexes(Connection connection, AbstractDriver driver, AbstractAtkEntity entity) {
         Indexes indexes = driver.getIndexes(connection, entity.getTableName());
+
+        FrKeys dbKeys = FrKeys.load(driver.getForeignKeys(connection, entity.getTableName()));
+
+        indexes.removeIf(i -> dbKeys.getFkColNames().containsIgnoreCase(i.getColumns().toString(",")));
+
         // add missing
+        List<AtkEnIndex> missing = entity.getIndexes()
+                .stream()
+                .filter(i -> !indexes.getByName(i.getName()).isPresent())
+                .collect(Collectors.toList());
+
+        for (AtkEnIndex i : missing) {
+            logAndExecute(connection,driver.getCreateIndex(entity,i));
+        }
+
+        Indexes redundant = indexes.stream()
+                .filter(i -> !entity.getIndexes().getByName(i.getINDEX_NAME()).isPresent())
+                .collect(Collectors.toCollection(Indexes::new));
+        for (Index index : redundant) {
+            logAndExecute(connection,driver.getDropIndex(entity,index));
+        }
+
+        Indexes mismatch = indexes.stream()
+                .filter(i -> entity.getIndexes().getByName(i.getINDEX_NAME()).isPresent()
+                        && !i.equals(entity.getIndexes().getByName(i.getINDEX_NAME()).get()))
+                .collect(Collectors.toCollection(Indexes::new));
+
+        for (Index index : mismatch) {
+            logAndExecute(connection,driver.getDropIndex(entity,index));
+            logAndExecute(connection,driver.getCreateIndex(entity
+                    ,entity.getIndexes().getByName(index.getINDEX_NAME()).get()));
+        }
+
     }
 
 

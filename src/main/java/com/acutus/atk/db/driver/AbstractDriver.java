@@ -3,7 +3,9 @@ package com.acutus.atk.db.driver;
 import com.acutus.atk.db.AbstractAtkEntity;
 import com.acutus.atk.db.AtkEnField;
 import com.acutus.atk.db.AtkEnFields;
+import com.acutus.atk.db.AtkEnIndex;
 import com.acutus.atk.db.annotations.ForeignKey;
+import com.acutus.atk.db.fe.indexes.Index;
 import com.acutus.atk.db.fe.indexes.Indexes;
 import com.acutus.atk.db.fe.keys.FrKey;
 import com.acutus.atk.db.sql.SQLHelper;
@@ -49,8 +51,16 @@ public abstract class AbstractDriver {
 
     @SneakyThrows
     public Indexes getIndexes(Connection connection, String tableName) {
-        return Indexes.load(connection.getMetaData().getIndexInfo(null, null, tableName, false, false));
+        return removePrimaryIndexes(
+                Indexes.load(connection.getMetaData().getIndexInfo(connection.getCatalog()
+                        , connection.getSchema(), tableName, false, false)));
     }
+
+    public Indexes removePrimaryIndexes(Indexes indices) {
+        return indices.stream().filter(i -> !i.getINDEX_NAME().equalsIgnoreCase("primary"))
+                .collect(Collectors.toCollection(Indexes::new));
+    }
+
 
     @SneakyThrows
     public boolean doesTableExist(Connection connection, String tableName) {
@@ -133,6 +143,18 @@ public abstract class AbstractDriver {
 
     public String getDeferRule(ForeignKey.Deferrability deferrable) {
         return "";
+    }
+
+
+    // Indexes
+
+    public String getCreateIndex(AbstractAtkEntity entity,AtkEnIndex index) {
+        return String.format("create %s index %s on %s (%s)",index.isUnique()?"unique":"",index.getName()
+                ,entity.getTableName(),index.getFields().getColNames().toString(","));
+    }
+
+    public String getDropIndex(AbstractAtkEntity entity, Index index) {
+        return String.format("drop index %s on %s",index.getINDEX_NAME(),entity.getTableName());
     }
 
     /**

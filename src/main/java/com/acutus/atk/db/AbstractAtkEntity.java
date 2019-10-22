@@ -12,9 +12,8 @@ import javax.persistence.Table;
 import javax.sql.DataSource;
 import java.lang.reflect.Field;
 import java.sql.ResultSet;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.acutus.atk.util.AtkUtil.handle;
@@ -25,15 +24,19 @@ public class AbstractAtkEntity<T extends AbstractAtkEntity, O> extends AbstractA
     @Setter
     private transient boolean isLoadedFromDB;
 
-    @Getter
-    private transient List<AtkEnIndex> indexes = new ArrayList<>();
+    private transient AtkEnIndexes indexes;
 
     // entities created as child classes will have this reference set to the parent
     @Getter
     private transient AbstractAtkEntity parentEntity;
 
     protected void addIndex(AtkEnIndex index) {
-        indexes.add(index);
+        getIndexes().add(index);
+    }
+
+    public AtkEnIndexes getIndexes() {
+        indexes = indexes == null?new AtkEnIndexes():indexes;
+        return indexes;
     }
 
     public String getTableName() {

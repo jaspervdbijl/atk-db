@@ -13,6 +13,8 @@ import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.type.TypeMirror;
 import javax.persistence.Column;
 import javax.persistence.Enumerated;
 import javax.persistence.OneToMany;
@@ -24,7 +26,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.acutus.atk.db.processor.AtkEntity.ColumnNamingStrategy.CAMEL_CASE_UNDERSCORE;
-import static com.acutus.atk.db.processor.ProcessorHelper.getExecuteMethod;
+import static com.acutus.atk.db.processor.ProcessorHelper.*;
 import static com.acutus.atk.util.StringUtils.removeAllASpaces;
 
 @SupportedAnnotationTypes(
@@ -64,7 +66,7 @@ public class AtkEntityProcessor extends AtkProcessor {
 
     private static String removeColumnAnnotation(String line) {
         String header = line.substring(0, line.indexOf("@javax.persistence.Column"));
-        line = line.substring(line.indexOf("@Column") + "@javax.persistence.Column".length());
+        line = line.substring(line.indexOf("@Column") + "@javax.persistence.Column" .length());
         line = line.substring(line.indexOf(")") + 1);
         return header + line;
     }
@@ -211,27 +213,32 @@ public class AtkEntityProcessor extends AtkProcessor {
         );
     }
 
-    private Strings getQueryMethods(Element element) {
-        Strings methods = new Strings();
-        Arrays.stream(Query.class.getMethods()).forEach(m -> {
-            if ("java.util.Optional<T>".equals(m.getGenericReturnType().getTypeName())
-                    || "java.util.List<T>".equals(m.getGenericReturnType().getTypeName())) {
-                methods.add(cloneQueryMethod(element, m));
-            }
-        });
-        return methods;
-    }
-
     @SneakyThrows
     protected String getExecute(Execute execute, Element element) {
         return "\n\n" + getExecuteMethod(element.getSimpleName().toString(), execute.value());
     }
 
-    protected Strings getExecutes(Element element) {
+    protected String getQuery(AtkEntity atk, com.acutus.atk.db.processor.Query query, Element element) {
+        TypeMirror returnType = ((ExecutableElement) element).getReturnType();
+
+        String queryMethod = returnType.toString().startsWith("java.util.List")
+
+                ? getQueryAllMethod(atk.classNameExt(),returnType, element.getSimpleName().toString(), query.value())
+                : getQueryMethod(atk.classNameExt(), returnType, element.getSimpleName().toString(), query.value());
+
+        return "\n\n" + queryMethod;
+    }
+
+    protected Strings getExecuteOrQueries(AtkEntity atk, Element element) {
         return element.getEnclosedElements().stream()
                 .filter(f -> ElementKind.METHOD.equals(f.getKind()))
-                .filter(f -> f.getAnnotation(Execute.class) != null)
-                .map(f -> getExecute(((Element) f).getAnnotation(Execute.class), f))
+                .filter(f -> f.getAnnotation(Execute.class) != null ||
+                        f.getAnnotation(com.acutus.atk.db.processor.Query.class) != null)
+                .map(f ->
+                        f.getAnnotation(Execute.class) != null ?
+                                getExecute(((Element) f).getAnnotation(Execute.class), f)
+                                : getQuery(atk, ((Element) f).getAnnotation(com.acutus.atk.db.processor.Query.class), f)
+                )
                 .collect(Collectors.toCollection(Strings::new));
     }
 
@@ -264,12 +271,12 @@ public class AtkEntityProcessor extends AtkProcessor {
         AtkEntity atk = element.getAnnotation(AtkEntity.class);
         // add all query shortcuts
         Strings methods = new Strings();
-        methods.add(String.format("public Query<%s> query() {return new Query(this);}", getClassName(element)));
-        methods.add(String.format("public Persist<%s> persist() {return new Persist(this);}", getClassName(element)));
-        methods.add(String.format("public int version() {return %d;}", atk.version()));
+        methods.add(String.format("\tpublic Query<%s> query() {return new Query(this);}", getClassName(element)));
+        methods.add(String.format("\tpublic Persist<%s> persist() {return new Persist(this);}", getClassName(element)));
+        methods.add(String.format("\tpublic int version() {return %d;}", atk.version()));
 
         // add Execute methods
-        methods.addAll(getExecutes(element));
+        methods.addAll(getExecuteOrQueries(atk, element));
         methods.addAll(getOneToMany(atk, element));
         return methods;
     }

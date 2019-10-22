@@ -10,6 +10,7 @@ import com.acutus.atk.util.call.CallOne;
 import lombok.SneakyThrows;
 
 import javax.sql.DataSource;
+import java.lang.reflect.Modifier;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -68,10 +69,17 @@ public class Query<T extends AbstractAtkEntity> {
         return Optional.empty();
     }
 
+    public Optional<T> get(Connection connection, String sql,Object ... params) {
+        return get(connection,new Filter(sql,params));
+    }
+
     public Optional<T> get(DataSource dataSource, Filter filter) {
         return runAndReturn(dataSource, c -> get(c, filter));
     }
 
+    public Optional<T> get(DataSource dataSource, String sql,Object ... params) {
+        return runAndReturn(dataSource, c -> get(c, sql,params));
+    }
 
     @SneakyThrows
     public void iterate(Connection connection, Filter filter, CallOne<T> call) {
@@ -98,14 +106,22 @@ public class Query<T extends AbstractAtkEntity> {
         return list;
     }
 
+    public List<T> getAll(Connection connection, String sql, Object ... params) {
+        return getAll(connection, new Filter(sql,params));
+    }
+
     public static <T> T populateFrom(ResultSet rs, T t) {
-        Reflect.getFields(t.getClass()).stream()
+        Reflect.getFields(t.getClass()).filter(f -> !Modifier.isTransient(f.getModifiers())).stream()
                 .forEach(f -> handle(() -> f.set(t, mapFromRs(rs, f.getType(), f.getName()))));
         return t;
     }
 
     public List<T> getAll(DataSource dataSource, Filter filter) {
         return runAndReturn(dataSource, c -> getAll(c, filter));
+    }
+
+    public List<T> getAll(DataSource dataSource, String sql,Object ... params) {
+        return runAndReturn(dataSource, c -> getAll(c, sql,params));
     }
 
     public List<T> getAll(DataSource dataSource) {

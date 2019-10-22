@@ -1,11 +1,13 @@
 package com.acutus.atk.db.fe.keys;
 
 import com.acutus.atk.db.AtkEnField;
+import com.acutus.atk.util.Strings;
 import lombok.SneakyThrows;
 
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import static com.acutus.atk.db.Query.populateFrom;
 
@@ -19,6 +21,10 @@ public class FrKeys extends ArrayList<FrKey> {
             keys.add(populateFrom(rs, fk));
         }
         return keys;
+    }
+
+    public Strings getFkColNames() {
+        return stream().map(f -> f.getFKCOLUMN_NAME()).collect(Collectors.toCollection(Strings::new));
     }
 
     public boolean containsField(AtkEnField field) {

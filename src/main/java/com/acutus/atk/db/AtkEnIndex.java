@@ -33,8 +33,9 @@ public class AtkEnIndex {
     public AtkEnFields getFields() {
         AtkEnFields fields = new AtkEnFields();
         for (String col : getColumns()) {
-            fields.add(entity.getEnFields().getByColName(col).get());
+            fields.add(entity.getEnFields().getByFieldName(col).get());
         }
         return fields;
     }
+
 }
