@@ -1,6 +1,5 @@
 package com.acutus.atk.db.processor;
 
-import com.acutus.atk.db.Query;
 import com.acutus.atk.db.annotations.Index;
 import com.acutus.atk.entity.processor.AtkProcessor;
 import com.acutus.atk.util.Strings;
@@ -66,7 +65,7 @@ public class AtkEntityProcessor extends AtkProcessor {
 
     private static String removeColumnAnnotation(String line) {
         String header = line.substring(0, line.indexOf("@javax.persistence.Column"));
-        line = line.substring(line.indexOf("@Column") + "@javax.persistence.Column" .length());
+        line = line.substring(line.indexOf("@Column") + "@javax.persistence.Column".length());
         line = line.substring(line.indexOf(")") + 1);
         return header + line;
     }
@@ -223,7 +222,7 @@ public class AtkEntityProcessor extends AtkProcessor {
 
         String queryMethod = returnType.toString().startsWith("java.util.List")
 
-                ? getQueryAllMethod(atk.classNameExt(),returnType, element.getSimpleName().toString(), query.value())
+                ? getQueryAllMethod(atk.classNameExt(), returnType, element.getSimpleName().toString(), query.value())
                 : getQueryMethod(atk.classNameExt(), returnType, element.getSimpleName().toString(), query.value());
 
         return "\n\n" + queryMethod;
