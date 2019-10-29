@@ -13,7 +13,6 @@ import javax.sql.DataSource;
 import java.lang.reflect.Field;
 import java.sql.ResultSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.acutus.atk.util.AtkUtil.handle;
@@ -54,7 +53,7 @@ public class AbstractAtkEntity<T extends AbstractAtkEntity, O> extends AbstractA
 
     public T set(ResultSet rs) {
         isLoadedFromDB = true;
-        getEnFields().stream().forEach(f -> {
+        getEnFields().excludeIgnore().stream().forEach(f -> {
             f.setFromRs(rs);
             f.setSet(false);
         });
