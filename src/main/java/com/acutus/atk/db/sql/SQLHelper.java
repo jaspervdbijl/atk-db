@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -135,6 +136,16 @@ public class SQLHelper {
     public static <A> List<One<A>> query(DataSource dataSource, Class<A> type, String query, Object... params) {
         return runAndReturn(dataSource, connection -> query(connection, type, query, params));
     }
+
+    public static <A> Optional<One<A>> queryOne(Connection connection, Class<A> type, String query, Object... params) {
+        List<One<A>> list = query(connection,type,query,params);
+        return Optional.ofNullable(!list.isEmpty()?list.get(0):null);
+    }
+
+    public static <A> Optional<One<A>> queryOne(DataSource dataSource, Class<A> type, String query, Object... params) {
+        return runAndReturn(dataSource, connection -> queryOne(connection, type, query, params));
+    }
+
 
     public static <A, B> List<Two<A, B>> query(Connection connection, Class<A> t1, Class<B> t2, String query, Object... params) {
         return (List<Two<A, B>>) query(connection, Two.class, new Class[]{t1, t2}, query, params);

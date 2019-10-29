@@ -1,10 +1,6 @@
 package com.acutus.atk.db.processor;
 
-import com.acutus.atk.db.AbstractAtkEntity;
-
 import javax.lang.model.type.TypeMirror;
-import javax.sql.DataSource;
-import java.util.Optional;
 
 public class ProcessorHelper {
 
@@ -21,24 +17,40 @@ public class ProcessorHelper {
             "        });\n" +
             "    }";
 
-    public static String QUERY_METHOD = "public static java.util.Optional<_TYPE_> _METHOD_NAME_(javax.sql.DataSource dataSource, Object ... params) {\n" +
+    public static String QUERY_METHOD = "\tpublic static java.util.Optional<_TYPE_> _METHOD_NAME_(javax.sql.DataSource dataSource, Object ... params) {\n" +
             "        return new _TYPE_().query().get(dataSource,\"_SQL_\",params);\n" +
             "    }";
 
-    public static String QUERY_ALL_METHOD = "public static java.util.List<_TYPE_> _METHOD_NAME_(javax.sql.DataSource dataSource, Object ... params) {\n" +
+    public static String QUERY_PRIM = "\tpublic static java.util.Optional<One<_TYPE_>> _METHOD_NAME_(javax.sql.DataSource dataSource, Object ... params) {\n" +
+            "        return queryOne(dataSource,_TYPE_.class,\"_SQL_\",params);\n" +
+            "    }";
+
+    public static String QUERY_ALL_METHOD = "\tpublic static java.util.List<_TYPE_> _METHOD_NAME_(javax.sql.DataSource dataSource, Object ... params) {\n" +
             "        return new _TYPE_().query().getAll(dataSource,\"_SQL_\",params);\n" +
             "    }";
 
+    public static String QUERY_ALL_PRIM = "\tpublic static java.util.List<One<_TYPE_>> _METHOD_NAME_(javax.sql.DataSource dataSource, Object ... params) {\n" +
+            "        return query(dataSource,_TYPE_.class,\"_SQL_\",params);\n" +
+            "    }";
+
+    private static boolean isClassPrimitive(String className) {
+        return (className.startsWith("java.lang.") || className.startsWith("java.math."));
+    }
+
     public static String getQueryMethod(String extName, TypeMirror type ,String methodName, String sql) {
-        return QUERY_METHOD.replace("_TYPE_", type.toString()+extName)
+        extName = isClassPrimitive(type.toString())? "" : extName;
+        return ((isClassPrimitive(type.toString()))? QUERY_PRIM : QUERY_METHOD)
+                .replace("_TYPE_", type.toString()+extName)
                 .replace("_METHOD_NAME_", methodName).replace("_SQL_", sql);
     }
 
     public static String getQueryAllMethod(String extName, TypeMirror type, String methodName, String sql) {
+        extName = isClassPrimitive(type.toString())? "" : extName;
         String className = type.toString();
         className = className.substring(className.indexOf("<")+1);
         className = className.substring(0,className.indexOf(">")) + extName;
-        return QUERY_ALL_METHOD.replace("_TYPE_", className)
+        return (isClassPrimitive(type.toString())? QUERY_ALL_PRIM : QUERY_ALL_METHOD)
+                .replace("_TYPE_", className)
                 .replace("_METHOD_NAME_", methodName).replace("_SQL_", sql);
     }
 

@@ -284,11 +284,14 @@ public class AtkEntityProcessor extends AtkProcessor {
     protected Strings getImports() {
         return super.getImports().plus("import com.acutus.atk.db.*").plus("import com.acutus.atk.db.annotations.*")
                 .plus("import static com.acutus.atk.db.sql.SQLHelper.runAndReturn")
+                .plus("import static com.acutus.atk.db.sql.SQLHelper.queryOne")
+                .plus("import static com.acutus.atk.db.sql.SQLHelper.query")
                 .plus("import static com.acutus.atk.util.AtkUtil.handle")
                 .plus("import java.sql.PreparedStatement")
                 .plus("import com.acutus.atk.db.annotations.audit.*")
                 .plus("import java.time.LocalDateTime")
                 .plus("import javax.persistence.Column")
-                .plus("import javax.persistence.Table");
+                .plus("import javax.persistence.Table")
+                .plus("import com.acutus.atk.util.collection.*");
     }
 }

@@ -1,8 +1,6 @@
 package com.acutus.atk.db;
 
 import com.acutus.atk.db.sql.Filter;
-import com.acutus.atk.entity.AtkField;
-import com.acutus.atk.entity.AtkFieldList;
 import com.acutus.atk.reflection.Reflect;
 import com.acutus.atk.util.Assert;
 import com.acutus.atk.util.call.CallNilRet;
@@ -15,7 +13,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,7 +20,6 @@ import static com.acutus.atk.db.Query.OrderBy.DESC;
 import static com.acutus.atk.db.driver.DriverFactory.getDriver;
 import static com.acutus.atk.db.sql.Filter.Type.AND;
 import static com.acutus.atk.db.sql.Filter.and;
-import static com.acutus.atk.db.sql.Filter.or;
 import static com.acutus.atk.db.sql.SQLHelper.*;
 import static com.acutus.atk.util.AtkUtil.handle;
 
@@ -47,7 +43,7 @@ public class Query<T extends AbstractAtkEntity> {
         String sql = filter.isCustom()?
                 filter.getCustomSql()
                 : String.format("select %s from %s where %s %s"
-                , entity.getEnFields().getColNames().toString(",")
+                , entity.getEnFields().excludeIgnore().getColNames().toString(",")
                 , entity.getTableName(), filter.getSql(),
                 orderBy != null
                         ? "order by " + orderBy.getColNames().toString(",") + " " + orderByType.name()

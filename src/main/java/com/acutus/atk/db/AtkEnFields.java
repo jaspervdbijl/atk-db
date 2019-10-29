@@ -29,6 +29,11 @@ public class AtkEnFields extends AtkFieldList<AtkEnField> {
         return stream().filter(f -> f.isChanged()).collect(Collectors.toCollection(AtkEnFields::new));
     }
 
+    public AtkEnFields excludeIgnore() {
+        return stream().filter(f -> !f.isIgnore()).collect(Collectors.toCollection(AtkEnFields::new));
+    }
+
+
     @Override
     public AtkEnFields getSet() {
         return stream().filter(f -> f.isSet()).collect(Collectors.toCollection(AtkEnFields::new));
