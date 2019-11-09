@@ -8,6 +8,7 @@ import lombok.SneakyThrows;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.util.List;
+import java.util.Optional;
 
 import static com.acutus.atk.db.sql.Filter.Type.AND;
 import static com.acutus.atk.db.sql.SQLHelper.run;
@@ -24,10 +25,15 @@ public class AtkEnRelation<T extends AbstractAtkEntity> {
     }
 
     @SneakyThrows
-    private T getEntity() {
+    private T getEntity(boolean oneToMany) {
         T instance = type.getConstructor().newInstance();
+
+        Assert.isTrue(source.getEnFields().getIds().size() == 1, "Expected exactly one ID field in " + source);
         Assert.isTrue(instance.getEnFields().getIds().size() == 1, "Expected exactly one ID field in " + type);
-        AtkEnFields fField = instance.getEnFields().getForeignKeys(source.getClass());
+
+        AtkEnFields fField = oneToMany
+                ? instance.getEnFields().getForeignKeys(source.getClass())
+                : source.getEnFields().getForeignKeys(instance.getClass());
         Assert.isTrue(instance.getEnFields().getIds().size() == 1, "No matching foreign key found in %s for %s"
                 , source.getClass(), type);
         fField.get(0).set(source.getEnFields().getIds().get(0).get());
@@ -35,11 +41,15 @@ public class AtkEnRelation<T extends AbstractAtkEntity> {
     }
 
     public List<T> getAll(DataSource dataSource) {
-        return getQuery(getEntity()).getAllBySet(dataSource);
+        return getQuery(getEntity(true)).getAllBySet(dataSource);
+    }
+
+    public Optional<T> get(DataSource dataSource) {
+        return getQuery(getEntity(false)).getBySet(dataSource);
     }
 
     public void iterate(Connection connection, CallOne<T> call) {
-        T entity = getEntity();
+        T entity = getEntity(true);
         getQuery(entity).iterate(connection, new Filter(AND, entity.getEnFields().getSet()), call);
     }
 

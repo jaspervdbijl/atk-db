@@ -2,13 +2,11 @@ package com.acutus.atk.db;
 
 import com.acutus.atk.db.driver.DriverFactory;
 import com.acutus.atk.db.util.AtkEnUtil;
-import com.acutus.atk.reflection.Reflect;
 import com.acutus.atk.util.Assert;
 import lombok.SneakyThrows;
 
 import javax.persistence.GeneratedValue;
 import javax.sql.DataSource;
-import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.util.ArrayList;
@@ -188,7 +186,7 @@ public class Persist<T extends AbstractAtkEntity> {
      * @return
      */
     @SneakyThrows
-    public void deleteOnset(Connection connection) {
+    public void deleteOnSet(Connection connection) {
         Assert.notEmpty(entity.getEnFields().getSet(), "Atleast one fields must be set");
         StringBuilder where = new StringBuilder();
         entity.getEnFields().getSet().stream().forEach(field -> where.append(field.getColName()).append(" = ?").append(" and "));
@@ -204,7 +202,7 @@ public class Persist<T extends AbstractAtkEntity> {
     }
 
     public void deleteOnSet(DataSource dataSource) {
-        run(dataSource, c -> deleteOnset(c));
+        run(dataSource, c -> deleteOnSet(c));
     }
 
     public void deleteOnId(DataSource dataSource) {

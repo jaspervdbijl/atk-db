@@ -14,10 +14,7 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.TypeMirror;
-import javax.persistence.Column;
-import javax.persistence.Enumerated;
-import javax.persistence.OneToMany;
-import javax.persistence.Table;
+import javax.persistence.*;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.OptionalInt;
@@ -256,13 +253,27 @@ public class AtkEntityProcessor extends AtkProcessor {
                 , className, element.toString(), className);
     }
 
+    protected String getManyToOneImp(AtkEntity atk, Element element) {
+        String type = element.asType().toString();
+        // check that type is List
+        String className = type + atk.classNameExt();
+        return String.format("public transient AtkEnRelation<%s> %sRef = new AtkEnRelation<>(%s.class, this);"
+                , className, element.toString(), className);
+    }
+
+
     protected Strings getOneToMany(AtkEntity atk, Element element) {
         return element.getEnclosedElements().stream()
-                .filter(f -> ElementKind.FIELD.equals(f.getKind()))
-                .filter(f -> f.getAnnotation(OneToMany.class) != null)
+                .filter(f -> ElementKind.FIELD.equals(f.getKind()) && f.getAnnotation(OneToMany.class) != null)
                 .map(f -> getOneToManyImp(atk, f))
                 .collect(Collectors.toCollection(Strings::new));
+    }
 
+    protected Strings getManyToOne(AtkEntity atk, Element element) {
+        return element.getEnclosedElements().stream()
+                .filter(f -> ElementKind.FIELD.equals(f.getKind()) && f.getAnnotation(ManyToOne.class) != null)
+                .map(f -> getManyToOneImp(atk, f))
+                .collect(Collectors.toCollection(Strings::new));
     }
 
     @Override
@@ -277,6 +288,7 @@ public class AtkEntityProcessor extends AtkProcessor {
         // add Execute methods
         methods.addAll(getExecuteOrQueries(atk, element));
         methods.addAll(getOneToMany(atk, element));
+        methods.addAll(getManyToOne(atk, element));
         return methods;
     }
 
