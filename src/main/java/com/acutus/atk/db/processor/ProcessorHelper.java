@@ -4,18 +4,25 @@ import javax.lang.model.type.TypeMirror;
 
 public class ProcessorHelper {
 
-    public static final String EXECUTE_METHOD = "public int _EXECUTE_(javax.sql.DataSource dataSource,Object ... params) {\n" +
-            "        return runAndReturn(dataSource,c -> {\n" +
-            "            try (PreparedStatement ps = c.prepareStatement(\"_SQL_\")) {\n" +
-            "                if (params != null) {\n" +
-            "                    for (int i = 0; i < params.length; i++) {\n" +
-            "                        ps.setObject(i + 1, params[i]);\n" +
-            "                    }\n" +
-            "                }\n" +
-            "                return ps.executeUpdate();\n" +
-            "            }\n" +
+    public static final String EXECUTE_METHOD = "   public static int _EXECUTE_(javax.sql.DataSource dataSource,Object ... params) {\n" +
+            "       return runAndReturn(dataSource,c -> {\n" +
+            "           return _EXECUTE_(c,params);" +
             "        });\n" +
             "    }";
+
+    public static final String EXECUTE_METHOD_CONNECTION = "    public static int _EXECUTE_(java.sql.Connection c,Object ... params) {\n" +
+            "       try (PreparedStatement ps = c.prepareStatement(\"_SQL_\")) {\n" +
+            "           if (params != null) {\n" +
+            "               for (int i = 0; i < params.length; i++) {\n" +
+            "                   ps.setObject(i + 1, params[i]);\n" +
+            "               }\n" +
+            "           }\n" +
+            "           return ps.executeUpdate();\n" +
+            "       } catch (java.sql.SQLException e) {\n" +
+            "           throw new RuntimeException(e);\n" +
+            "       }\n" +
+            "   }";
+
 
     public static String QUERY_METHOD = "\tpublic static java.util.Optional<_TYPE_> _METHOD_NAME_(javax.sql.DataSource dataSource, Object ... params) {\n" +
             "        return new _TYPE_().query().get(dataSource,\"_SQL_\",params);\n" +
@@ -55,7 +62,8 @@ public class ProcessorHelper {
     }
 
     public static String getExecuteMethod(String methodName, String sql) {
-        return EXECUTE_METHOD.replace("_EXECUTE_", methodName).replace("_SQL_", sql);
+        return EXECUTE_METHOD_CONNECTION.replace("_EXECUTE_", methodName).replace("_SQL_", sql) + "\n\n" +
+                EXECUTE_METHOD.replace("_EXECUTE_", methodName).replace("_SQL_", sql) + "\n";
     }
 
     public static void main(String[] args) {
