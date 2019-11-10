@@ -1,12 +1,13 @@
 package com.acutus.atk.db.util;
 
-import afu.org.checkerframework.checker.signature.qual.SourceName;
 import com.acutus.atk.db.AbstractAtkEntity;
 import com.acutus.atk.db.AtkEnField;
 import com.acutus.atk.db.annotations.Default;
 import com.acutus.atk.db.annotations.UID;
+import com.acutus.atk.db.annotations.audit.CreatedBy;
 import com.acutus.atk.db.annotations.audit.CreatedDate;
-import com.acutus.atk.db.processor.AtkEntity;
+import com.acutus.atk.db.annotations.audit.LastModifiedBy;
+import com.acutus.atk.db.annotations.audit.LastModifiedDate;
 import com.acutus.atk.util.Assert;
 import com.acutus.atk.util.call.CallOne;
 import lombok.SneakyThrows;
@@ -17,31 +18,53 @@ import java.lang.annotation.Annotation;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.*;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
-import static com.acutus.atk.beans.BeanHelper.*;
+import static com.acutus.atk.beans.BeanHelper.decode;
 import static com.acutus.atk.db.util.AtkEnUtil.unwrapEnumerated;
+import static com.acutus.atk.db.util.UserContextHolder.getUsername;
 import static com.acutus.atk.util.AtkUtil.handle;
 
 public class PersistHelper {
     private static Map<Class<? extends Annotation>, CallOne<AtkEnField>> insertPreProcessor = new HashMap<>();
+    private static Map<Class<? extends Annotation>, CallOne<AtkEnField>> updatePreProcessor = new HashMap<>();
 
     static {
         insertPreProcessor.put(CreatedDate.class, (e) -> processCreatedDate(e));
+        insertPreProcessor.put(CreatedBy.class, (e) -> processCreatedBy(e));
         insertPreProcessor.put(UID.class, (e) -> processUID(e));
         insertPreProcessor.put(Default.class, (e) -> processDefault(e, true));
     }
 
+    static {
+        updatePreProcessor.put(LastModifiedDate.class, (e) -> processCreatedDate(e));
+        updatePreProcessor.put(LastModifiedBy.class, (e) -> processCreatedBy(e));
+    }
+
     @SneakyThrows
-    public static void preProcessInsert(AbstractAtkEntity entity) {
+    public static void preProcess(AbstractAtkEntity entity,Map<Class<? extends Annotation>, CallOne<AtkEnField>> processor) {
         entity.getEnFields().stream().filter(f -> f.get() == null).forEach(field -> {
             for (Annotation a : field.getField().getAnnotations()) {
-                if (insertPreProcessor.containsKey(a.annotationType())) {
-                    handle(() -> insertPreProcessor.get(a.annotationType()).call(field));
+                if (processor.containsKey(a.annotationType())) {
+                    handle(() -> processor.get(a.annotationType()).call(field));
                 }
             }
         });
     }
+
+    @SneakyThrows
+    public static void preProcessInsert(AbstractAtkEntity entity) {
+        preProcess(entity,insertPreProcessor);
+    }
+
+    @SneakyThrows
+    public static void preProcessUpdate(AbstractAtkEntity entity) {
+        preProcess(entity,updatePreProcessor);
+    }
+
 
     @SneakyThrows
     public static void processCreatedDate(AtkEnField field) {
@@ -58,6 +81,10 @@ public class PersistHelper {
                 throw new UnsupportedOperationException("Type not implemented " + field.getType());
             }
         }
+    }
+
+    public static void processCreatedBy(AtkEnField field) {
+        field.set(field.get() == null ? getUsername() : field.get());
     }
 
     public static void processUID(AtkEnField field) {

@@ -3,6 +3,7 @@ package com.acutus.atk.db;
 import com.acutus.atk.db.driver.DriverFactory;
 import com.acutus.atk.db.util.AtkEnUtil;
 import com.acutus.atk.util.Assert;
+import com.acutus.atk.util.call.CallThree;
 import lombok.SneakyThrows;
 
 import javax.persistence.GeneratedValue;
@@ -11,14 +12,23 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static com.acutus.atk.db.sql.SQLHelper.*;
 import static com.acutus.atk.db.util.PersistHelper.preProcessInsert;
+import static com.acutus.atk.db.util.PersistHelper.preProcessUpdate;
+import static com.acutus.atk.util.AtkUtil.handle;
 import static javax.persistence.GenerationType.AUTO;
 import static javax.persistence.GenerationType.IDENTITY;
 
 public class Persist<T extends AbstractAtkEntity> {
+
+    private static Optional<CallThree<Connection, AbstractAtkEntity , Boolean>> PERSIST_CALLBACK = Optional.empty();
+
+    public static void setPersistCallback(CallThree<Connection, AbstractAtkEntity , Boolean> callback) {
+        PERSIST_CALLBACK = Optional.of(callback);
+    }
 
     private T entity;
 
@@ -64,6 +74,7 @@ public class Persist<T extends AbstractAtkEntity> {
             ids.get(0).set(DriverFactory.getDriver(connection)
                     .getLastInsertValue(connection, ids.get(0).getType()));
         }
+        PERSIST_CALLBACK.ifPresent(c -> handle(() -> c.call(connection, entity, true)));
         return entity;
     }
 
@@ -95,6 +106,7 @@ public class Persist<T extends AbstractAtkEntity> {
      */
     @SneakyThrows
     private T update(Connection connection, AtkEnFields updateFields) {
+        preProcessUpdate(entity);
         AtkEnFields ids = entity.getEnFields().getIds();
         assertIdIsPresent(ids);
         // remove the ids
@@ -109,6 +121,9 @@ public class Persist<T extends AbstractAtkEntity> {
                 , wrapEnumerated(updateValues).toArray(new Object[]{}))) {
             int updated = ps.executeUpdate();
             Assert.isTrue(updated == 1, "Failed to update %s on %s", entity.getTableName(), entity.getEnFields().getIds());
+
+            PERSIST_CALLBACK.ifPresent(c -> handle(() -> c.call(connection, entity, false)));
+
             entity.getEnFields().reset();
         }
         return entity;

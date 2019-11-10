@@ -25,6 +25,10 @@ public @interface AtkEntity {
     // will auto add auditing fields
     boolean addAuditFields() default false;
 
+    boolean auditTable() default false;
+
+    boolean addDeclaredFields() default false;
+
     enum ColumnNamingStrategy {
         NONE, CAMEL_CASE_UNDERSCORE
     }
