@@ -3,11 +3,11 @@ package com.acutus.atk.db;
 import com.acutus.atk.db.sql.Filter;
 import com.acutus.atk.util.Assert;
 import com.acutus.atk.util.call.CallOne;
+import lombok.Getter;
 import lombok.SneakyThrows;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
-import java.util.List;
 import java.util.Optional;
 
 import static com.acutus.atk.db.sql.Filter.Type.AND;
@@ -16,6 +16,7 @@ import static com.acutus.atk.db.util.AtkEnUtil.getQuery;
 
 public class AtkEnRelation<T extends AbstractAtkEntity> {
 
+    @Getter
     private Class<T> type;
     private AbstractAtkEntity source;
 
@@ -40,8 +41,12 @@ public class AtkEnRelation<T extends AbstractAtkEntity> {
         return instance;
     }
 
-    public List<T> getAll(DataSource dataSource) {
+    public AtkEntities<T> getAll(DataSource dataSource) {
         return getQuery(getEntity(true)).getAllBySet(dataSource);
+    }
+
+    public AtkEntities<T> getAll(Connection c) {
+        return getQuery(getEntity(true)).getAllBySet(c);
     }
 
     public Optional<T> get(DataSource dataSource) {

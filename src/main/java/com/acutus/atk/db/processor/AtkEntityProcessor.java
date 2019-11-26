@@ -238,6 +238,16 @@ public class AtkEntityProcessor extends AtkProcessor {
                 .collect(Collectors.toCollection(Strings::new));
     }
 
+    private String getLazyLoadMethod(String className,Element element,String cType) {
+        String eName = element.toString();
+        String mName = element.toString();
+        mName = "get"+mName.substring(0,1).toUpperCase()+mName.substring(1);
+        return String.format("public AtkEntities<%s> %s(%s c) {\n" +
+                "\t%s = %s == null ? %sRef.getAll(c) : %s;\n" +
+                "\treturn %s;\n" +
+                "};",className,mName,cType,eName,eName,eName,eName,eName);
+    }
+
     protected String getOneToManyImp(AtkEntity atk, Element element) {
         String type = element.asType().toString();
         // check that type is List
@@ -248,9 +258,21 @@ public class AtkEntityProcessor extends AtkProcessor {
         if (!type.contains("<")) {
             error(String.format("OneToMany Expected a generic type for [%s]", element.toString()));
         }
-        String className = type.substring(type.indexOf("<") + 1, type.indexOf(">")) + atk.classNameExt();
-        return String.format("public transient AtkEnRelation<%s> %sRef = new AtkEnRelation<>(%s.class, this);"
-                , className, element.toString(), className);
+        String className = type.substring(type.indexOf("<") + 1, type.indexOf(">"));
+        String classNameAndRef = className + atk.classNameExt();
+        String atkRef = String.format("public transient AtkEnRelation<%s> %sRef = new AtkEnRelation<>(%s.class, this);"
+                , classNameAndRef, element.toString(), classNameAndRef);
+        // TODO add a getter, that wil automatically execute the atkReference
+        if (element.getAnnotation(OneToMany.class).fetch().equals(FetchType.EAGER)) {
+
+            Strings list = new Strings();
+            list.add(String.format("@OneToMany(fetch = javax.persistence.FetchType.EAGER)"));
+            list.add(String.format("private AtkEntities<%s> %s;", classNameAndRef,element.toString()));
+            list.add(getLazyLoadMethod(classNameAndRef,element,"Connection"));
+            list.add(getLazyLoadMethod(classNameAndRef,element,"DataSource"));
+            return atkRef + "\n\n\t" + list.toString("\n\t");
+        }
+        return atkRef;
     }
 
     protected String getManyToOneImp(AtkEntity atk, Element element) {
@@ -281,7 +303,7 @@ public class AtkEntityProcessor extends AtkProcessor {
         AtkEntity atk = element.getAnnotation(AtkEntity.class);
         // add all query shortcuts
         Strings methods = new Strings();
-        methods.add(String.format("\tpublic Query<%s> query() {return new Query(this);}", getClassName(element)));
+        methods.add(String.format("\tpublic Query<%s,%s> query() {return new Query(this);}", getClassName(element),element.getSimpleName()));
         methods.add(String.format("\tpublic Persist<%s> persist() {return new Persist(this);}", getClassName(element)));
         methods.add(String.format("\tpublic int version() {return %d;}", atk.version()));
 
@@ -304,6 +326,12 @@ public class AtkEntityProcessor extends AtkProcessor {
                 .plus("import java.time.LocalDateTime")
                 .plus("import javax.persistence.Column")
                 .plus("import javax.persistence.Table")
+                .plus("import java.util.List")
+                .plus("import java.util.ArrayList")
+                .plus("import java.sql.Connection")
+                .plus("import javax.persistence.OneToMany")
+                .plus("import javax.sql.DataSource")
+                .plus("import com.acutus.atk.db.*")
                 .plus("import com.acutus.atk.util.collection.*");
     }
 }

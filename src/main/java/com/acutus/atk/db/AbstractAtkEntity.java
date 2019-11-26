@@ -15,6 +15,7 @@ import java.sql.ResultSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.acutus.atk.db.Query.getEagerFields;
 import static com.acutus.atk.util.AtkUtil.handle;
 
 public class AbstractAtkEntity<T extends AbstractAtkEntity, O> extends AbstractAtk<T, O> {
@@ -25,9 +26,8 @@ public class AbstractAtkEntity<T extends AbstractAtkEntity, O> extends AbstractA
 
     private transient AtkEnIndexes indexes;
 
-    // entities created as child classes will have this reference set to the parent
-    @Getter
-    private transient AbstractAtkEntity parentEntity;
+    @Setter @Getter
+    private String tableName;
 
     protected void addIndex(AtkEnIndex index) {
         getIndexes().add(index);
@@ -39,8 +39,11 @@ public class AbstractAtkEntity<T extends AbstractAtkEntity, O> extends AbstractA
     }
 
     public String getTableName() {
-        Table table = getClass().getAnnotation(Table.class);
-        return table != null && !StringUtils.isEmpty(table.name()) ? table.name() : getClass().getSimpleName();
+        if (tableName == null) {
+            Table table = getClass().getAnnotation(Table.class);
+            tableName = table != null && !StringUtils.isEmpty(table.name()) ? table.name() : getClass().getSimpleName();
+        }
+        return tableName;
     }
 
     public int version() {
@@ -58,6 +61,19 @@ public class AbstractAtkEntity<T extends AbstractAtkEntity, O> extends AbstractA
             f.setSet(false);
         });
         return (T) this;
+    }
+
+    public O toBase() {
+        O base = super.toBase();
+        // process eager fetches and map them to their dao's
+        getEagerFields(this).forEach(f -> handle(() -> {
+            if (f.get(this) != null) {
+                List<AbstractAtkEntity> values = (List<AbstractAtkEntity>) f.get(this);
+                Reflect.getFields(base.getClass()).get(f.getName()).get()
+                        .set(base,values.stream().map(v -> v.toBase()).collect(Collectors.toList()));
+            }
+        }));
+        return base;
     }
 
     @SneakyThrows
@@ -92,7 +108,7 @@ public class AbstractAtkEntity<T extends AbstractAtkEntity, O> extends AbstractA
         return new Persist(this);
     }
 
-    public Query<T> query() {
+    public Query<T,O> query() {
         return new Query(this);
     }
 

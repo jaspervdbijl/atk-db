@@ -32,7 +32,7 @@ public class ProcessorHelper {
             "        return queryOne(dataSource,_TYPE_.class,\"_SQL_\",params);\n" +
             "    }";
 
-    public static String QUERY_ALL_METHOD = "\tpublic static java.util.List<_TYPE_> _METHOD_NAME_(javax.sql.DataSource dataSource, Object ... params) {\n" +
+    public static String QUERY_ALL_METHOD = "\tpublic static AtkEntities<_TYPE_> _METHOD_NAME_(javax.sql.DataSource dataSource, Object ... params) {\n" +
             "        return new _TYPE_().query().getAll(dataSource,\"_SQL_\",params);\n" +
             "    }";
 
@@ -55,9 +55,10 @@ public class ProcessorHelper {
         extName = isClassPrimitive(type.toString())? "" : extName;
         String className = type.toString();
         className = className.substring(className.indexOf("<")+1);
-        className = className.substring(0,className.indexOf(">")) + extName;
+        className = className.substring(0,className.indexOf(">"));
+        String classNameAndExt = className + extName;
         return (isClassPrimitive(type.toString())? QUERY_ALL_PRIM : QUERY_ALL_METHOD)
-                .replace("_TYPE_", className)
+                .replace("_TYPE_", classNameAndExt)
                 .replace("_METHOD_NAME_", methodName).replace("_SQL_", sql);
     }
 
