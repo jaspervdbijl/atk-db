@@ -1,6 +1,7 @@
 package com.acutus.atk.db.processor;
 
 import javax.lang.model.type.TypeMirror;
+import javax.persistence.FetchType;
 
 public class ProcessorHelper {
 
@@ -33,7 +34,7 @@ public class ProcessorHelper {
             "    }";
 
     public static String QUERY_ALL_METHOD = "\tpublic static AtkEntities<_TYPE_> _METHOD_NAME_(javax.sql.DataSource dataSource, Object ... params) {\n" +
-            "        return new _TYPE_().query().getAll(dataSource,\"_SQL_\",params);\n" +
+            "        return new _TYPE_().query()._GET_ALL_METHOD_(dataSource,\"_SQL_\",params);\n" +
             "    }";
 
     public static String QUERY_ALL_PRIM = "\tpublic static java.util.List<One<_TYPE_>> _METHOD_NAME_(javax.sql.DataSource dataSource, Object ... params) {\n" +
@@ -51,7 +52,7 @@ public class ProcessorHelper {
                 .replace("_METHOD_NAME_", methodName).replace("_SQL_", sql);
     }
 
-    public static String getQueryAllMethod(String extName, TypeMirror type, String methodName, String sql) {
+    public static String getQueryAllMethod(FetchType fetchType, String extName, TypeMirror type, String methodName, String sql) {
         extName = isClassPrimitive(type.toString())? "" : extName;
         String className = type.toString();
         className = className.substring(className.indexOf("<")+1);
@@ -59,7 +60,8 @@ public class ProcessorHelper {
         String classNameAndExt = className + extName;
         return (isClassPrimitive(type.toString())? QUERY_ALL_PRIM : QUERY_ALL_METHOD)
                 .replace("_TYPE_", classNameAndExt)
-                .replace("_METHOD_NAME_", methodName).replace("_SQL_", sql);
+                .replace("_METHOD_NAME_", methodName).replace("_SQL_", sql)
+                .replace("_GET_ALL_METHOD_",FetchType.EAGER.equals(fetchType) ? "getAllCascade" : "getAll");
     }
 
     public static String getExecuteMethod(String methodName, String sql) {

@@ -219,7 +219,7 @@ public class AtkEntityProcessor extends AtkProcessor {
 
         String queryMethod = returnType.toString().startsWith("java.util.List")
 
-                ? getQueryAllMethod(atk.classNameExt(), returnType, element.getSimpleName().toString(), query.value())
+                ? getQueryAllMethod(query.fetchType(),atk.classNameExt(), returnType, element.getSimpleName().toString(), query.value())
                 : getQueryMethod(atk.classNameExt(), returnType, element.getSimpleName().toString(), query.value());
 
         return "\n\n" + queryMethod;

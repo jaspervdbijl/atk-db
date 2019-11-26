@@ -3,6 +3,7 @@ package com.acutus.atk.db;
 import com.acutus.atk.db.sql.Filter;
 import com.acutus.atk.reflection.Reflect;
 import com.acutus.atk.util.Assert;
+import com.acutus.atk.util.Strings;
 import com.acutus.atk.util.call.CallNilRet;
 import com.acutus.atk.util.call.CallOne;
 import com.acutus.atk.util.collection.Two;
@@ -17,6 +18,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static com.acutus.atk.db.Query.OrderBy.DESC;
@@ -134,15 +137,14 @@ public class Query<T extends AbstractAtkEntity,O> {
                 .stream();
     }
 
-    private String getLeftJoin(int cnt,AbstractAtkEntity entity) {
-        Optional<String> lj = getEagerFields(entity).map(f -> handle(() -> {
+    private Strings getLeftJoin(int cnt,AbstractAtkEntity entity) {
+        return getEagerFields(entity).map(f -> handle(() -> {
 
             // find the entity relation field
             Optional<Field> enRefField = entity.getRefFields().get(f.getName() + "Ref");
             Assert.isTrue(enRefField.isPresent(), "Field not found " + f.getName() + "Ref");
             return getLeftJoin(cnt,entity, (AtkEnRelation) enRefField.get().get(entity));
-        })).reduce((s1, s2) -> s1 + " " + s2);
-        return lj.isPresent()? lj.get() : "";
+        })).collect(Collectors.toCollection(Strings::new));
     }
 
     private String keyToString(AbstractAtkEntity entity) {
@@ -175,16 +177,17 @@ public class Query<T extends AbstractAtkEntity,O> {
 
     @SneakyThrows
     public AtkEntities<T> getAllCascade(Connection connection, Filter filter) {
-        String sql = prepareSql(filter);
+        String sql = prepareSql(filter).replaceAll("\\p{Cntrl}", "");
         // add all the left joins
-        String lj = getLeftJoin(0,entity);
-        if (sql.indexOf(" where ") != -1) {
-            sql = sql.substring(0,sql.indexOf(" where ")) + " " + lj + sql.substring(sql.indexOf(" where "));
-        } else {
-            sql += lj;
-        }
+        sql = sql.substring(sql.toLowerCase().indexOf(" from "));
+        Strings lj = getLeftJoin(0,entity);
+        Strings split = Strings.asList(sql.replace(","," , ").split("\\s+"));
+        split.add(split.indexOfIgnoreCase(entity.getTableName())+1,lj.toString(" "));
+        split.add(1, IntStream.range(0,lj.size()).mapToObj(i -> getTmpTablename(i)+".*")
+                        .reduce((t1,t2) -> t1 + ", " + t2).get());
+        sql = "select " + entity.getTableName()+".*, "+ split.toString(" ");
+        // transform the select *
         Map<String, AbstractAtkEntity> map = new HashMap<>();
-        List<String> keys = new ArrayList<>();
         AtkEntities<T> entities = new AtkEntities<>();
         try (PreparedStatement ps = prepareStatementFromFilter(connection, new Filter(sql, filter.getCustomParams()))) {
             try (ResultSet rs = ps.executeQuery()) {
@@ -202,6 +205,11 @@ public class Query<T extends AbstractAtkEntity,O> {
     public AtkEntities<T> getAllCascade(DataSource dataSource, Filter filter) {
         return runAndReturn(dataSource, connection -> getAllCascade(connection, filter));
     }
+
+    public AtkEntities<T> getAllCascade(DataSource dataSource, String sql, Object ... params) {
+        return runAndReturn(dataSource, connection -> getAllCascade(connection, new Filter(sql,params)));
+    }
+
 
     public AtkEntities<T> getAll(Connection connection, String sql, Object... params) {
         return getAll(connection, new Filter(sql, params));
@@ -292,4 +300,10 @@ public class Query<T extends AbstractAtkEntity,O> {
         return setOrderBy(DESC, orderBys);
     }
 
+    public static void main(String[] args) {
+        String sql = "select * from quote,\n\t quote_item where..".replaceAll("\\p{Cntrl}", "").replace(","," , ");
+        System.out.println(sql);
+        System.out.println(Arrays.stream(sql.split("\\s+"))
+                .reduce((w1,w2) -> w1 + "->" + w2).get());
+    }
 }
