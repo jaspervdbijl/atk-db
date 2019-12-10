@@ -53,6 +53,10 @@ public class Filter {
         return type == Type.CUSTOM;
     }
 
+    public boolean isEmpty() {
+        return type == null;
+    }
+
     public static Filter and(AtkEnField... fields) {
         return new Filter(Type.AND, fields);
     }

@@ -260,7 +260,7 @@ public class AtkEntityProcessor extends AtkProcessor {
         }
         String className = type.substring(type.indexOf("<") + 1, type.indexOf(">"));
         String classNameAndRef = className + atk.classNameExt();
-        String atkRef = String.format("public transient AtkEnRelation<%s> %sRef = new AtkEnRelation<>(%s.class, this);"
+        String atkRef = String.format("public transient AtkEnRelation<%s> %sRef = new AtkEnRelation<>(%s.class, AtkEnRelation.RelType.OneToMany, this);"
                 , classNameAndRef, element.toString(), classNameAndRef);
         // TODO add a getter, that wil automatically execute the atkReference
         if (element.getAnnotation(OneToMany.class).fetch().equals(FetchType.EAGER)) {
@@ -279,7 +279,7 @@ public class AtkEntityProcessor extends AtkProcessor {
         String type = element.asType().toString();
         // check that type is List
         String className = type + atk.classNameExt();
-        return String.format("public transient AtkEnRelation<%s> %sRef = new AtkEnRelation<>(%s.class, this);"
+        return String.format("public transient AtkEnRelation<%s> %sRef = new AtkEnRelation<>(%s.class, AtkEnRelation.RelType.ManyToOne, this);"
                 , className, element.toString(), className);
     }
 
