@@ -66,7 +66,7 @@ public class Persist<T extends AbstractAtkEntity> {
                 String.format("insert into %s (%s) values(%s)"
                         , entity.getTableName(), clone.getColNames().toString(",")
                         , clone.stream().map(f -> "?").reduce((s1, s2) -> s1 + "," + s2).get())
-                , wrapEnumerated(clone).toArray())) {
+                , wrapForPreparedStatement(clone).toArray())) {
             ps.executeUpdate();
         }
         // load any auto inc fields
@@ -78,11 +78,11 @@ public class Persist<T extends AbstractAtkEntity> {
         return entity;
     }
 
-    private List wrapEnumerated(AtkEnFields fields) {
+    private List wrapForPreparedStatement(AtkEnFields fields) {
         // note that a lambda stream will remove null values
         List values = new ArrayList();
         for (AtkEnField field : fields) {
-            values.add(AtkEnUtil.wrapEnumerated(field));
+            values.add(AtkEnUtil.wrapForPreparedStatement(field));
         }
         return values;
     }
@@ -95,7 +95,6 @@ public class Persist<T extends AbstractAtkEntity> {
         Assert.isTrue(!ids.isEmpty(), "No Id fields defined for entity " + entity.getTableName());
         Assert.isTrue(!ids.stream().filter(f -> f.get() == null).findAny().isPresent()
                 , "Ids can not be null %s %s", entity.getTableName(), entity.getEnFields().getIds());
-
     }
 
     /**
@@ -118,7 +117,7 @@ public class Persist<T extends AbstractAtkEntity> {
                 String.format("update %s set %s where %s"
                         , entity.getTableName(), updateFields.getColNames().append("= ?").toString(",")
                         , entity.getEnFields().getIds().getColNames().append("= ?").toString(","))
-                , wrapEnumerated(updateValues).toArray(new Object[]{}))) {
+                , wrapForPreparedStatement(updateValues).toArray(new Object[]{}))) {
             int updated = ps.executeUpdate();
             Assert.isTrue(updated == 1, "Failed to update %s on %s", entity.getTableName(), entity.getEnFields().getIds());
 

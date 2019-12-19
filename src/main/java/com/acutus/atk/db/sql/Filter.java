@@ -9,8 +9,7 @@ import lombok.SneakyThrows;
 import java.sql.PreparedStatement;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.acutus.atk.db.util.AtkEnUtil.unwrapEnumerated;
-import static com.acutus.atk.db.util.AtkEnUtil.wrapEnumerated;
+import static com.acutus.atk.db.util.AtkEnUtil.wrapForPreparedStatement;
 
 @NoArgsConstructor
 public class Filter {
@@ -97,7 +96,7 @@ public class Filter {
     private void set(PreparedStatement ps, AtomicInteger index) {
         if (fields != null) {
             for (AtkEnField f : fields) {
-                ps.setObject(index.getAndIncrement(), wrapEnumerated(f));
+                ps.setObject(index.getAndIncrement(), wrapForPreparedStatement(f));
             }
         } else if (s1 != null) {
             s1.set(ps, index);

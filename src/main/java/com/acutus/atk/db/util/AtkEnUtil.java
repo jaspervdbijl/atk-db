@@ -12,6 +12,9 @@ import lombok.SneakyThrows;
 import javax.persistence.Enumerated;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.time.temporal.Temporal;
 
 import static javax.persistence.EnumType.STRING;
 
@@ -51,8 +54,9 @@ public class AtkEnUtil {
         }
     }
 
+
     @SneakyThrows
-    public static Object wrapEnumerated(AtkEnField field) {
+    public static Object wrapForPreparedStatement(AtkEnField field) {
         Enumerated enumerated = field.getField().getAnnotation(Enumerated.class);
         if (enumerated == null || field.get() == null) {
             return field.get();
