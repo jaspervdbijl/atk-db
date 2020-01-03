@@ -6,7 +6,6 @@ import com.acutus.atk.util.call.CallOne;
 import lombok.Getter;
 import lombok.SneakyThrows;
 
-import javax.persistence.OneToMany;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.util.Optional;
@@ -68,20 +67,20 @@ public class AtkEnRelation<T extends AbstractAtkEntity> {
     }
 
     public AtkEntities<T> getAll(DataSource dataSource) {
-        return getQuery(getEntity()).getAllBySet(dataSource);
+        return getQuery(getEntity()).getAll(dataSource);
     }
 
     public AtkEntities<T> getAll(Connection c) {
-        return getQuery(getEntity()).getAllBySet(c);
+        return getQuery(getEntity()).getAll(c);
     }
 
     public Optional<T> get(DataSource dataSource) {
-        return getQuery(getEntity()).getBySet(dataSource);
+        return getQuery(getEntity()).get(dataSource);
     }
 
     public void iterate(Connection connection, CallOne<T> call) {
         T entity = getEntity();
-        getQuery(entity).iterate(connection, new Filter(AND, entity.getEnFields().getSet()), call);
+        getQuery(entity).getAll(connection, new Filter(AND, entity.getEnFields().getSet()), call,-1);
     }
 
     public void iterate(DataSource dataSource, CallOne<T> call) {

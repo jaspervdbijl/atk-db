@@ -81,7 +81,7 @@ public class Filter {
     }
 
     public String getSql() {
-        if (fields != null) {
+        if (fields != null && !fields.isEmpty()) {
             return fields.getColNames().append(" = ? ")
                     .toString(String.format(" %s ", type.name().toLowerCase()));
         } else if (s1 != null) {
@@ -115,6 +115,5 @@ public class Filter {
         }
         return ps;
     }
-
 
 }

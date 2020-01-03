@@ -26,7 +26,8 @@ public class AbstractAtkEntity<T extends AbstractAtkEntity, O> extends AbstractA
 
     private transient AtkEnIndexes indexes;
 
-    @Setter @Getter
+    @Setter
+    @Getter
     private String tableName;
 
     protected void addIndex(AtkEnIndex index) {
@@ -34,7 +35,7 @@ public class AbstractAtkEntity<T extends AbstractAtkEntity, O> extends AbstractA
     }
 
     public AtkEnIndexes getIndexes() {
-        indexes = indexes == null?new AtkEnIndexes():indexes;
+        indexes = indexes == null ? new AtkEnIndexes() : indexes;
         return indexes;
     }
 
@@ -70,7 +71,7 @@ public class AbstractAtkEntity<T extends AbstractAtkEntity, O> extends AbstractA
             if (f.get(this) != null) {
                 List<AbstractAtkEntity> values = (List<AbstractAtkEntity>) f.get(this);
                 Reflect.getFields(base.getClass()).get(f.getName()).get()
-                        .set(base,values.stream().map(v -> v.toBase()).collect(Collectors.toList()));
+                        .set(base, values.stream().map(v -> v.toBase()).collect(Collectors.toList()));
             }
         }));
         return base;
@@ -108,7 +109,7 @@ public class AbstractAtkEntity<T extends AbstractAtkEntity, O> extends AbstractA
         return new Persist(this);
     }
 
-    public Query<T,O> query() {
+    public Query<T, O> query() {
         return new Query(this);
     }
 

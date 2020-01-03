@@ -45,75 +45,6 @@ public class Query<T extends AbstractAtkEntity,O> {
         this.entity = entity;
     }
 
-    private String prepareSql(Filter filter) {
-        String sql = filter.isCustom() ?
-                filter.getCustomSql()
-                : String.format("select %s from %s where %s %s"
-                , entity.getEnFields().excludeIgnore().getColNames().toString(",")
-                , entity.getTableName(), filter.getSql(),
-                orderBy != null
-                        ? "order by " + orderBy.getColNames().toString(",") + " " + orderByType.name()
-                        : ""
-        );
-        return sql;
-    }
-
-    @SneakyThrows
-    private PreparedStatement prepareStatementFromFilter(Connection connection, Filter filter) {
-        String sql = prepareSql(filter);
-        return filter.prepare(connection.prepareStatement(limit != null
-                ? getDriver(connection).limit(sql, limit) : sql));
-    }
-
-    @SneakyThrows
-    public Optional<T> get(Connection connection, Filter filter) {
-        try (PreparedStatement ps = prepareStatementFromFilter(connection, filter)) {
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return Optional.of((T) ((T) entity.clone()).set(rs));
-                }
-            }
-        }
-        return Optional.empty();
-    }
-
-    public Optional<T> get(Connection connection, String sql, Object... params) {
-        return get(connection, new Filter(sql, params));
-    }
-
-    public Optional<T> get(DataSource dataSource, Filter filter) {
-        return runAndReturn(dataSource, c -> get(c, filter));
-    }
-
-    public Optional<T> get(DataSource dataSource, String sql, Object... params) {
-        return runAndReturn(dataSource, c -> get(c, sql, params));
-    }
-
-    @SneakyThrows
-    public void iterate(Connection connection, Filter filter, CallOne<T> call) {
-        try (PreparedStatement ps = prepareStatementFromFilter(connection, filter)) {
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    call.call((T) entity.set(rs));
-                }
-            }
-        }
-    }
-
-    public void iterate(DataSource dataSource, Filter filter, CallOne<T> call) {
-        run(dataSource, c -> iterate(c, filter, call));
-    }
-
-    public void iterateBySet(DataSource dataSource, CallOne<T> call) {
-        run(dataSource, c -> iterate(c, and(entity.getEnFields().getSet().toArray(new AtkEnField[]{})), call));
-    }
-
-    public AtkEntities<T> getAll(Connection connection, Filter filter) {
-        AtkEntities<T> list = new AtkEntities<>();
-        iterate(connection, filter, e -> list.add((T) e.clone()));
-        return list;
-    }
-
     private String getTmpTablename(int dept) {
         return ""+(char)(65+dept);
     }
@@ -175,44 +106,89 @@ public class Query<T extends AbstractAtkEntity,O> {
         return new Two<>(local,existed);
     }
 
+        private String prepareSql(Filter filter) {
+        String sql = filter.isCustom() ?
+                filter.getCustomSql()
+                : String.format("select %s from %s where %s %s"
+                , entity.getEnFields().excludeIgnore().getColNames().toString(",")
+                , entity.getTableName(), filter.getSql(),
+                orderBy != null
+                        ? "order by " + orderBy.getColNames().toString(",") + " " + orderByType.name()
+                        : ""
+        );
+        return sql;
+    }
+
     @SneakyThrows
-    public AtkEntities<T> getAllCascade(Connection connection, Filter filter) {
+    private PreparedStatement prepareStatementFromFilter(Connection connection, Filter filter) {
+        String sql = prepareSql(filter);
+        return filter.prepare(connection.prepareStatement(limit != null
+                ? getDriver(connection).limit(sql, limit) : sql));
+    }
+
+
+    @SneakyThrows
+    public void getAll(Connection connection, Filter filter,CallOne<T> iterate,int limit) {
         String sql = prepareSql(filter).replaceAll("\\p{Cntrl}", "");
         // add all the left joins
         sql = sql.substring(sql.toLowerCase().indexOf(" from "));
         Strings lj = getLeftJoin(0,entity);
         Strings split = Strings.asList(sql.replace(","," , ").split("\\s+"));
         split.add(split.indexOfIgnoreCase(entity.getTableName())+1,lj.toString(" "));
-        split.add(1, IntStream.range(0,lj.size()).mapToObj(i -> getTmpTablename(i)+".*")
-                        .reduce((t1,t2) -> t1 + ", " + t2).get());
-        sql = "select " + entity.getTableName()+".*, "+ split.toString(" ");
+        if (!lj.isEmpty()) {
+            split.add(1, IntStream.range(0, lj.size()).mapToObj(i -> getTmpTablename(i) + ".*")
+                    .reduce((t1, t2) -> t1 + ", " + t2).get());
+            split.add(0,",");
+        }
+        sql = "select " + entity.getTableName()+".* "+ split.toString(" ");
         // transform the select *
         Map<String, AbstractAtkEntity> map = new HashMap<>();
-        AtkEntities<T> entities = new AtkEntities<>();
-        try (PreparedStatement ps = prepareStatementFromFilter(connection, new Filter(sql, filter.getCustomParams()))) {
+        T  lastEntity = null;
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            filter.prepare(ps);
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
+                while (rs.next() && (limit > 0 || limit < 0)) {
                     Two<AbstractAtkEntity,Boolean> value = loadCascade(-1,map, entity, rs);
+                    lastEntity = (lastEntity == null) ? (T) value.getFirst() : lastEntity;
                     if (!value.getSecond()) {
-                        entities.add((T) value.getFirst());
+                        limit--;
+                        iterate.call(lastEntity);
+                        lastEntity = (T) value.getFirst();
                     }
                 }
             }
         }
+        if (lastEntity != null) {
+            iterate.call(lastEntity);
+        }
+    }
+
+    private  AtkEntities<T> getAll(Connection connection, Filter filter,int limit) {
+        AtkEntities<T> entities = new AtkEntities<>();
+        getAll(connection, filter, t -> entities.add(t),limit);
         return entities;
     }
 
-    public AtkEntities<T> getAllCascade(DataSource dataSource, Filter filter) {
-        return runAndReturn(dataSource, connection -> getAllCascade(connection, filter));
-    }
-
-    public AtkEntities<T> getAllCascade(DataSource dataSource, String sql, Object ... params) {
-        return runAndReturn(dataSource, connection -> getAllCascade(connection, new Filter(sql,params)));
-    }
-
-
     public AtkEntities<T> getAll(Connection connection, String sql, Object... params) {
-        return getAll(connection, new Filter(sql, params));
+        return getAll(connection, new Filter(sql, params),-1);
+    }
+
+    @SneakyThrows
+    public Optional<T> get(Connection connection, Filter filter) {
+        AtkEntities<T> entities = getAll(connection,filter,1);
+        return Optional.ofNullable(!entities.isEmpty() ? entities.get(0): null);
+    }
+
+    public Optional<T> get(Connection connection, String sql, Object... params) {
+        return get(connection, new Filter(sql, params));
+    }
+
+    public Optional<T> get(DataSource dataSource, Filter filter) {
+        return runAndReturn(dataSource, c -> get(c, filter));
+    }
+
+    public Optional<T> get(DataSource dataSource, String sql, Object... params) {
+        return runAndReturn(dataSource, c -> get(c, sql, params));
     }
 
     public static <T> T populateFrom(ResultSet rs, T t) {
@@ -222,51 +198,47 @@ public class Query<T extends AbstractAtkEntity,O> {
     }
 
     public AtkEntities<T> getAll(DataSource dataSource, Filter filter) {
-        return runAndReturn(dataSource, c -> getAll(c, filter));
+        return runAndReturn(dataSource, c -> getAll(c, filter,-1));
     }
 
     public AtkEntities<T> getAll(DataSource dataSource, String sql, Object... params) {
         return runAndReturn(dataSource, c -> getAll(c, sql, params));
     }
 
+    public AtkEntities<T> getAll(Connection connection) {
+        return getAll(connection, new Filter(AND, entity.getEnFields().getSet()),-1);
+    }
+
     public AtkEntities<T> getAll(DataSource dataSource) {
-        return runAndReturn(dataSource, c -> getAll(c, new Filter()));
+        return runAndReturn(dataSource, c -> getAll(c, new Filter(AND, entity.getEnFields().getSet()),-1));
     }
 
-    public AtkEntities<T> getAllBySet(Connection connection) {
-        return getAll(connection, new Filter(AND, entity.getEnFields().getSet()));
-    }
-
-    public AtkEntities<T> getAllBySet(DataSource dataSource) {
-        return runAndReturn(dataSource, c -> getAll(c, new Filter(AND, entity.getEnFields().getSet())));
-    }
-
-    public Optional<T> getBySet(Connection connection) {
-        return getBySet(connection, entity.getEnFields().getSet());
+    public Optional<T> get(Connection connection) {
+        return get(connection, entity.getEnFields().getSet());
     }
 
     @SneakyThrows
-    private Optional<T> getBySet(Connection connection, AtkEnFields set) {
+    private Optional<T> get(Connection connection, AtkEnFields set) {
         Assert.isTrue(!set.isEmpty(), "No set fields for entity %s ", entity.getTableName());
         return get(connection, and(set.toArray(new AtkEnField[]{})));
     }
 
-    public Optional<T> getBySet(DataSource dataSource) {
-        return runAndReturn(dataSource, c -> getBySet(c, entity.getEnFields().getSet()));
+    public Optional<T> get(DataSource dataSource) {
+        return runAndReturn(dataSource, c -> get(c, entity.getEnFields().getSet()));
     }
 
     public Optional<T> findById(DataSource dataSource) {
         return runAndReturn(dataSource, c -> findById(c));
     }
 
-    public T retrieveBySet(DataSource dataSource, CallNilRet<RuntimeException> call) {
-        Optional<T> optional = getBySet(dataSource);
+    public T retrieve(DataSource dataSource, CallNilRet<RuntimeException> call) {
+        Optional<T> optional = get(dataSource);
         Assert.isTrue(optional.isPresent(), call);
         return optional.get();
     }
 
-    public T retrieveBySet(DataSource dataSource) {
-        return retrieveBySet(dataSource, () ->
+    public T retrieve(DataSource dataSource) {
+        return retrieve(dataSource, () ->
                 new RuntimeException(String.format(
                         "Unable to retrieve entity %s by set fields %s", entity.getTableName()
                         , entity.getEnFields().getSet().toString())));
@@ -282,7 +254,7 @@ public class Query<T extends AbstractAtkEntity,O> {
         AtkEnFields ids = entity.getEnFields().getIds();
         Assert.isTrue(!ids.isEmpty(), "No Primary keys defined for entity %s ", entity.getTableName());
         Assert.isTrue(ids.getSet().size() == ids.size(), "Null id values. entity %s ", entity.getTableName());
-        return getBySet(connection, ids);
+        return get(connection, ids);
     }
 
     public Query setLimit(Integer limit) {
