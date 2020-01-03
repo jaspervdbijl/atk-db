@@ -110,7 +110,7 @@ public class Query<T extends AbstractAtkEntity,O> {
         String sql = filter.isCustom() ?
                 filter.getCustomSql()
                 : String.format("select %s from %s where %s %s"
-                , entity.getEnFields().excludeIgnore().getColNames().toString(",")
+                , entity.getEnFields().excludeIgnore().getTableAndColName().toString(",")
                 , entity.getTableName(), filter.getSql(),
                 orderBy != null
                         ? "order by " + orderBy.getColNames().toString(",") + " " + orderByType.name()

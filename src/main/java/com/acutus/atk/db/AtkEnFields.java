@@ -71,6 +71,10 @@ public class AtkEnFields extends AtkFieldList<AtkEnField> {
         return new Strings(stream().map(f -> f.getColName()).collect(Collectors.toList()));
     }
 
+    public Strings getTableAndColName() {
+        return new Strings(stream().map(f -> f.getTableAndColName()).collect(Collectors.toList()));
+    }
+
     public Optional<AtkEnField> getByColName(String name) {
         Optional<AtkEnField> field = stream().filter(f -> f.getColName().equalsIgnoreCase(name)).findAny();
         return field;

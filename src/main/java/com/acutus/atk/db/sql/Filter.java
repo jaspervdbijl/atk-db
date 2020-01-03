@@ -82,7 +82,7 @@ public class Filter {
 
     public String getSql() {
         if (fields != null && !fields.isEmpty()) {
-            return fields.getColNames().append(" = ? ")
+            return fields.getTableAndColName().append(" = ? ")
                     .toString(String.format(" %s ", type.name().toLowerCase()));
         } else if (s1 != null) {
             return String.format("((%s) %s (%s))", s1.getSql(), type.name().toLowerCase(), s2.getSql());
