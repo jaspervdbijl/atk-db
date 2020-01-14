@@ -61,7 +61,7 @@ public class ProcessorHelper {
         return (isClassPrimitive(type.toString())? QUERY_ALL_PRIM : QUERY_ALL_METHOD)
                 .replace("_TYPE_", classNameAndExt)
                 .replace("_METHOD_NAME_", methodName).replace("_SQL_", sql)
-                .replace("_GET_ALL_METHOD_",FetchType.EAGER.equals(fetchType) ? "getAllCascade" : "getAll");
+                .replace("_GET_ALL_METHOD_",FetchType.EAGER.equals(fetchType) ? "getAll" : "getAll");
     }
 
     public static String getExecuteMethod(String methodName, String sql) {

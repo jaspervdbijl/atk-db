@@ -63,7 +63,7 @@ public class AtkEntityProcessor extends AtkProcessor {
     private static String removeColumnAnnotation(String line) {
         String header = line.substring(0, line.indexOf("@javax.persistence.Column"));
         line = line.substring(line.indexOf("@Column") + "@javax.persistence.Column".length());
-        line = line.substring(line.indexOf(")") + 1);
+        line = line.substring(line.lastIndexOf(")") + 1);
         return header + line;
     }
 
@@ -73,16 +73,24 @@ public class AtkEntityProcessor extends AtkProcessor {
         return lines;
     }
 
-    private String copyColumn(String colName, Column column) {
+    private static String copyColumn(String colName, Column column) {
         return String.format("name = \"%s\", unique = %s, nullable = %s, insertable = %s, updatable = %s, columnDefinition = \"%s\"" +
                         ", table = \"%s\", length = %d, precision = %d, scale = %d"
                 , column.name().isEmpty() ? colName : column.name()
                 , column.unique() + "", column.nullable() + "", column.insertable() + "", column.updatable() + "", column.columnDefinition()
                 , column.table(), column.length(), column.precision(), column.scale());
     }
+    public static class Test {
+        @Column(nullable = false,columnDefinition = "varchar(50) default 'AVAILABLE'")
+        private String  status;
 
+    }
+    @SneakyThrows
     public static void main(String[] args) {
-        System.out.println(removeColumnAnnotation("@Id @Column(length = 50) @Column(fasdljsakdjl) @ Id"));
+        String text = "@javax.persistence.Column(nullable = false,columnDefinition = \"varchar(50) default 'AVAILABLE'\")\n" +
+                "        private String  status;";
+        text = removeColumnAnnotation(text) + copyColumn("status",Test.class.getDeclaredField("status").getAnnotation(Column.class));
+        System.out.println(text);
     }
 
     // TODO support other Table features
@@ -267,7 +275,7 @@ public class AtkEntityProcessor extends AtkProcessor {
 
             Strings list = new Strings();
             list.add(String.format("@OneToMany(fetch = javax.persistence.FetchType.EAGER)"));
-            list.add(String.format("private AtkEntities<%s> %s;", classNameAndRef,element.toString()));
+            list.add(String.format("private transient AtkEntities<%s> %s;", classNameAndRef,element.toString()));
             list.add(getLazyLoadMethod(classNameAndRef,element,"Connection"));
             list.add(getLazyLoadMethod(classNameAndRef,element,"DataSource"));
             return atkRef + "\n\n\t" + list.toString("\n\t");

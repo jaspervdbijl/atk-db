@@ -163,6 +163,16 @@ public class Query<T extends AbstractAtkEntity,O> {
         }
     }
 
+    public void getAll(DataSource dataSource, Filter filter,CallOne<T> iterate,int limit) {
+        run(dataSource,c -> {
+            getAll(c,filter,iterate,limit);
+        });
+    }
+
+    public void getAll(DataSource dataSource,CallOne<T> iterate) {
+        getAll(dataSource,new Filter(AND, entity.getEnFields().getSet()),iterate,-1);
+    }
+
     private  AtkEntities<T> getAll(Connection connection, Filter filter,int limit) {
         AtkEntities<T> entities = new AtkEntities<>();
         getAll(connection, filter, t -> entities.add(t),limit);
