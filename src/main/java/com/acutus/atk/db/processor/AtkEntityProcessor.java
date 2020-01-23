@@ -283,12 +283,18 @@ public class AtkEntityProcessor extends AtkProcessor {
         return atkRef;
     }
 
-    protected String getManyToOneImp(AtkEntity atk, Element element) {
+    protected Strings getManyToOneImp(AtkEntity atk, Element element) {
+        Strings values = new Strings();
         String type = element.asType().toString();
         // check that type is List
         String className = type + atk.classNameExt();
-        return String.format("public transient AtkEnRelation<%s> %sRef = new AtkEnRelation<>(%s.class, AtkEnRelation.RelType.ManyToOne, this);"
-                , className, element.toString(), className);
+        values.add(String.format("public transient AtkEnRelation<%s> %sRef = new AtkEnRelation<>(%s.class, AtkEnRelation.RelType.ManyToOne, this);"
+                , className, element.toString(), className));
+        // add getter method
+        String mName = "get"+element.toString().substring(0,1).toUpperCase()+element.toString().substring(1);
+        values.add(String.format("\tpublic Optional<%s> %s(DataSource ds) {return %sRef.get(ds);}",className,mName,element.toString()));
+        values.add(String.format("\tpublic Optional<%s> %s(Connection c) {return %sRef.get(c);}",className,mName,element.toString()));
+        return values;
     }
 
 
@@ -301,8 +307,9 @@ public class AtkEntityProcessor extends AtkProcessor {
 
     protected Strings getManyToOne(AtkEntity atk, Element element) {
         return element.getEnclosedElements().stream()
-                .filter(f -> ElementKind.FIELD.equals(f.getKind()) && f.getAnnotation(ManyToOne.class) != null)
-                .map(f -> getManyToOneImp(atk, f))
+                .filter(f -> ElementKind.FIELD.equals(f.getKind()) &&
+                        (f.getAnnotation(ManyToOne.class) != null || f.getAnnotation(OneToOne.class) != null))
+                .flatMap(f -> getManyToOneImp(atk, f).stream())
                 .collect(Collectors.toCollection(Strings::new));
     }
 
@@ -335,6 +342,7 @@ public class AtkEntityProcessor extends AtkProcessor {
                 .plus("import javax.persistence.Column")
                 .plus("import javax.persistence.Table")
                 .plus("import java.util.List")
+                .plus("import java.util.Optional")
                 .plus("import java.util.ArrayList")
                 .plus("import java.sql.Connection")
                 .plus("import javax.persistence.OneToMany")

@@ -129,7 +129,7 @@ public class Query<T extends AbstractAtkEntity,O> {
 
     @SneakyThrows
     public void getAll(Connection connection, Filter filter,CallOne<T> iterate,int limit) {
-        String sql = prepareSql(filter).replaceAll("\\p{Cntrl}", "");
+        String sql = prepareSql(filter).replaceAll("\\p{Cntrl}", " ");
         // add all the left joins
         sql = sql.substring(sql.toLowerCase().indexOf(" from "));
         Strings lj = getLeftJoin(0,entity);

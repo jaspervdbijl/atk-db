@@ -78,6 +78,10 @@ public class AtkEnRelation<T extends AbstractAtkEntity> {
         return getQuery(getEntity()).get(dataSource);
     }
 
+    public Optional<T> get(Connection connection) {
+        return getQuery(getEntity()).get(connection);
+    }
+
     public void iterate(Connection connection, CallOne<T> call) {
         T entity = getEntity();
         getQuery(entity).getAll(connection, new Filter(AND, entity.getEnFields().getSet()), call,-1);
