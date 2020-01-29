@@ -143,23 +143,23 @@ public class Query<T extends AbstractAtkEntity,O> {
         sql = "select " + entity.getTableName()+".* "+ split.toString(" ");
         // transform the select *
         Map<String, AbstractAtkEntity> map = new HashMap<>();
-        T  lastEntity = null;
+        Two<AbstractAtkEntity,Boolean> lastEntity = null;
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             filter.prepare(ps);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next() && (limit > 0 || limit < 0)) {
                     Two<AbstractAtkEntity,Boolean> value = loadCascade(-1,map, entity, rs);
-                    lastEntity = (lastEntity == null) ? (T) value.getFirst() : lastEntity;
-                    if (!value.getSecond()) {
+                    if (lastEntity != null &&
+                            !value.getFirst().isIdEqual(lastEntity.getFirst())) {
                         limit--;
-                        iterate.call(lastEntity);
-                        lastEntity = (T) value.getFirst();
+                        iterate.call((T) lastEntity.getFirst());
                     }
+                    lastEntity = value;
                 }
             }
         }
         if (lastEntity != null) {
-            iterate.call(lastEntity);
+            iterate.call((T) lastEntity.getFirst());
         }
     }
 

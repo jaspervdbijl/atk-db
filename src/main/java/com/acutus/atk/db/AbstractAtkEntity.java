@@ -47,6 +47,11 @@ public class AbstractAtkEntity<T extends AbstractAtkEntity, O> extends AbstractA
         return tableName;
     }
 
+    public boolean isIdEqual(AbstractAtkEntity entity) {
+        return getClass().equals(entity.getClass()) &&
+                getEnFields().getIds().isEqual(entity.getEnFields().getIds());
+    }
+
     public int version() {
         return 0;
     }

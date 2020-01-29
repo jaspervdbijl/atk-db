@@ -33,6 +33,23 @@ public class AtkEnFields extends AtkFieldList<AtkEnField> {
         return stream().filter(f -> !f.isIgnore()).collect(Collectors.toCollection(AtkEnFields::new));
     }
 
+    public boolean isEqual(AtkEnFields fields) {
+        if (size() == fields.size()) {
+            return !stream().filter(f -> !fields.getByFieldName(f.getField().getName()).isPresent() ||
+                            !fields.getByFieldName(f.getField().getName()).get().isEqual(f)
+                    ).findAny().isPresent();
+        } else {
+            return false;
+        }
+    }
+    @Override
+    public boolean equals(Object o) {
+        if (o instanceof AtkEnFields) {
+            return isEqual((AtkEnFields)o);
+        } else {
+            return super.equals(o);
+        }
+    }
 
     @Override
     public AtkEnFields getSet() {
