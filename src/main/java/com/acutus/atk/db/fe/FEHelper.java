@@ -12,8 +12,7 @@ import com.acutus.atk.db.fe.keys.FrKeys;
 import com.acutus.atk.util.Assert;
 import com.acutus.atk.util.Strings;
 import lombok.SneakyThrows;
-import lombok.extern.java.Log;
-
+import lombok.extern.slf4j.Slf4j;
 import javax.persistence.Enumerated;
 import java.sql.*;
 import java.time.temporal.Temporal;
@@ -27,7 +26,7 @@ import static com.acutus.atk.db.constants.EnvProperties.DB_FE_STRICT;
 import static com.acutus.atk.db.sql.SQLHelper.execute;
 import static com.acutus.atk.util.AtkUtil.handle;
 
-@Log
+@Slf4j
 public class FEHelper {
 
     public static void maintainDataDefinition(Connection connection, List<Class<? extends AbstractAtkEntity>> classes) {
