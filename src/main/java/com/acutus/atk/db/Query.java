@@ -173,10 +173,14 @@ public class Query<T extends AbstractAtkEntity,O> {
         getAll(dataSource,new Filter(AND, entity.getEnFields().getSet()),iterate,-1);
     }
 
-    private  AtkEntities<T> getAll(Connection connection, Filter filter,int limit) {
+    public  AtkEntities<T> getAll(Connection connection, Filter filter,int limit) {
         AtkEntities<T> entities = new AtkEntities<>();
         getAll(connection, filter, t -> entities.add(t),limit);
         return entities;
+    }
+
+    public AtkEntities<T> getAll(Connection connection, Filter filter) {
+        return getAll(connection,filter,-1);
     }
 
     public AtkEntities<T> getAll(Connection connection, String sql, Object... params) {
@@ -241,17 +245,25 @@ public class Query<T extends AbstractAtkEntity,O> {
         return runAndReturn(dataSource, c -> findById(c));
     }
 
-    public T retrieve(DataSource dataSource, CallNilRet<RuntimeException> call) {
-        Optional<T> optional = get(dataSource);
+    public T retrieve(Connection c, CallNilRet<RuntimeException> call) {
+        Optional<T> optional = get(c);
         Assert.isTrue(optional.isPresent(), call);
         return optional.get();
     }
 
-    public T retrieve(DataSource dataSource) {
-        return retrieve(dataSource, () ->
+    public T retrieve(DataSource dataSource, CallNilRet<RuntimeException> call) {
+        return runAndReturn(dataSource,c -> retrieve(c,call));
+    }
+
+    public T retrieve(Connection c) {
+        return retrieve(c, () ->
                 new RuntimeException(String.format(
                         "Unable to retrieve entity %s by set fields %s", entity.getTableName()
                         , entity.getEnFields().getSet().toString())));
+    }
+
+    public T retrieve(DataSource dataSource) {
+        return runAndReturn(dataSource,c -> retrieve(c));
     }
 
     /**

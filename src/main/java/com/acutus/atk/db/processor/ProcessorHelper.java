@@ -27,19 +27,31 @@ public class ProcessorHelper {
 
     public static String QUERY_METHOD = "\tpublic static java.util.Optional<_TYPE_> _METHOD_NAME_(javax.sql.DataSource dataSource, Object ... params) {\n" +
             "        return new _TYPE_().query().get(dataSource,\"_SQL_\",params);\n" +
+            "    }\n\n" +
+            "\tpublic static java.util.Optional<_TYPE_> _METHOD_NAME_(java.sql.Connection connection, Object ... params) {\n" +
+            "        return new _TYPE_().query().get(connection,\"_SQL_\",params);\n" +
             "    }";
 
     public static String QUERY_PRIM = "\tpublic static java.util.Optional<One<_TYPE_>> _METHOD_NAME_(javax.sql.DataSource dataSource, Object ... params) {\n" +
             "        return queryOne(dataSource,_TYPE_.class,\"_SQL_\",params);\n" +
+            "    }\n\n" +
+            "\tpublic static java.util.Optional<One<_TYPE_>> _METHOD_NAME_(java.sql.Connection connection, Object ... params) {\n" +
+            "        return queryOne(connection,_TYPE_.class,\"_SQL_\",params);\n" +
             "    }";
 
     public static String QUERY_ALL_METHOD = "\tpublic static AtkEntities<_TYPE_> _METHOD_NAME_(javax.sql.DataSource dataSource, Object ... params) {\n" +
             "        return new _TYPE_().query()._GET_ALL_METHOD_(dataSource,\"_SQL_\",params);\n" +
+            "    }\n\n"+
+            "\tpublic static AtkEntities<_TYPE_> _METHOD_NAME_(java.sql.Connection connection, Object ... params) {\n" +
+            "        return new _TYPE_().query()._GET_ALL_METHOD_(connection,\"_SQL_\",params);\n" +
             "    }";
 
     public static String QUERY_ALL_PRIM = "\tpublic static java.util.List<One<_TYPE_>> _METHOD_NAME_(javax.sql.DataSource dataSource, Object ... params) {\n" +
             "        return query(dataSource,_TYPE_.class,\"_SQL_\",params);\n" +
-            "    }";
+            "    }\n\n" +
+            "\tpublic static java.util.List<One<_TYPE_>> _METHOD_NAME_(java.sql.Connection connection, Object ... params) {\n" +
+            "        return query(connection,_TYPE_.class,\"_SQL_\",params);\n" +
+            "    }\n\n";
 
     private static boolean isClassPrimitive(String className) {
         return (className.startsWith("java.lang.") || className.startsWith("java.math."));
