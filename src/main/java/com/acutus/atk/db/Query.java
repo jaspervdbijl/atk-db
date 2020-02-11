@@ -89,21 +89,27 @@ public class Query<T extends AbstractAtkEntity,O> {
         }
         final int dept = cnt+1;
         entity.set(rs);
-        String key = keyToString(entity);
-        boolean existed = map.containsKey(key);
-        if (!map.containsKey(key)) {
-            map.put(key, (AbstractAtkEntity) entity.clone());
-        }
-        AbstractAtkEntity local = map.get(key);
-        getEagerFields(local).forEach(f -> handle(() -> {
-            AbstractAtkEntity child = (AbstractAtkEntity) getGenericFieldType(f).getConstructor().newInstance();
-            Two<AbstractAtkEntity,Boolean> value = loadCascade(dept,map, child, rs);
-            if (!value.getSecond()) {
-                f.set(local,f.get(local) == null?new AtkEntities<>():f.get(local));
-                ((List) f.get(local)).add(child);
+        if (entity.hasIdValue()) {
+            String key = keyToString(entity);
+            boolean existed = map.containsKey(key);
+            if (!map.containsKey(key)) {
+                map.put(key, (AbstractAtkEntity) entity.clone());
             }
-        }));
-        return new Two<>(local,existed);
+            AbstractAtkEntity local = map.get(key);
+            getEagerFields(local).forEach(f -> handle(() -> {
+                AbstractAtkEntity child = (AbstractAtkEntity) getGenericFieldType(f).getConstructor().newInstance();
+                Two<AbstractAtkEntity, Boolean> value = loadCascade(dept, map, child, rs);
+                if (value == null) {
+                    f.set(local, new AtkEntities<>());
+                } else if (!value.getSecond()) {
+                    f.set(local, f.get(local) == null ? new AtkEntities<>() : f.get(local));
+                    ((List) f.get(local)).add(child);
+                }
+            }));
+            return new Two<>(local, existed);
+        } else {
+            return null;
+        }
     }
 
         private String prepareSql(Filter filter) {
