@@ -270,6 +270,7 @@ public class AtkEntityProcessor extends AtkProcessor {
         String classNameAndRef = className + atk.classNameExt();
         String atkRef = String.format("public transient AtkEnRelation<%s> %sRef = new AtkEnRelation<>(%s.class, AtkEnRelation.RelType.OneToMany, this);"
                 , classNameAndRef, element.toString(), classNameAndRef);
+
         // TODO add a getter, that wil automatically execute the atkReference
         if (element.getAnnotation(OneToMany.class).fetch().equals(FetchType.EAGER)) {
 
@@ -283,17 +284,41 @@ public class AtkEntityProcessor extends AtkProcessor {
         return atkRef;
     }
 
+    private String getLazyLoadMethodForOptional(String className,Element element,String cType) {
+        String eName = element.toString();
+        String mName = element.toString();
+        mName = "get"+mName.substring(0,1).toUpperCase()+mName.substring(1);
+        return String.format("public Optional<%s> %s(%s c) {\n" +
+                "\t%s = %s == null ? %sRef.get(c) : %s;\n" +
+                "\treturn %s;\n" +
+                "};",className,mName,cType,eName,eName,eName,eName,eName);
+    }
+
+
     protected Strings getManyToOneImp(AtkEntity atk, Element element) {
         Strings values = new Strings();
         String type = element.asType().toString();
         // check that type is List
         String className = type + atk.classNameExt();
+
         values.add(String.format("public transient AtkEnRelation<%s> %sRef = new AtkEnRelation<>(%s.class, AtkEnRelation.RelType.ManyToOne, this);"
                 , className, element.toString(), className));
-        // add getter method
-        String mName = "get"+element.toString().substring(0,1).toUpperCase()+element.toString().substring(1);
-        values.add(String.format("\tpublic Optional<%s> %s(DataSource ds) {return %sRef.get(ds);}",className,mName,element.toString()));
-        values.add(String.format("\tpublic Optional<%s> %s(Connection c) {return %sRef.get(c);}",className,mName,element.toString()));
+        // add reference
+        ManyToOne manyToOne = element.getAnnotation(ManyToOne.class);
+        OneToOne oneToOne = element.getAnnotation(OneToOne.class);
+
+        if (manyToOne != null && manyToOne.fetch().equals(FetchType.EAGER) || oneToOne != null && oneToOne.fetch().equals(FetchType.EAGER)) {
+            values.add(String.format("@"+(manyToOne != null ? "ManyToOne":"OneToOne")+"(fetch = javax.persistence.FetchType.EAGER)"));
+            values.add(String.format("private transient Optional<%s> %s;", className,element.toString()));
+            values.add(getLazyLoadMethodForOptional(className,element,"Connection"));
+            values.add(getLazyLoadMethodForOptional(className,element,"DataSource"));
+
+        } else {
+            String mName = "get"+element.toString().substring(0,1).toUpperCase()+element.toString().substring(1);
+            values.add(String.format("\tpublic Optional<%s> %s(DataSource ds) {return %sRef.get(ds);}",className,mName,element.toString()));
+            values.add(String.format("\tpublic Optional<%s> %s(Connection c) {return %sRef.get(c);}",className,mName,element.toString()));
+        }
+
         return values;
     }
 
@@ -346,6 +371,8 @@ public class AtkEntityProcessor extends AtkProcessor {
                 .plus("import java.util.ArrayList")
                 .plus("import java.sql.Connection")
                 .plus("import javax.persistence.OneToMany")
+                .plus("import javax.persistence.ManyToOne")
+                .plus("import javax.persistence.OneToOne")
                 .plus("import javax.sql.DataSource")
                 .plus("import com.acutus.atk.db.*")
                 .plus("import com.acutus.atk.util.collection.*");
