@@ -1,5 +1,6 @@
 package com.acutus.atk.db.processor;
 
+import com.acutus.atk.db.annotations.FieldFilter;
 import com.acutus.atk.db.annotations.Index;
 import com.acutus.atk.entity.processor.AtkProcessor;
 import com.acutus.atk.util.Strings;
@@ -301,12 +302,16 @@ public class AtkEntityProcessor extends AtkProcessor {
         // check that type is List
         String className = type + atk.classNameExt();
 
-        values.add(String.format("public transient AtkEnRelation<%s> %sRef = new AtkEnRelation<>(%s.class, AtkEnRelation.RelType.ManyToOne, this);"
-                , className, element.toString(), className));
+        FieldFilter filter = element.getAnnotation(FieldFilter.class);
+        String filterStr = filter != null ? "\""+filter.fields()[0]+"\", " : "";
+        values.add(String.format("public transient AtkEnRelation<%s> %sRef = new AtkEnRelation<>(%s.class, AtkEnRelation.RelType.ManyToOne,%s this);"
+                , className, element.toString(), className,filterStr));
         // add reference
         ManyToOne manyToOne = element.getAnnotation(ManyToOne.class);
         OneToOne oneToOne = element.getAnnotation(OneToOne.class);
+        FieldFilter fieldFilter = element.getAnnotation(FieldFilter.class);
 
+        // TODO - Validate that there is exactlty one ForeignKey Match
         if (manyToOne != null && manyToOne.fetch().equals(FetchType.EAGER) || oneToOne != null && oneToOne.fetch().equals(FetchType.EAGER)) {
             values.add(String.format("@"+(manyToOne != null ? "ManyToOne":"OneToOne")+"(fetch = javax.persistence.FetchType.EAGER)"));
             values.add(String.format("private transient Optional<%s> %s;", className,element.toString()));

@@ -116,6 +116,10 @@ public class AtkEnFields extends AtkFieldList<AtkEnField> {
         return clone;
     }
 
+    public AtkEnFields filter(Predicate<AtkEnField> filter) {
+        return stream().filter(filter).collect(Collectors.toCollection(AtkEnFields::new));
+    }
+
     @Override
     public String toString() {
         return new Strings(stream().map(f -> f.toString()).collect(Collectors.toList())).toString("\n\t");
