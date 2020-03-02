@@ -41,6 +41,8 @@ public class Query<T extends AbstractAtkEntity,O> {
     private AtkEnFields orderBy;
     private OrderBy orderByType;
 
+    private AtkEnFields selectFilter;
+
     public Query(T entity) {
         this.entity = entity;
     }
@@ -138,7 +140,7 @@ public class Query<T extends AbstractAtkEntity,O> {
         String sql = prepareSql(filter).replaceAll("\\p{Cntrl}", " ");
         // add all the left joins
         sql = sql.substring(sql.toLowerCase().indexOf(" from "));
-        Strings lj = getLeftJoin(0,entity);
+        Strings lj = selectFilter == null ? getLeftJoin(0,entity) : new Strings();
         Strings split = Strings.asList(sql.replace(","," , ").split("\\s+"));
         split.add(split.indexOfIgnoreCase(entity.getTableName())+1,lj.toString(" "));
         if (!lj.isEmpty()) {
@@ -146,7 +148,8 @@ public class Query<T extends AbstractAtkEntity,O> {
                     .reduce((t1, t2) -> t1 + ", " + t2).get());
             split.add(0,",");
         }
-        sql = "select " + entity.getTableName()+".* "+ split.toString(" ");
+        String star = selectFilter != null?selectFilter.getColNames().toString(",") : "*";
+        sql = "select " + entity.getTableName()+"."+star+" "+ split.toString(" ");
         // transform the select *
         Map<String, AbstractAtkEntity> map = new HashMap<>();
         Two<AbstractAtkEntity,Boolean> lastEntity = null;
@@ -285,18 +288,25 @@ public class Query<T extends AbstractAtkEntity,O> {
         return get(connection, ids);
     }
 
-    public Query setLimit(Integer limit) {
+    public Query<T,O> setLimit(Integer limit) {
         this.limit = limit;
         return this;
     }
 
-    public Query setOrderBy(OrderBy orderByType, AtkEnField... orderBys) {
+    public Query<T,O> setOrderBy(OrderBy orderByType, AtkEnField... orderBys) {
         this.orderByType = orderByType;
         this.orderBy = new AtkEnFields(orderBys);
         return this;
     }
 
-    public Query setOrderBy(AtkEnField... orderBys) {
+    public Query<T,O> setSelectFilter(Field ... filter) {
+        selectFilter = new AtkEnFields(Reflect.getFields(getClass()).getByNames(
+                Arrays.stream(filter).map(f -> f.getName()).collect(Collectors.toCollection(Strings::new)))
+                .getInstances(AtkEnField.class,this));
+        return this;
+    }
+
+    public Query<T,O> setOrderBy(AtkEnField... orderBys) {
         return setOrderBy(DESC, orderBys);
     }
 

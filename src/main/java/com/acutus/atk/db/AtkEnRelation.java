@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.SneakyThrows;
 
 import javax.sql.DataSource;
+import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.util.Optional;
 
@@ -27,6 +28,7 @@ public class AtkEnRelation<T extends AbstractAtkEntity> {
     private RelType relType;
     private AbstractAtkEntity source;
     private String fieldFilter;
+    private Field selectFilter[];
 
     public AtkEnRelation(Class<T> type, RelType relType, AbstractAtkEntity source) {
         this.type = type;
@@ -82,28 +84,33 @@ public class AtkEnRelation<T extends AbstractAtkEntity> {
     }
 
     public AtkEntities<T> getAll(DataSource dataSource) {
-        return getQuery(getEntity()).getAll(dataSource);
+        return getQuery(getEntity(),selectFilter).getAll(dataSource);
     }
 
     public AtkEntities<T> getAll(Connection c) {
-        return getQuery(getEntity()).getAll(c);
+        return getQuery(getEntity(),selectFilter).getAll(c);
     }
 
     public Optional<T> get(DataSource dataSource) {
-        return getQuery(getEntity()).get(dataSource);
+        return getQuery(getEntity(),selectFilter).get(dataSource);
     }
 
     public Optional<T> get(Connection connection) {
-        return getQuery(getEntity()).get(connection);
+        return getQuery(getEntity(),selectFilter).get(connection);
     }
 
     public void iterate(Connection connection, CallOne<T> call) {
         T entity = getEntity();
-        getQuery(entity).getAll(connection, new Filter(AND, entity.getEnFields().getSet()), call, -1);
+        getQuery(entity,selectFilter).getAll(connection, new Filter(AND, entity.getEnFields().getSet()), call, -1);
     }
 
     public void iterate(DataSource dataSource, CallOne<T> call) {
         run(dataSource, c -> iterate(c, call));
+    }
+
+    public AtkEnRelation<T> setSelectFilter(Field ... fields) {
+        this.selectFilter = fields;
+        return this;
     }
 
 

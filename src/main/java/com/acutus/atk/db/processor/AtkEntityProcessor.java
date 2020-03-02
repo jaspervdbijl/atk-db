@@ -269,7 +269,7 @@ public class AtkEntityProcessor extends AtkProcessor {
         }
         String className = type.substring(type.indexOf("<") + 1, type.indexOf(">"));
         String classNameAndRef = className + atk.classNameExt();
-        String atkRef = String.format("public transient AtkEnRelation<%s> %sRef = new AtkEnRelation<>(%s.class, AtkEnRelation.RelType.OneToMany, this);"
+        String atkRef = String.format("\tpublic transient AtkEnRelation<%s> %sRef = new AtkEnRelation<>(%s.class, AtkEnRelation.RelType.OneToMany, this);"
                 , classNameAndRef, element.toString(), classNameAndRef);
 
         // TODO add a getter, that wil automatically execute the atkReference

@@ -31,14 +31,24 @@ public class SQLHelper {
     @SneakyThrows
     public static void run(DataSource dataSource, CallOne<Connection> call) {
         try (Connection con = dataSource.getConnection()) {
-            call.call(con);
+            con.setAutoCommit(false);
+            try {
+                call.call(con);
+                con.commit();
+            } catch (Exception ex) {
+                con.rollback();
+                throw new RuntimeException(ex.getMessage(),ex);
+            }
         }
     }
 
     @SneakyThrows
     public static <T> T runAndReturn(DataSource dataSource, CallOneRet<Connection, T> call) {
         try (Connection con = dataSource.getConnection()) {
-            return call.call(con);
+            con.setAutoCommit(false);
+            T value = call.call(con);
+            con.commit();
+            return value;
         }
     }
 

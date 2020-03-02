@@ -1,9 +1,6 @@
 package com.acutus.atk.db.util;
 
-import com.acutus.atk.db.AbstractAtkEntity;
-import com.acutus.atk.db.AtkEnField;
-import com.acutus.atk.db.Persist;
-import com.acutus.atk.db.Query;
+import com.acutus.atk.db.*;
 import com.acutus.atk.reflection.Reflect;
 import com.acutus.atk.reflection.ReflectMethods;
 import com.acutus.atk.util.Assert;
@@ -12,9 +9,6 @@ import lombok.SneakyThrows;
 import javax.persistence.Enumerated;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.sql.Timestamp;
-import java.time.LocalDateTime;
-import java.time.temporal.Temporal;
 
 import static javax.persistence.EnumType.STRING;
 
@@ -28,8 +22,16 @@ public class AtkEnUtil {
     }
 
     @SneakyThrows
+    public static Query getQuery(AbstractAtkEntity entity, Field ... selectFilter) {
+        Query query = (Query) getMethod(entity.getClass(), "query").invoke(entity);
+        if (selectFilter != null) {
+            query.setSelectFilter(selectFilter);
+        }
+        return query;
+    }
+
     public static Query getQuery(AbstractAtkEntity entity) {
-        return (Query) getMethod(entity.getClass(), "query").invoke(entity);
+        return getQuery(entity,null);
     }
 
     @SneakyThrows
