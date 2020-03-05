@@ -98,16 +98,18 @@ public class Query<T extends AbstractAtkEntity,O> {
                 map.put(key, (AbstractAtkEntity) entity.clone());
             }
             AbstractAtkEntity local = map.get(key);
-            getEagerFields(local).forEach(f -> handle(() -> {
-                AbstractAtkEntity child = (AbstractAtkEntity) getGenericFieldType(f).getConstructor().newInstance();
-                Two<AbstractAtkEntity, Boolean> value = loadCascade(dept, map, child, rs);
-                if (value == null) {
-                    f.set(local, new AtkEntities<>());
-                } else if (!value.getSecond()) {
-                    f.set(local, f.get(local) == null ? new AtkEntities<>() : f.get(local));
-                    ((List) f.get(local)).add(child);
-                }
-            }));
+            if (selectFilter == null) {
+                getEagerFields(local).forEach(f -> handle(() -> {
+                    AbstractAtkEntity child = (AbstractAtkEntity) getGenericFieldType(f).getConstructor().newInstance();
+                    Two<AbstractAtkEntity, Boolean> value = loadCascade(dept, map, child, rs);
+                    if (value == null) {
+                        f.set(local, new AtkEntities<>());
+                    } else if (!value.getSecond()) {
+                        f.set(local, f.get(local) == null ? new AtkEntities<>() : f.get(local));
+                        ((List) f.get(local)).add(child);
+                    }
+                }));
+            }
             return new Two<>(local, existed);
         } else {
             return null;
@@ -300,9 +302,11 @@ public class Query<T extends AbstractAtkEntity,O> {
     }
 
     public Query<T,O> setSelectFilter(Field ... filter) {
-        selectFilter = new AtkEnFields(Reflect.getFields(getClass()).getByNames(
+        selectFilter = new AtkEnFields(Reflect.getFields(entity.getClass()).getByNames(
                 Arrays.stream(filter).map(f -> f.getName()).collect(Collectors.toCollection(Strings::new)))
-                .getInstances(AtkEnField.class,this));
+                .getInstances(AtkEnField.class,entity));
+        // ignore all the rest
+        entity.getEnFields().filter(f -> !selectFilter.contains(f)).forEach(f -> f.setIgnore(true));
         return this;
     }
 

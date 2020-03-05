@@ -158,6 +158,11 @@ public class AtkEntityProcessor extends AtkProcessor {
                 , formatIndexName(index.name()), field.getSimpleName());
     }
 
+    private String getAuditAtkEnField(Element element,String name, String type) {
+        return String.format(
+                "public transient AtkEnField<%s,%s> _%s = new AtkEnField<>(Reflect.getFields(%s.class).getByName(\"%s\").get(),this)",
+                type,getClassName(element),name,getClassName(element),name);
+    }
 
     private Strings getAuditFields(Element element) {
         Strings append = new Strings();
@@ -166,15 +171,19 @@ public class AtkEntityProcessor extends AtkProcessor {
             Strings fNames = getFieldNames(element);
             if (!fNames.contains("createdBy")) {
                 append.add("@CreatedBy @Column(name = \"created_by\") private String createdBy");
+                append.add("@CreatedBy " + getAuditAtkEnField(element,"createdBy","String"));
             }
             if (!fNames.contains("createdDate")) {
-                append.add("@CreatedDate @Column(name = \"created_date\") private LocalDateTime createdDate;");
+                append.add("@CreatedDate @Column(name = \"created_date\") private LocalDateTime createdDate");
+                append.add("@CreatedDate "+ getAuditAtkEnField(element,"createdDate","LocalDateTime"));
             }
             if (!fNames.contains("lastModifiedBy")) {
-                append.add("@LastModifiedBy @Column(name = \"last_modified_by\") private String lastModifiedBy;");
+                append.add("@LastModifiedBy @Column(name = \"last_modified_by\") private String lastModifiedBy");
+                append.add("@LastModifiedBy " + getAuditAtkEnField(element,"lastModifiedBy","String"));
             }
             if (!fNames.contains("lastModifiedDate")) {
-                append.add("@LastModifiedDate @Column(name = \"last_modified_date\") private LocalDateTime lastModifiedDate;");
+                append.add("@LastModifiedDate @Column(name = \"last_modified_date\") private LocalDateTime lastModifiedDate");
+                append.add("@LastModifiedDate "+ getAuditAtkEnField(element,"lastModifiedDate","LocalDateTime"));
             }
         }
         return append;
