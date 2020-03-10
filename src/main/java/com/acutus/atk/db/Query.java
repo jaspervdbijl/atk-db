@@ -302,9 +302,10 @@ public class Query<T extends AbstractAtkEntity,O> {
     }
 
     public Query<T,O> setSelectFilter(Field ... filter) {
-        selectFilter = new AtkEnFields(Reflect.getFields(entity.getClass()).getByNames(
-                Arrays.stream(filter).map(f -> f.getName()).collect(Collectors.toCollection(Strings::new)))
-                .getInstances(AtkEnField.class,entity));
+        List<String> names = Arrays.stream(filter).map(f -> f.getName().substring(1)).collect(Collectors.toList());
+        selectFilter = entity.getEnFields()
+                .stream().filter(f -> f.isId() || names.contains(f.getField().getName()))
+                .collect(Collectors.toCollection(AtkEnFields::new));
         // ignore all the rest
         entity.getEnFields().filter(f -> !selectFilter.contains(f)).forEach(f -> f.setIgnore(true));
         return this;

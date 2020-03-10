@@ -77,7 +77,6 @@ public class AtkEnField<T, R extends AbstractAtkEntity> extends AtkField<T, R> {
         return getType();
     }
 
-
     @SneakyThrows
     public void setFromRs(ResultSet rs) {
         set((T) unwrapEnumerated(getField(), mapFromRs(rs
