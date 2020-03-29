@@ -72,6 +72,13 @@
             <version>1.7.25</version>
             <scope>compile</scope>
         </dependency>
+
+        <!-- -->
+        <dependency>
+            <groupId>com.github.jasync-sql</groupId>
+            <artifactId>jasync-r2dbc-mysql</artifactId>
+            <version>1.0.14</version>
+        </dependency>
     </dependencies>
 
     <build>
