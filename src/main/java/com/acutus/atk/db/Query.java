@@ -55,12 +55,16 @@ public class Query<T extends AbstractAtkEntity, O> {
 
     @SneakyThrows
     private String getLeftJoin(AtomicInteger cnt, AbstractAtkEntity entity, AtkEnRelation re) {
+        if (cnt.get() > 0) {
+            entity.setTableName(getTmpTablename(cnt.get()-1));
+        }
         AbstractAtkEntity e = (AbstractAtkEntity) re.getType().getConstructor().newInstance();
+        String realTableName = e.getTableName();
+        e.setTableName(getTmpTablename(cnt.getAndIncrement()));
         AtkEnFields fk = e.getEnFields().getForeignKeys(entity.getClass());
-        String tableName = getTmpTablename(cnt.getAndIncrement());
         Assert.isTrue(fk.size() == 1, "FK [" + fk.getColNames() + "] not located for " + entity.getTableName());
-        return String.format("left join %s %s on %s = %s.%s", e.getTableName(), tableName,
-                entity.getEnFields().getSingleId().getTableAndColName(), tableName, fk.get(0).getColName()) + " " +
+        return String.format("left join %s %s on %s = %s", realTableName, e.getTableName(),
+                entity.getEnFields().getSingleId().getTableAndColName(), fk.get(0).getTableAndColName()) + " " +
                 getLeftJoin(cnt, e);
     }
 
@@ -72,14 +76,14 @@ public class Query<T extends AbstractAtkEntity, O> {
     }
 
     @SneakyThrows
-    private Strings getLeftJoin(AtomicInteger cnt, AbstractAtkEntity entity) {
+    private String getLeftJoin(AtomicInteger cnt, AbstractAtkEntity entity) {
         Strings leftJoin = new Strings();
         for (Field f : getEagerFields(entity)) {
             Optional<Field> enRefField = entity.getRefFields().get(f.getName() + "Ref");
             Assert.isTrue(enRefField.isPresent(), "Field not found " + f.getName() + "Ref");
             leftJoin.add(getLeftJoin(cnt, entity, (AtkEnRelation) enRefField.get().get(entity)));
         }
-        return leftJoin;
+        return leftJoin.toString(" ");
     }
 
     private String keyToString(AbstractAtkEntity entity) {
@@ -145,11 +149,11 @@ public class Query<T extends AbstractAtkEntity, O> {
         String sql = prepareSql(filter).replaceAll("\\p{Cntrl}", " ");
         // add all the left joins
         sql = sql.substring(sql.toLowerCase().indexOf(" from "));
-        Strings lj = selectFilter == null && !filter.isCustom() ? getLeftJoin(new AtomicInteger(0), entity) : new Strings();
+        String lj = selectFilter == null && !filter.isCustom() ? getLeftJoin(new AtomicInteger(0), entity) : "";
         Strings split = Strings.asList(sql.replace(",", " , ").split("\\s+"));
-        split.add(split.indexOfIgnoreCase(entity.getTableName()) + 1, lj.toString(" "));
+        split.add(split.indexOfIgnoreCase(entity.getTableName()) + 1, lj);
         if (!lj.isEmpty()) {
-            split.add(1, IntStream.range(0, lj.size()).mapToObj(i -> getTmpTablename(i) + ".*")
+            split.add(1, IntStream.range(0, lj.split("left join").length-1).mapToObj(i -> getTmpTablename(i) + ".*")
                     .reduce((t1, t2) -> t1 + ", " + t2).get());
             split.add(0, ",");
         }
