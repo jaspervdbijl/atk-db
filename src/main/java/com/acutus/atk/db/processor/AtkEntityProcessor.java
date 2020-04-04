@@ -81,16 +81,18 @@ public class AtkEntityProcessor extends AtkProcessor {
                 , column.unique() + "", column.nullable() + "", column.insertable() + "", column.updatable() + "", column.columnDefinition()
                 , column.table(), column.length(), column.precision(), column.scale());
     }
+
     public static class Test {
-        @Column(nullable = false,columnDefinition = "varchar(50) default 'AVAILABLE'")
-        private String  status;
+        @Column(nullable = false, columnDefinition = "varchar(50) default 'AVAILABLE'")
+        private String status;
 
     }
+
     @SneakyThrows
     public static void main(String[] args) {
         String text = "@javax.persistence.Column(nullable = false,columnDefinition = \"varchar(50) default 'AVAILABLE'\")\n" +
                 "        private String  status;";
-        text = removeColumnAnnotation(text) + copyColumn("status",Test.class.getDeclaredField("status").getAnnotation(Column.class));
+        text = removeColumnAnnotation(text) + copyColumn("status", Test.class.getDeclaredField("status").getAnnotation(Column.class));
         System.out.println(text);
     }
 
@@ -158,10 +160,10 @@ public class AtkEntityProcessor extends AtkProcessor {
                 , formatIndexName(index.name()), field.getSimpleName());
     }
 
-    private String getAuditAtkEnField(Element element,String name, String type) {
+    private String getAuditAtkEnField(Element element, String name, String type) {
         return String.format(
                 "public transient AtkEnField<%s,%s> _%s = new AtkEnField<>(Reflect.getFields(%s.class).getByName(\"%s\").get(),this)",
-                type,getClassName(element),name,getClassName(element),name);
+                type, getClassName(element), name, getClassName(element), name);
     }
 
     private Strings getAuditFields(Element element) {
@@ -171,19 +173,19 @@ public class AtkEntityProcessor extends AtkProcessor {
             Strings fNames = getFieldNames(element);
             if (!fNames.contains("createdBy")) {
                 append.add("@CreatedBy @Column(name = \"created_by\") private String createdBy");
-                append.add("@CreatedBy " + getAuditAtkEnField(element,"createdBy","String"));
+                append.add("@CreatedBy " + getAuditAtkEnField(element, "createdBy", "String"));
             }
             if (!fNames.contains("createdDate")) {
                 append.add("@CreatedDate @Column(name = \"created_date\") private LocalDateTime createdDate");
-                append.add("@CreatedDate "+ getAuditAtkEnField(element,"createdDate","LocalDateTime"));
+                append.add("@CreatedDate " + getAuditAtkEnField(element, "createdDate", "LocalDateTime"));
             }
             if (!fNames.contains("lastModifiedBy")) {
                 append.add("@LastModifiedBy @Column(name = \"last_modified_by\") private String lastModifiedBy");
-                append.add("@LastModifiedBy " + getAuditAtkEnField(element,"lastModifiedBy","String"));
+                append.add("@LastModifiedBy " + getAuditAtkEnField(element, "lastModifiedBy", "String"));
             }
             if (!fNames.contains("lastModifiedDate")) {
                 append.add("@LastModifiedDate @Column(name = \"last_modified_date\") private LocalDateTime lastModifiedDate");
-                append.add("@LastModifiedDate "+ getAuditAtkEnField(element,"lastModifiedDate","LocalDateTime"));
+                append.add("@LastModifiedDate " + getAuditAtkEnField(element, "lastModifiedDate", "LocalDateTime"));
             }
         }
         return append;
@@ -237,7 +239,7 @@ public class AtkEntityProcessor extends AtkProcessor {
 
         String queryMethod = returnType.toString().startsWith("java.util.List")
 
-                ? getQueryAllMethod(query.fetchType(),atk.classNameExt(), returnType, element.getSimpleName().toString(), query.value())
+                ? getQueryAllMethod(query.fetchType(), atk.classNameExt(), returnType, element.getSimpleName().toString(), query.value())
                 : getQueryMethod(atk.classNameExt(), returnType, element.getSimpleName().toString(), query.value());
 
         return "\n\n" + queryMethod;
@@ -256,14 +258,14 @@ public class AtkEntityProcessor extends AtkProcessor {
                 .collect(Collectors.toCollection(Strings::new));
     }
 
-    private String getLazyLoadMethod(String className,Element element,String cType) {
+    private String getLazyLoadMethod(String className, Element element, String cType) {
         String eName = element.toString();
         String mName = element.toString();
-        mName = "get"+mName.substring(0,1).toUpperCase()+mName.substring(1);
+        mName = "get" + mName.substring(0, 1).toUpperCase() + mName.substring(1);
         return String.format("public AtkEntities<%s> %s(%s c) {\n" +
                 "\t%s = %s == null ? %sRef.getAll(c) : %s;\n" +
                 "\treturn %s;\n" +
-                "};",className,mName,cType,eName,eName,eName,eName,eName);
+                "};", className, mName, cType, eName, eName, eName, eName, eName);
     }
 
     protected String getOneToManyImp(AtkEntity atk, Element element) {
@@ -282,26 +284,23 @@ public class AtkEntityProcessor extends AtkProcessor {
                 , classNameAndRef, element.toString(), classNameAndRef);
 
         // TODO add a getter, that wil automatically execute the atkReference
-        if (element.getAnnotation(OneToMany.class).fetch().equals(FetchType.EAGER)) {
 
-            Strings list = new Strings();
-            list.add(String.format("@OneToMany(fetch = javax.persistence.FetchType.EAGER)"));
-            list.add(String.format("private transient AtkEntities<%s> %s;", classNameAndRef,element.toString()));
-            list.add(getLazyLoadMethod(classNameAndRef,element,"Connection"));
-            list.add(getLazyLoadMethod(classNameAndRef,element,"DataSource"));
-            return atkRef + "\n\n\t" + list.toString("\n\t");
-        }
-        return atkRef;
+        Strings list = new Strings();
+        list.add(String.format("@OneToMany(fetch = javax.persistence.FetchType.EAGER)"));
+        list.add(String.format("private transient AtkEntities<%s> %s;", classNameAndRef, element.toString()));
+        list.add(getLazyLoadMethod(classNameAndRef, element, "Connection"));
+        list.add(getLazyLoadMethod(classNameAndRef, element, "DataSource"));
+        return atkRef + "\n\n\t" + list.toString("\n\t");
     }
 
-    private String getLazyLoadMethodForOptional(String className,Element element,String cType) {
+    private String getLazyLoadMethodForOptional(String className, Element element, String cType) {
         String eName = element.toString();
         String mName = element.toString();
-        mName = "get"+mName.substring(0,1).toUpperCase()+mName.substring(1);
+        mName = "get" + mName.substring(0, 1).toUpperCase() + mName.substring(1);
         return String.format("public Optional<%s> %s(%s c) {\n" +
                 "\t%s = %s == null ? %sRef.get(c) : %s;\n" +
                 "\treturn %s;\n" +
-                "};",className,mName,cType,eName,eName,eName,eName,eName);
+                "};", className, mName, cType, eName, eName, eName, eName, eName);
     }
 
 
@@ -312,9 +311,9 @@ public class AtkEntityProcessor extends AtkProcessor {
         String className = type + atk.classNameExt();
 
         FieldFilter filter = element.getAnnotation(FieldFilter.class);
-        String filterStr = filter != null ? "\""+filter.fields()[0]+"\", " : "";
+        String filterStr = filter != null ? "\"" + filter.fields()[0] + "\", " : "";
         values.add(String.format("public transient AtkEnRelation<%s> %sRef = new AtkEnRelation<>(%s.class, AtkEnRelation.RelType.ManyToOne,%s this);"
-                , className, element.toString(), className,filterStr));
+                , className, element.toString(), className, filterStr));
         // add reference
         ManyToOne manyToOne = element.getAnnotation(ManyToOne.class);
         OneToOne oneToOne = element.getAnnotation(OneToOne.class);
@@ -322,15 +321,15 @@ public class AtkEntityProcessor extends AtkProcessor {
 
         // TODO - Validate that there is exactlty one ForeignKey Match
         if (manyToOne != null && manyToOne.fetch().equals(FetchType.EAGER) || oneToOne != null && oneToOne.fetch().equals(FetchType.EAGER)) {
-            values.add(String.format("@"+(manyToOne != null ? "ManyToOne":"OneToOne")+"(fetch = javax.persistence.FetchType.EAGER)"));
-            values.add(String.format("private transient Optional<%s> %s;", className,element.toString()));
-            values.add(getLazyLoadMethodForOptional(className,element,"Connection"));
-            values.add(getLazyLoadMethodForOptional(className,element,"DataSource"));
+            values.add(String.format("@" + (manyToOne != null ? "ManyToOne" : "OneToOne") + "(fetch = javax.persistence.FetchType.EAGER)"));
+            values.add(String.format("private transient Optional<%s> %s;", className, element.toString()));
+            values.add(getLazyLoadMethodForOptional(className, element, "Connection"));
+            values.add(getLazyLoadMethodForOptional(className, element, "DataSource"));
 
         } else {
-            String mName = "get"+element.toString().substring(0,1).toUpperCase()+element.toString().substring(1);
-            values.add(String.format("\tpublic Optional<%s> %s(DataSource ds) {return %sRef.get(ds);}",className,mName,element.toString()));
-            values.add(String.format("\tpublic Optional<%s> %s(Connection c) {return %sRef.get(c);}",className,mName,element.toString()));
+            String mName = "get" + element.toString().substring(0, 1).toUpperCase() + element.toString().substring(1);
+            values.add(String.format("\tpublic Optional<%s> %s(DataSource ds) {return %sRef.get(ds);}", className, mName, element.toString()));
+            values.add(String.format("\tpublic Optional<%s> %s(Connection c) {return %sRef.get(c);}", className, mName, element.toString()));
         }
 
         return values;
@@ -357,7 +356,7 @@ public class AtkEntityProcessor extends AtkProcessor {
         AtkEntity atk = element.getAnnotation(AtkEntity.class);
         // add all query shortcuts
         Strings methods = new Strings();
-        methods.add(String.format("\tpublic Query<%s,%s> query() {return new Query(this);}", getClassName(element),element.getSimpleName()));
+        methods.add(String.format("\tpublic Query<%s,%s> query() {return new Query(this);}", getClassName(element), element.getSimpleName()));
         methods.add(String.format("\tpublic Persist<%s> persist() {return new Persist(this);}", getClassName(element)));
         methods.add(String.format("\tpublic int version() {return %d;}", atk.version()));
 
