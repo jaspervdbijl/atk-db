@@ -55,17 +55,17 @@ public class Query<T extends AbstractAtkEntity, O> {
 
     @SneakyThrows
     private String getLeftJoin(AtomicInteger cnt, AbstractAtkEntity entity, AtkEnRelation re) {
-
+        String tableName = entity.getTableName();
         if (cnt.get() > 0) {
-            entity.setTableName(getTmpTablename(cnt.get()-1));
+            tableName = getTmpTablename(cnt.get()-1);
         }
         AbstractAtkEntity e = (AbstractAtkEntity) re.getType().getConstructor().newInstance();
         String realTableName = e.getTableName();
         e.setTableName(getTmpTablename(cnt.getAndIncrement()));
         AtkEnFields fk = e.getEnFields().getForeignKeys(entity.getClass());
         Assert.isTrue(fk.size() == 1, "FK [" + fk.getColNames() + "] not located for " + entity.getTableName());
-        return String.format("left join %s %s on %s = %s", realTableName, e.getTableName(),
-                entity.getEnFields().getSingleId().getTableAndColName(), fk.get(0).getTableAndColName()) + " " +
+        return String.format("left join %s %s on %s.%s = %s", realTableName, e.getTableName(),
+                tableName,entity.getEnFields().getSingleId().getColName(), fk.get(0).getTableAndColName()) + " " +
                 getLeftJoin(cnt, e);
     }
 
@@ -149,17 +149,22 @@ public class Query<T extends AbstractAtkEntity, O> {
     public void getAll(Connection connection, Filter filter, CallOne<T> iterate, int limit) {
         String sql = prepareSql(filter).replaceAll("\\p{Cntrl}", " ");
         // add all the left joins
-        sql = sql.substring(sql.toLowerCase().indexOf(" from "));
-        String lj = selectFilter == null && !filter.isCustom() ? getLeftJoin(new AtomicInteger(0), entity) : "";
+        sql = sql.substring(sql.toLowerCase().indexOf("from "));
+
+        String lj = !filter.isCustom() ? getLeftJoin(new AtomicInteger(0), entity) : "";
+
         Strings split = Strings.asList(sql.replace(",", " , ").split("\\s+"));
-        split.add(split.indexOfIgnoreCase(entity.getTableName()) + 1, lj);
+
         if (!lj.isEmpty()) {
-            split.add(1, IntStream.range(0, lj.split("left join").length-1).mapToObj(i -> getTmpTablename(i) + ".*")
-                    .reduce((t1, t2) -> t1 + ", " + t2).get());
-            split.add(0, ",");
+            String selectLJ = IntStream.range(0, lj.split("left join").length-1)
+                    .mapToObj(i -> getTmpTablename(i)+".*").reduce((t1, t2) -> t1+", " + t2).get();
+
+            split.add(0,","+selectLJ);
+            split.add(3,lj);
         }
+
         String star = selectFilter != null ? selectFilter.getColNames().toString(",") : "*";
-        sql = "select " + entity.getTableName() + "." + star + " " + split.toString(" ");
+        sql = "select " + entity.getTableName() + "." + star + split.toString(" ");
         // transform the select *
         Map<String, AbstractAtkEntity> map = new HashMap<>();
         Two<AbstractAtkEntity, Boolean> lastEntity = null;
