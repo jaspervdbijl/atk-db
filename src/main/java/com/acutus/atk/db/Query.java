@@ -55,6 +55,7 @@ public class Query<T extends AbstractAtkEntity, O> {
 
     @SneakyThrows
     private String getLeftJoin(AtomicInteger cnt, AbstractAtkEntity entity, AtkEnRelation re) {
+
         if (cnt.get() > 0) {
             entity.setTableName(getTmpTablename(cnt.get()-1));
         }
