@@ -349,7 +349,8 @@ public class AtkEntityProcessor extends AtkProcessor {
     @Override
     protected Two<Class, Atk.Match> getDaoClass(Element element) {
         AtkEntity atk = element.getAnnotation(AtkEntity.class);
-        return atk != null ? new Two<>(getDaoClass(atk.toString()),atk.daoMatch()): new Two(null,null);
+        info("Get Dao class " + atk);
+        return atk != null ? new Two<>(atk.dao(),atk.daoMatch()): new Two(null,null);
     }
 
     @Override
