@@ -2,8 +2,10 @@ package com.acutus.atk.db.processor;
 
 import com.acutus.atk.db.annotations.FieldFilter;
 import com.acutus.atk.db.annotations.Index;
+import com.acutus.atk.entity.processor.Atk;
 import com.acutus.atk.entity.processor.AtkProcessor;
 import com.acutus.atk.util.Strings;
+import com.acutus.atk.util.collection.Two;
 import com.google.auto.service.AutoService;
 import lombok.SneakyThrows;
 
@@ -86,14 +88,6 @@ public class AtkEntityProcessor extends AtkProcessor {
         @Column(nullable = false, columnDefinition = "varchar(50) default 'AVAILABLE'")
         private String status;
 
-    }
-
-    @SneakyThrows
-    public static void main(String[] args) {
-        String text = "@javax.persistence.Column(nullable = false,columnDefinition = \"varchar(50) default 'AVAILABLE'\")\n" +
-                "        private String  status;";
-        text = removeColumnAnnotation(text) + copyColumn("status", Test.class.getDeclaredField("status").getAnnotation(Column.class));
-        System.out.println(text);
     }
 
     // TODO support other Table features
@@ -203,7 +197,7 @@ public class AtkEntityProcessor extends AtkProcessor {
 
     @Override
     protected Strings getExtraFields(Element element) {
-        return getIndexes(element).plus(getAuditFields(element));
+        return getIndexes(element).plus(getAuditFields(element)).prepend("\t");
     }
 
     @Override
@@ -297,10 +291,10 @@ public class AtkEntityProcessor extends AtkProcessor {
         String eName = element.toString();
         String mName = element.toString();
         mName = "get" + mName.substring(0, 1).toUpperCase() + mName.substring(1);
-        return String.format("public Optional<%s> %s(%s c) {\n" +
-                "\t%s = %s == null ? %sRef.get(c) : %s;\n" +
-                "\treturn %s;\n" +
-                "};", className, mName, cType, eName, eName, eName, eName, eName);
+        return String.format("\tpublic Optional<%s> %s(%s c) {\n" +
+                "\t\t%s = %s == null ? %sRef.get(c) : %s;\n" +
+                "\t\treturn %s;\n" +
+                "\t};", className, mName, cType, eName, eName, eName, eName, eName);
     }
 
 
@@ -312,7 +306,7 @@ public class AtkEntityProcessor extends AtkProcessor {
 
         FieldFilter filter = element.getAnnotation(FieldFilter.class);
         String filterStr = filter != null ? "\"" + filter.fields()[0] + "\", " : "";
-        values.add(String.format("public transient AtkEnRelation<%s> %sRef = new AtkEnRelation<>(%s.class, AtkEnRelation.RelType.ManyToOne,%s this);"
+        values.add(String.format("\tpublic transient AtkEnRelation<%s> %sRef = new AtkEnRelation<>(%s.class, AtkEnRelation.RelType.ManyToOne,%s this);"
                 , className, element.toString(), className, filterStr));
         // add reference
         ManyToOne manyToOne = element.getAnnotation(ManyToOne.class);
@@ -320,7 +314,7 @@ public class AtkEntityProcessor extends AtkProcessor {
         FieldFilter fieldFilter = element.getAnnotation(FieldFilter.class);
 
         // TODO - Validate that there is exactlty one ForeignKey Match
-        if (manyToOne != null && manyToOne.fetch().equals(FetchType.EAGER) || oneToOne != null && oneToOne.fetch().equals(FetchType.EAGER)) {
+        if (manyToOne != null || oneToOne != null ) {
             values.add(String.format("@" + (manyToOne != null ? "ManyToOne" : "OneToOne") + "(fetch = javax.persistence.FetchType.EAGER)"));
             values.add(String.format("private transient Optional<%s> %s;", className, element.toString()));
             values.add(getLazyLoadMethodForOptional(className, element, "Connection"));
@@ -349,6 +343,13 @@ public class AtkEntityProcessor extends AtkProcessor {
                         (f.getAnnotation(ManyToOne.class) != null || f.getAnnotation(OneToOne.class) != null))
                 .flatMap(f -> getManyToOneImp(atk, f).stream())
                 .collect(Collectors.toCollection(Strings::new));
+    }
+
+    @SneakyThrows
+    @Override
+    protected Two<Class, Atk.Match> getDaoClass(Element element) {
+        AtkEntity atk = element.getAnnotation(AtkEntity.class);
+        return atk != null ? new Two<>(getDaoClass(atk.toString()),atk.daoMatch()): new Two(null,null);
     }
 
     @Override
@@ -390,4 +391,6 @@ public class AtkEntityProcessor extends AtkProcessor {
                 .plus("import com.acutus.atk.db.*")
                 .plus("import com.acutus.atk.util.collection.*");
     }
+
+
 }

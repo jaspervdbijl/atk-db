@@ -1,12 +1,13 @@
 package com.acutus.atk.db.entity;
 
 import com.acutus.atk.db.processor.AtkEntity;
+import com.acutus.atk.util.Strings;
 
 import javax.persistence.Column;
 import javax.persistence.Id;
 import javax.persistence.Lob;
 
-@AtkEntity
+@AtkEntity()
 public class Person {
 
     @Id
@@ -19,5 +20,6 @@ public class Person {
     @Column(length = 5000)
     @Lob
     private String surname;
+
 
 }

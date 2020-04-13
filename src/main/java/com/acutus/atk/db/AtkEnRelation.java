@@ -50,8 +50,12 @@ public class AtkEnRelation<T extends AbstractAtkEntity> {
     private T getManyToOne(T instance) {
         AtkEnFields fField = source.getEnFields().getForeignKeys(instance.getClass());
         AtkEnField key = fieldFilter != null ? fField.getByFieldName(fieldFilter).get() : fField.get(0);
-        instance.getEnFields().getSingleId().set(key.get());
-        return instance;
+        if (key.get() != null) {
+            instance.getEnFields().getSingleId().set(key.get());
+            return instance;
+        } else {
+            return null;
+        }
     }
 
     private T getOneToOne(T instance) {
@@ -71,14 +75,11 @@ public class AtkEnRelation<T extends AbstractAtkEntity> {
 
         switch (relType) {
             case OneToMany:
-                getOneToMany(instance);
-                break;
+                return getOneToMany(instance);
             case ManyToOne:
-                getManyToOne(instance);
-                break;
+                return getManyToOne(instance);
             case OneToOne:
-                getOneToOne(instance);
-                break;
+                return getOneToOne(instance);
         }
         return instance;
     }
@@ -92,11 +93,13 @@ public class AtkEnRelation<T extends AbstractAtkEntity> {
     }
 
     public Optional<T> get(DataSource dataSource) {
-        return getQuery(getEntity(),selectFilter).get(dataSource);
+        T entity = getEntity();
+        return entity != null ? getQuery(entity,selectFilter).get(dataSource) : Optional.empty();
     }
 
     public Optional<T> get(Connection connection) {
-        return getQuery(getEntity(),selectFilter).get(connection);
+        T entity = getEntity();
+        return entity != null ? getQuery(entity,selectFilter).get(connection) : Optional.empty();
     }
 
     public void iterate(Connection connection, CallOne<T> call) {

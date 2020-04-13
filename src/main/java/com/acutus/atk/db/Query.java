@@ -147,20 +147,22 @@ public class Query<T extends AbstractAtkEntity, O> {
 
     @SneakyThrows
     public void getAll(Connection connection, Filter filter, CallOne<T> iterate, int limit) {
+        boolean shouldLeftJoin = selectFilter == null;
         String sql = prepareSql(filter).replaceAll("\\p{Cntrl}", " ");
         // add all the left joins
         sql = sql.substring(sql.toLowerCase().indexOf("from "));
 
-        String lj = !filter.isCustom() ? getLeftJoin(new AtomicInteger(0), entity) : "";
+        String lj = shouldLeftJoin ? getLeftJoin(new AtomicInteger(0), entity) : "";
 
         Strings split = Strings.asList(sql.replace(",", " , ").split("\\s+"));
 
         if (!lj.isEmpty()) {
+            int offset = split.indexOfIgnoreCase(entity.getTableName());
             String selectLJ = IntStream.range(0, lj.split("left join").length-1)
                     .mapToObj(i -> getTmpTablename(i)+".*").reduce((t1, t2) -> t1+", " + t2).get();
 
             split.add(0,","+selectLJ);
-            split.add(3,lj);
+            split.add(2+offset,lj);
         }
 
         String star = selectFilter != null ? selectFilter.getColNames().toString(",") : "*";
@@ -172,7 +174,7 @@ public class Query<T extends AbstractAtkEntity, O> {
             filter.prepare(ps);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next() && (limit > 0 || limit < 0)) {
-                    if (filter.isCustom()) {
+                    if (!shouldLeftJoin) {
                         iterate.call((T) entity.set(rs).clone());
                     } else {
                         Two<AbstractAtkEntity, Boolean> value = loadCascade(new AtomicInteger(-1), map, entity, rs);

@@ -1,5 +1,7 @@
 package com.acutus.atk.db.processor;
 
+import com.acutus.atk.entity.processor.Atk;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -10,7 +12,7 @@ import java.lang.annotation.Target;
 public @interface AtkEntity {
 
     // if no column name is defined, what naming stratergy should be used
-    ColumnNamingStrategy columnNamingStrategy() default ColumnNamingStrategy.NONE;
+    ColumnNamingStrategy columnNamingStrategy() default ColumnNamingStrategy.CAMEL_CASE_UNDERSCORE;
 
     // if no table name is defined, what naming stratergy should be used
     TableNamingStrategy tableNamingStrategy() default TableNamingStrategy.LOWER_CASE_UNDERSCORE;
@@ -28,6 +30,10 @@ public @interface AtkEntity {
     boolean auditTable() default false;
 
     boolean addDeclaredFields() default false;
+
+    Class dao() default Void.class;
+    Atk.Match daoMatch() default Atk.Match.FULL;
+
 
     enum ColumnNamingStrategy {
         NONE, CAMEL_CASE_UNDERSCORE
