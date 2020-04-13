@@ -11,6 +11,7 @@ import com.acutus.atk.db.fe.indexes.Indexes;
 import com.acutus.atk.db.fe.keys.FrKeys;
 import com.acutus.atk.util.Assert;
 import com.acutus.atk.util.Strings;
+import com.acutus.atk.util.collection.Two;
 import lombok.SneakyThrows;
 import lombok.extern.java.Log;
 import lombok.extern.java.Log;
@@ -48,6 +49,9 @@ public class FEHelper {
         AbstractDriver driver = DriverFactory.getDriver(connection);
         // maintain schema's
         for (AbstractAtkEntity entity : entities) {
+
+            maintainForeignKeysDrop(connection, driver, entity);
+
             if (!driver.doesTableExist(connection, entity.getTableName())) {
                 createTable(connection, entity);
             } else {
@@ -61,7 +65,7 @@ public class FEHelper {
 
         // FK
         for (AbstractAtkEntity entity : entities) {
-            maintainForeignKeys(connection, driver, entity);
+            maintainForeignKeysAdd(connection, driver, entity);
         }
 
         // INDEXES
@@ -160,6 +164,14 @@ public class FEHelper {
 
     }
 
+    private static void maintainForeignKeysDrop(Connection connection, AbstractDriver driver, AbstractAtkEntity entity) {
+        FrKeys dbKeys = FrKeys.load(driver.getForeignKeys(connection, entity.getTableName()));
+        AtkEnFields enKeys = entity.getEnFields().getForeignKeys();
+        // remove redundant
+        FrKeys remove = dbKeys.removeWhen(k -> k.isPresentIn(enKeys));
+        remove.stream().forEach(k -> logAndExecute(connection, driver.dropForeignKey(entity.getTableName(), k)));
+    }
+
     /**
      * add missing Foreign keys, replace mismatching keys, drop redundant keys
      *
@@ -167,9 +179,7 @@ public class FEHelper {
      * @param driver
      * @param entity
      */
-    private static void maintainForeignKeys(Connection connection, AbstractDriver driver, AbstractAtkEntity entity) {
-        // **** Foreign Keys
-
+    private static void maintainForeignKeysAdd(Connection connection, AbstractDriver driver, AbstractAtkEntity entity) {
         FrKeys dbKeys = FrKeys.load(driver.getForeignKeys(connection, entity.getTableName()));
         AtkEnFields enKeys = entity.getEnFields().getForeignKeys();
 
@@ -177,9 +187,6 @@ public class FEHelper {
         AtkEnFields missing = enKeys.removeWhen(k -> dbKeys.containsField(k));
         missing.stream().forEach(k -> logAndExecute(connection, driver.addForeignKey(k)));
 
-        // remove redundant
-        FrKeys remove = dbKeys.removeWhen(k -> k.isPresentIn(enKeys));
-        remove.stream().forEach(k -> logAndExecute(connection, driver.dropForeignKey(entity.getTableName(), k)));
     }
 
     @SneakyThrows
