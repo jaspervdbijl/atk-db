@@ -69,6 +69,10 @@ public class Query<T extends AbstractAtkEntity, O> {
                 getLeftJoin(cnt, e);
     }
 
+    public static ReflectFields getOneToMany(AbstractAtkEntity entity) {
+        return entity.getRefFields().filter(f ->(f.getAnnotation(OneToMany.class) != null));
+    }
+
     public static ReflectFields getEagerFields(AbstractAtkEntity entity) {
         return entity.getRefFields().filter(f ->
                 f.getAnnotation(OneToMany.class) != null

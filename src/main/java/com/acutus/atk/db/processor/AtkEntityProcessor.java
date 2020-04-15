@@ -280,7 +280,8 @@ public class AtkEntityProcessor extends AtkProcessor {
         // TODO add a getter, that wil automatically execute the atkReference
 
         Strings list = new Strings();
-        list.add(String.format("@OneToMany(fetch = javax.persistence.FetchType.EAGER)"));
+        info("OneToMany mirror " + element.getAnnotationMirrors().toString());
+        list.add(element.getAnnotationMirrors().toString());
         list.add(String.format("private transient AtkEntities<%s> %s;", classNameAndRef, element.toString()));
         list.add(getLazyLoadMethod(classNameAndRef, element, "Connection"));
         list.add(getLazyLoadMethod(classNameAndRef, element, "DataSource"));

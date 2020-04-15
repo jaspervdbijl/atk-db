@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static com.acutus.atk.db.Query.getEagerFields;
+import static com.acutus.atk.db.Query.getOneToMany;
 import static com.acutus.atk.util.AtkUtil.handle;
 
 public class AbstractAtkEntity<T extends AbstractAtkEntity, O> extends AbstractAtk<T, O> {
@@ -75,13 +76,14 @@ public class AbstractAtkEntity<T extends AbstractAtkEntity, O> extends AbstractA
     public O toBase() {
         O base = super.toBase();
         // process eager fetches and map them to their dao's
-        getEagerFields(this).forEach(f -> handle(() -> {
+        getOneToMany(this).forEach(f -> handle(() -> {
             if (f.get(this) != null) {
                 List<AbstractAtkEntity> values = (List<AbstractAtkEntity>) f.get(this);
                 Reflect.getFields(base.getClass()).get(f.getName()).get()
                         .set(base, values.stream().map(v -> v.toBase()).collect(Collectors.toList()));
             }
         }));
+        // TODO - add one To one
         return base;
     }
 
