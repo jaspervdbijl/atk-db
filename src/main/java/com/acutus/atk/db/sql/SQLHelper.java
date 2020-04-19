@@ -6,6 +6,7 @@ import com.acutus.atk.util.call.CallOne;
 import com.acutus.atk.util.call.CallOneRet;
 import com.acutus.atk.util.collection.*;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.sql.DataSource;
 import java.sql.*;
@@ -22,6 +23,7 @@ import static com.acutus.atk.db.constants.SQLConstants.RS_FUNC_INT_MAP;
 import static com.acutus.atk.db.constants.SQLConstants.RS_FUNC_INT_STR;
 import static com.acutus.atk.util.AtkUtil.handle;
 
+@Slf4j
 public class SQLHelper {
 
     static {
@@ -37,7 +39,7 @@ public class SQLHelper {
                 con.commit();
             } catch (Exception ex) {
                 con.rollback();
-                throw new RuntimeException(ex.getMessage(),ex);
+                throw new RuntimeException(ex.getMessage(), ex);
             }
         }
     }
@@ -148,8 +150,8 @@ public class SQLHelper {
     }
 
     public static <A> Optional<One<A>> queryOne(Connection connection, Class<A> type, String query, Object... params) {
-        List<One<A>> list = query(connection,type,query,params);
-        return Optional.ofNullable(!list.isEmpty()?list.get(0):null);
+        List<One<A>> list = query(connection, type, query, params);
+        return Optional.ofNullable(!list.isEmpty() ? list.get(0) : null);
     }
 
     public static <A> Optional<One<A>> queryOne(DataSource dataSource, Class<A> type, String query, Object... params) {
@@ -193,7 +195,7 @@ public class SQLHelper {
     }
 
     public static void executeUpdate(DataSource dataSource, String sql, Object... params) {
-        run(dataSource, c -> executeUpdate(c, sql,params));
+        run(dataSource, c -> executeUpdate(c, sql, params));
     }
 
 

@@ -24,9 +24,9 @@ import static javax.persistence.GenerationType.IDENTITY;
 
 public class Persist<T extends AbstractAtkEntity> {
 
-    private static Optional<CallThree<Connection, AbstractAtkEntity , Boolean>> PERSIST_CALLBACK = Optional.empty();
+    private static Optional<CallThree<Connection, AbstractAtkEntity, Boolean>> PERSIST_CALLBACK = Optional.empty();
 
-    public static void setPersistCallback(CallThree<Connection, AbstractAtkEntity , Boolean> callback) {
+    public static void setPersistCallback(CallThree<Connection, AbstractAtkEntity, Boolean> callback) {
         PERSIST_CALLBACK = Optional.of(callback);
     }
 
@@ -63,10 +63,9 @@ public class Persist<T extends AbstractAtkEntity> {
             clone.removeAll(ids);
         }
         try (PreparedStatement ps = prepare(connection,
-                String.format("insert into %s (%s) values(%s)"
-                        , entity.getTableName(), clone.getColNames().toString(",")
-                        , clone.stream().map(f -> "?").reduce((s1, s2) -> s1 + "," + s2).get())
-                , wrapForPreparedStatement(clone).toArray())) {
+                String.format("insert into %s (%s) values(%s)", entity.getTableName(), clone.getColNames().toString(","),
+                        clone.stream().map(f -> "?").reduce((s1, s2) -> s1 + "," + s2).get()),
+                wrapForPreparedStatement(clone).toArray())) {
             ps.executeUpdate();
         }
         // load any auto inc fields
