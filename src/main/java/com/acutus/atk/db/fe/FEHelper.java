@@ -13,12 +13,8 @@ import com.acutus.atk.db.processor.Populate;
 import com.acutus.atk.reflection.Reflect;
 import com.acutus.atk.util.Assert;
 import com.acutus.atk.util.Strings;
-import com.acutus.atk.util.collection.Two;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sun.corba.se.impl.orbutil.ObjectUtility;
 import lombok.SneakyThrows;
-import lombok.extern.java.Log;
-import lombok.extern.java.Log;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.persistence.Enumerated;
@@ -94,10 +90,10 @@ public class FEHelper {
     }
 
     @SneakyThrows
-    private static void populateValues(Connection connection,AbstractAtkEntity entity, Map source) {
+    private static void populateValues(Connection connection, AbstractAtkEntity entity, Map source) {
         entity = entity.getClass().getConstructor().newInstance();
         for (Field field : Reflect.getFields(entity.getClass()).filter(f -> source.containsKey(f.getName()))) {
-            field.set(entity,source.get(field.getName()));
+            field.set(entity, source.get(field.getName()));
         }
         entity.persist().insert(connection);
     }
@@ -108,8 +104,8 @@ public class FEHelper {
         // populate data
         Populate populate = entity.getClass().getAnnotation(Populate.class);
         if (populate != null) {
-            new ObjectMapper().readValue(Thread.currentThread().getContextClassLoader().getResourceAsStream(populate.value()),List.class)
-                    .stream().forEach(o -> populateValues(connection,entity, (Map) o));
+            new ObjectMapper().readValue(Thread.currentThread().getContextClassLoader().getResourceAsStream(populate.value()), List.class)
+                    .stream().forEach(o -> populateValues(connection, entity, (Map) o));
         }
     }
 
@@ -226,14 +222,14 @@ public class FEHelper {
                 .collect(Collectors.toList());
 
         for (AtkEnIndex i : missing) {
-            logAndExecute(connection,driver.getCreateIndex(entity,i));
+            logAndExecute(connection, driver.getCreateIndex(entity, i));
         }
 
         Indexes redundant = indexes.stream()
                 .filter(i -> !entity.getIndexes().getByName(i.getINDEX_NAME()).isPresent())
                 .collect(Collectors.toCollection(Indexes::new));
         for (Index index : redundant) {
-            logAndExecute(connection,driver.getDropIndex(entity,index));
+            logAndExecute(connection, driver.getDropIndex(entity, index));
         }
 
         Indexes mismatch = indexes.stream()
@@ -242,9 +238,9 @@ public class FEHelper {
                 .collect(Collectors.toCollection(Indexes::new));
 
         for (Index index : mismatch) {
-            logAndExecute(connection,driver.getDropIndex(entity,index));
-            logAndExecute(connection,driver.getCreateIndex(entity
-                    ,entity.getIndexes().getByName(index.getINDEX_NAME()).get()));
+            logAndExecute(connection, driver.getDropIndex(entity, index));
+            logAndExecute(connection, driver.getCreateIndex(entity
+                    , entity.getIndexes().getByName(index.getINDEX_NAME()).get()));
         }
 
     }
