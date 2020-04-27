@@ -9,19 +9,25 @@ import com.acutus.atk.db.driver.DriverFactory;
 import com.acutus.atk.db.fe.indexes.Index;
 import com.acutus.atk.db.fe.indexes.Indexes;
 import com.acutus.atk.db.fe.keys.FrKeys;
+import com.acutus.atk.db.processor.Populate;
+import com.acutus.atk.reflection.Reflect;
 import com.acutus.atk.util.Assert;
 import com.acutus.atk.util.Strings;
 import com.acutus.atk.util.collection.Two;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sun.corba.se.impl.orbutil.ObjectUtility;
 import lombok.SneakyThrows;
 import lombok.extern.java.Log;
 import lombok.extern.java.Log;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.persistence.Enumerated;
+import java.lang.reflect.Field;
 import java.sql.*;
 import java.time.temporal.Temporal;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -87,8 +93,24 @@ public class FEHelper {
 
     }
 
+    @SneakyThrows
+    private static void populateValues(Connection connection,AbstractAtkEntity entity, Map source) {
+        entity = entity.getClass().getConstructor().newInstance();
+        for (Field field : Reflect.getFields(entity.getClass()).filter(f -> source.containsKey(f.getName()))) {
+            field.set(entity,source.get(field.getName()));
+        }
+        entity.persist().insert(connection);
+    }
+
+    @SneakyThrows
     public static void createTable(Connection connection, AbstractAtkEntity entity) {
         logAndExecute(connection, DriverFactory.getDriver(connection).getCreateSql(entity));
+        // populate data
+        Populate populate = entity.getClass().getAnnotation(Populate.class);
+        if (populate != null) {
+            new ObjectMapper().readValue(Thread.currentThread().getContextClassLoader().getResourceAsStream(populate.value()),List.class)
+                    .stream().forEach(o -> populateValues(connection,entity, (Map) o));
+        }
     }
 
     @SneakyThrows
