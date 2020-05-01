@@ -8,20 +8,20 @@ import com.acutus.atk.db.annotations.audit.CreatedBy;
 import com.acutus.atk.db.annotations.audit.CreatedDate;
 import com.acutus.atk.db.annotations.audit.LastModifiedBy;
 import com.acutus.atk.db.annotations.audit.LastModifiedDate;
+import com.acutus.atk.entity.AtkField;
 import com.acutus.atk.util.Assert;
 import com.acutus.atk.util.call.CallOne;
+import com.acutus.atk.util.call.CallOneRet;
 import lombok.SneakyThrows;
 
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
+import javax.swing.text.html.Option;
 import java.lang.annotation.Annotation;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 import static com.acutus.atk.beans.BeanHelper.decode;
 import static com.acutus.atk.db.util.AtkEnUtil.unwrapEnumerated;
@@ -29,8 +29,8 @@ import static com.acutus.atk.db.util.UserContextHolder.getUsername;
 import static com.acutus.atk.util.AtkUtil.handle;
 
 public class PersistHelper {
-    private static Map<Class<? extends Annotation>, CallOne<AtkEnField>> insertPreProcessor = new HashMap<>();
-    private static Map<Class<? extends Annotation>, CallOne<AtkEnField>> updatePreProcessor = new HashMap<>();
+    private static Map<Class<? extends Annotation>, CallOneRet<AtkEnField,Optional<AtkEnField>>> insertPreProcessor = new HashMap<>();
+    private static Map<Class<? extends Annotation>, CallOneRet<AtkEnField,Optional<AtkEnField>>> updatePreProcessor = new HashMap<>();
 
     static {
         insertPreProcessor.put(CreatedDate.class, (e) -> processCreatedDate(e));
@@ -45,29 +45,32 @@ public class PersistHelper {
     }
 
     @SneakyThrows
-    public static void preProcess(AbstractAtkEntity entity,Map<Class<? extends Annotation>, CallOne<AtkEnField>> processor) {
+    public static List<Optional<AtkEnField>> preProcess(AbstractAtkEntity entity,Map<Class<? extends Annotation>, CallOneRet<AtkEnField,Optional<AtkEnField>>> processor) {
+        List<Optional<AtkEnField>> fields = new ArrayList<>();
         entity.getEnFields().stream().filter(f -> f.get() == null).forEach(field -> {
             for (Annotation a : field.getField().getAnnotations()) {
                 if (processor.containsKey(a.annotationType())) {
-                    handle(() -> processor.get(a.annotationType()).call(field));
+                    fields.add(handle(() -> processor.get(a.annotationType()).call(field)));
                 }
             }
         });
+        return fields;
     }
 
     @SneakyThrows
-    public static void preProcessInsert(AbstractAtkEntity entity) {
-        preProcess(entity,insertPreProcessor);
+    public static List<Optional<AtkEnField>> preProcessInsert(AbstractAtkEntity entity) {
+        return preProcess(entity,insertPreProcessor);
     }
 
     @SneakyThrows
-    public static void preProcessUpdate(AbstractAtkEntity entity) {
-        preProcess(entity,updatePreProcessor);
+    public static List<Optional<AtkEnField>> preProcessUpdate(AbstractAtkEntity entity) {
+        return preProcess(entity,updatePreProcessor);
     }
 
 
     @SneakyThrows
-    public static void processCreatedDate(AtkEnField field) {
+    public static Optional<AtkEnField> processCreatedDate(AtkEnField field) {
+        boolean wasNull = field.get() == null;
         if (field.get() == null) {
             if (LocalDateTime.class.isAssignableFrom(field.getType())) {
                 field.set(LocalDateTime.now());
@@ -81,18 +84,22 @@ public class PersistHelper {
                 throw new UnsupportedOperationException("Type not implemented " + field.getType());
             }
         }
+        return wasNull && field.get() != null ? Optional.of(field) : Optional.empty();
     }
 
-    public static void processCreatedBy(AtkEnField field) {
+    public static Optional<AtkEnField> processCreatedBy(AtkEnField field) {
+        boolean wasNull = field.get() == null;
         field.set(field.get() == null ? getUsername() : field.get());
+        return wasNull ? Optional.of(field) : Optional.empty();
     }
 
-    public static void processUID(AtkEnField field) {
+    public static Optional<AtkEnField> processUID(AtkEnField field) {
         Assert.isTrue(field.getType().equals(String.class), "UID may only be applied to Strings. Field " + field);
         field.set(UUID.randomUUID().toString());
+        return Optional.of(field);
     }
 
-    public static void processDefault(AtkEnField field, boolean insert) {
+    public static Optional<AtkEnField> processDefault(AtkEnField field, boolean insert) {
         Default def = field.getField().getAnnotation(Default.class);
         if (insert == (def.type() == Default.Type.INSERT || def.type() == Default.Type.BOTH)
                 || !insert == (def.type() == Default.Type.UPDATE || def.type() == Default.Type.BOTH)) {
@@ -102,7 +109,9 @@ public class PersistHelper {
                     ? String.class : Integer.class
                     : field.getType();
             field.set(unwrapEnumerated(field.getField(), decode(type, def.value())));
+            return Optional.of(field);
         }
+        return Optional.empty();
     }
 
 

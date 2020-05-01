@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static com.acutus.atk.db.sql.SQLHelper.*;
 import static com.acutus.atk.db.util.PersistHelper.preProcessInsert;
@@ -105,7 +106,8 @@ public class Persist<T extends AbstractAtkEntity> {
      */
     @SneakyThrows
     private T update(Connection connection, AtkEnFields updateFields) {
-        preProcessUpdate(entity);
+        List<Optional<AtkEnField>> mod = preProcessUpdate(entity);
+        updateFields.addAll(mod.stream().filter(o -> o.isPresent()).map(o -> o.get()).collect(Collectors.toList()));
         AtkEnFields ids = entity.getEnFields().getIds();
         assertIdIsPresent(ids);
         // remove the ids
