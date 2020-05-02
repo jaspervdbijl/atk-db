@@ -28,6 +28,7 @@ import static com.acutus.atk.db.Query.OrderBy.DESC;
 import static com.acutus.atk.db.driver.DriverFactory.getDriver;
 import static com.acutus.atk.db.sql.Filter.Type.AND;
 import static com.acutus.atk.db.sql.Filter.and;
+import static com.acutus.atk.db.sql.Filter.or;
 import static com.acutus.atk.db.sql.SQLHelper.*;
 import static com.acutus.atk.util.AtkUtil.getGenericFieldType;
 import static com.acutus.atk.util.AtkUtil.handle;
@@ -318,9 +319,10 @@ public class Query<T extends AbstractAtkEntity, O> {
         return this;
     }
 
-    public Query<T, O> setOrderBy(OrderBy orderByType, AtkEnField... orderBys) {
+    public Query<T, O> setOrderBy(OrderBy orderByType, Field... orderBys) {
         this.orderByType = orderByType;
-        this.orderBy = new AtkEnFields(orderBys);
+        List<String> obFields = Arrays.asList(orderBys).stream().map(f -> f.getName().substring(1)).collect(Collectors.toList());
+        this.orderBy = new AtkEnFields(entity.getEnFields().filter(f -> obFields.contains(f.getField().getName())));
         return this;
     }
 
@@ -334,7 +336,7 @@ public class Query<T extends AbstractAtkEntity, O> {
         return this;
     }
 
-    public Query<T, O> setOrderBy(AtkEnField... orderBys) {
+    public Query<T, O> setOrderBy(Field... orderBys) {
         return setOrderBy(DESC, orderBys);
     }
 
