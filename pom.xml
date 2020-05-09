@@ -103,6 +103,10 @@
                 <configuration>
                     <source>1.8</source>
                     <target>1.8</target>
+                    <showWarnings>true</showWarnings>
+                    <compilerArgs>
+                        <arg>-Averbose=true</arg>
+                    </compilerArgs>
                 </configuration>
             </plugin>
         </plugins>

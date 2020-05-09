@@ -31,7 +31,7 @@ public @interface AtkEntity {
 
     boolean addDeclaredFields() default false;
 
-    Class dao() default Void.class;
+    Class daoClass() default Void.class;
     Atk.Match daoMatch() default Atk.Match.FULL;
 
 

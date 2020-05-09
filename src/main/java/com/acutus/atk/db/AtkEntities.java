@@ -1,5 +1,6 @@
 package com.acutus.atk.db;
 
+import com.acutus.atk.util.Strings;
 import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
@@ -16,5 +17,9 @@ public class AtkEntities<T extends AbstractAtkEntity> extends ArrayList<T> {
 
     public List<?> toDao() {
         return stream().map(e -> e.toBase()).collect(Collectors.toList());
+    }
+
+    public Strings getTableNames() {
+        return stream().map(e -> e.getTableName()).collect(Collectors.toCollection(Strings::new));
     }
 }

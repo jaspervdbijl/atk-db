@@ -2,6 +2,7 @@ package com.acutus.atk.db.sql;
 
 import com.acutus.atk.db.constants.SQLConstants;
 import com.acutus.atk.util.Assert;
+import com.acutus.atk.util.Strings;
 import com.acutus.atk.util.call.CallOne;
 import com.acutus.atk.util.call.CallOneRet;
 import com.acutus.atk.util.collection.*;
@@ -208,6 +209,29 @@ public class SQLHelper {
 
     public static void execute(DataSource dataSource, String sql) {
         run(dataSource, c -> execute(c, sql));
+    }
+
+    public static Strings intoWords(String sql) {
+        return Strings.asList(sql.replaceAll("\\p{Cntrl}", " ").replace(",", " , ").split("\\s+"));
+    }
+
+    public static String alias(Strings tNames, String sql, char letter) {
+        sql = sql.replaceAll("\\p{Cntrl}", " ").replace("   ", " ").replace("  ", " ");
+        String head = sql.substring(0, sql.indexOf(" from "));
+        sql = sql.substring(sql.indexOf(" from "));
+
+        for (int i = 0; i < tNames.size(); i++) {
+            sql = sql.replace(tNames.get(i) + "_", ((char) (letter + i)) + "_");
+            sql = sql.replace(tNames.get(i) + ".", ((char) (letter + i)) + ".");
+            sql = sql.replace(tNames.get(i), tNames.get(i) + " " + ((char) (letter + i)));
+            sql = sql.replace(((char) (letter + i)) + "_",tNames.get(i) + "_");
+        }
+        return head + sql;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(alias(Strings.asList("vendor_payment", "invoice", "booking"),
+                "select * from vendor_payment,invoice,booking where vendor_payment.invoice_id = invoice.id and invoice.id = booking.invoice_id and vendor_payment.status = ? and invoice.user_id = ? order by vendor_payment.schedule_date desc", 'a'));
     }
 
 }

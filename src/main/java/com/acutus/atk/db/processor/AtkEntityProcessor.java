@@ -20,6 +20,7 @@ import javax.lang.model.type.TypeMirror;
 import javax.persistence.*;
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -280,7 +281,6 @@ public class AtkEntityProcessor extends AtkProcessor {
         // TODO add a getter, that wil automatically execute the atkReference
 
         Strings list = new Strings();
-        info("OneToMany mirror " + element.getAnnotationMirrors().toString());
         list.add(element.getAnnotationMirrors().toString());
         list.add(String.format("private transient AtkEntities<%s> %s;", classNameAndRef, element.toString()));
         list.add(getLazyLoadMethod(classNameAndRef, element, "Connection"));
@@ -348,9 +348,11 @@ public class AtkEntityProcessor extends AtkProcessor {
 
     @SneakyThrows
     @Override
-    protected Two<Class, Atk.Match> getDaoClass(Element element) {
+    protected Optional<Two<Element, Atk.Match>> getDaoClass(Element element) {
         AtkEntity atk = element.getAnnotation(AtkEntity.class);
-        return atk != null ? new Two<>(getDaoClass(atk.toString()),atk.daoMatch()): new Two(null,null);
+        return atk == null || "java.lang.Void".equals(extractDaoClassName(atk.toString()))
+                ? Optional.empty()
+                : Optional.of(new Two<>(getClassElement(extractDaoClassName(atk.toString())), atk.daoMatch()));
     }
 
     @Override
@@ -370,8 +372,8 @@ public class AtkEntityProcessor extends AtkProcessor {
     }
 
     @Override
-    protected Strings getImports() {
-        return super.getImports().plus("import com.acutus.atk.db.*").plus("import com.acutus.atk.db.annotations.*")
+    protected Strings getImports(Element element) {
+        return super.getImports(element).plus("import com.acutus.atk.db.*").plus("import com.acutus.atk.db.annotations.*")
                 .plus("import static com.acutus.atk.db.sql.SQLHelper.runAndReturn")
                 .plus("import static com.acutus.atk.db.sql.SQLHelper.queryOne")
                 .plus("import static com.acutus.atk.db.sql.SQLHelper.query")

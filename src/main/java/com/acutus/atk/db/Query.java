@@ -149,7 +149,6 @@ public class Query<T extends AbstractAtkEntity, O> {
                 ? getDriver(connection).limit(sql, limit) : sql));
     }
 
-
     @SneakyThrows
     public void getAll(Connection connection, Filter filter, CallOne<T> iterate, int limit) {
         boolean shouldLeftJoin = selectFilter == null;
