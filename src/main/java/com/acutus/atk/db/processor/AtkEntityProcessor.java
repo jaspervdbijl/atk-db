@@ -314,9 +314,10 @@ public class AtkEntityProcessor extends AtkProcessor {
         OneToOne oneToOne = element.getAnnotation(OneToOne.class);
         FieldFilter fieldFilter = element.getAnnotation(FieldFilter.class);
 
-        // TODO - Validate that there is exactlty one ForeignKey Match
+        // TODO - Validate that there is exactly one ForeignKey Match
         if (manyToOne != null || oneToOne != null ) {
-            values.add(String.format("@" + (manyToOne != null ? "ManyToOne" : "OneToOne") + "(fetch = javax.persistence.FetchType.EAGER)"));
+            String fetchType = manyToOne != null ? manyToOne.fetch().name() : oneToOne.fetch().name();
+            values.add(String.format("@" + (manyToOne != null ? "ManyToOne" : "OneToOne") + String.format("(fetch = javax.persistence.FetchType.%s)",fetchType)));
             values.add(String.format("private transient Optional<%s> %s;", className, element.toString()));
             values.add(getLazyLoadMethodForOptional(className, element, "Connection"));
             values.add(getLazyLoadMethodForOptional(className, element, "DataSource"));

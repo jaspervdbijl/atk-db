@@ -4,6 +4,7 @@ import com.acutus.atk.db.annotations.ForeignKey;
 import com.acutus.atk.db.driver.AbstractDriver;
 import com.acutus.atk.db.driver.DriverFactory;
 import com.acutus.atk.entity.AtkField;
+import com.acutus.atk.entity.AtkFieldList;
 import lombok.SneakyThrows;
 
 import javax.persistence.Column;
@@ -40,6 +41,7 @@ public class AtkEnField<T, R extends AbstractAtkEntity> extends AtkField<T, R> {
     public String getTableAndColName() {
         return String.format("%s.%s", getEntity().getTableName(), getColName());
     }
+
 
     // TODO - expand to include complex ids
     public boolean isId() {

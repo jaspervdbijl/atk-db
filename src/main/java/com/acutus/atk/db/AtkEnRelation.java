@@ -6,8 +6,10 @@ import com.acutus.atk.util.Assert;
 import com.acutus.atk.util.Strings;
 import com.acutus.atk.util.call.CallOne;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.SneakyThrows;
 
+import javax.persistence.FetchType;
 import javax.sql.DataSource;
 import java.lang.reflect.Field;
 import java.sql.Connection;
@@ -25,10 +27,14 @@ public class AtkEnRelation<T extends AbstractAtkEntity> {
 
     @Getter
     private Class<T> type;
+    @Getter
     private RelType relType;
     private AbstractAtkEntity source;
     private String fieldFilter;
     private Field selectFilter[];
+
+    @Setter @Getter
+    private FetchType fetchType;
 
     public AtkEnRelation(Class<T> type, RelType relType, AbstractAtkEntity source) {
         this.type = type;
@@ -65,6 +71,19 @@ public class AtkEnRelation<T extends AbstractAtkEntity> {
             return getManyToOne(instance);
         }
     }
+
+    public void lazy() {
+        this.fetchType = FetchType.LAZY;
+    }
+
+    public void eager() {
+        this.fetchType = FetchType.EAGER;
+    }
+
+    public boolean isEager() {
+        return this.fetchType == FetchType.EAGER;
+    }
+
 
     @SneakyThrows
     private T getEntity() {

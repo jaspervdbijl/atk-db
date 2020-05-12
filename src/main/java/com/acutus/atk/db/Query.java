@@ -11,7 +11,9 @@ import com.acutus.atk.util.collection.Two;
 import lombok.SneakyThrows;
 
 import javax.persistence.FetchType;
+import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
+import javax.persistence.OneToOne;
 import javax.sql.DataSource;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -55,30 +57,55 @@ public class Query<T extends AbstractAtkEntity, O> {
     }
 
     @SneakyThrows
-    private String getLeftJoin(AtomicInteger cnt, AbstractAtkEntity entity, AtkEnRelation re) {
-        String tableName = entity.getTableName();
-        if (cnt.get() > 0) {
-            tableName = getTmpTablename(cnt.get()-1);
-        }
-        AbstractAtkEntity e = (AbstractAtkEntity) re.getType().getConstructor().newInstance();
+    private String getLeftJoinOneTo(AtomicInteger cnt, String tableName,AbstractAtkEntity entity, AtkEnRelation re,AbstractAtkEntity e) {
+        AtkEnFields fk = e.getEnFields().getForeignKeys(entity.getClass());
         String realTableName = e.getTableName();
         e.setTableName(getTmpTablename(cnt.getAndIncrement()));
-        AtkEnFields fk = e.getEnFields().getForeignKeys(entity.getClass());
         Assert.isTrue(fk.size() == 1, "FK [" + fk.getColNames() + "] not located for " + entity.getTableName());
         return String.format("left join %s %s on %s.%s = %s", realTableName, e.getTableName(),
                 tableName,entity.getEnFields().getSingleId().getColName(), fk.get(0).getTableAndColName()) + " " +
                 getLeftJoin(cnt, e);
     }
 
+    @SneakyThrows
+    private String getLeftJoinManyToOne(AtomicInteger cnt, String tableName,AbstractAtkEntity entity, AtkEnRelation re,AbstractAtkEntity e) {
+        AtkEnFields fk = entity.getEnFields().getForeignKeys(e.getClass());
+        String realTableName = e.getTableName();
+        e.setTableName(getTmpTablename(cnt.getAndIncrement()));
+        Assert.isTrue(fk.size() == 1, "FK [" + fk.getColNames() + "] not located for " + entity.getTableName());
+        return String.format("left join %s %s on %s =%s.%s", realTableName, e.getTableName(),
+                fk.get(0).getTableAndColName(), e.getTableName(),entity.getEnFields().getSingleId().getColName()) + " " +
+                getLeftJoin(cnt, e);
+    }
+
+    @SneakyThrows
+    private String getLeftJoin(AtomicInteger cnt, AbstractAtkEntity entity, AtkEnRelation re) {
+        String tableName = entity.getTableName();
+        if (cnt.get() > 0) {
+            tableName = getTmpTablename(cnt.get()-1);
+        }
+        AbstractAtkEntity e = (AbstractAtkEntity) re.getType().getConstructor().newInstance();
+        if (re.getRelType() == AtkEnRelation.RelType.OneToMany || re.getRelType() == AtkEnRelation.RelType.OneToOne) {
+            return getLeftJoinOneTo(cnt,tableName,entity,re,e);
+        } else {
+            return getLeftJoinManyToOne(cnt,tableName,entity,re,e);
+        }
+    }
+
     public static ReflectFields getOneToMany(AbstractAtkEntity entity) {
         return entity.getRefFields().filter(f ->(f.getAnnotation(OneToMany.class) != null));
     }
 
+    @SneakyThrows
     public static ReflectFields getEagerFields(AbstractAtkEntity entity) {
+        ReflectFields rFields = entity.getRefFields().filterType(AtkEnRelation.class);
         return entity.getRefFields().filter(f ->
-                f.getAnnotation(OneToMany.class) != null
-                        && f.getAnnotation(OneToMany.class).fetch()
-                        .equals(FetchType.EAGER));
+                handle(() -> rFields.getNames().contains(f.getName()+"Ref") &&
+                        ((AtkEnRelation)rFields.getByName(f.getName()+"Ref").get().get(entity)).isEager() ||
+                        f.getAnnotation(OneToMany.class) != null && f.getAnnotation(OneToMany.class).fetch().equals(FetchType.EAGER) ||
+                        f.getAnnotation(ManyToOne.class) != null && f.getAnnotation(ManyToOne.class).fetch().equals(FetchType.EAGER) ||
+                        f.getAnnotation(OneToOne.class) != null && f.getAnnotation(OneToOne.class).fetch().equals(FetchType.EAGER)
+                ));
     }
 
     @SneakyThrows
@@ -116,10 +143,18 @@ public class Query<T extends AbstractAtkEntity, O> {
                     cnt.getAndIncrement();
                     Two<AbstractAtkEntity, Boolean> value = loadCascade(cnt, map, child, rs);
                     if (value == null) {
-                        f.set(local, new AtkEntities<>());
+                        if (Optional.class.isAssignableFrom(f.getType())) {
+                            f.set(local, Optional.empty());
+                        } else {
+                            f.set(local, new AtkEntities<>());
+                        }
                     } else if (!value.getSecond()) {
-                        f.set(local, f.get(local) == null ? new AtkEntities<>() : f.get(local));
-                        ((List) f.get(local)).add(child);
+                        if (Optional.class.isAssignableFrom(f.getType())) {
+                            f.set(local, f.get(local) == null ? Optional.of(value.getFirst()) : f.get(local));
+                        } else {
+                            f.set(local, f.get(local) == null ? new AtkEntities<>() : f.get(local));
+                            ((List) f.get(local)).add(value.getFirst());
+                        }
                     }
                 }
             }
@@ -339,10 +374,5 @@ public class Query<T extends AbstractAtkEntity, O> {
         return setOrderBy(DESC, orderBys);
     }
 
-    public static void main(String[] args) {
-        String sql = "select * from quote,\n\t quote_item where..".replaceAll("\\p{Cntrl}", "").replace(",", " , ");
-        System.out.println(sql);
-        System.out.println(Arrays.stream(sql.split("\\s+"))
-                .reduce((w1, w2) -> w1 + "->" + w2).get());
-    }
+
 }

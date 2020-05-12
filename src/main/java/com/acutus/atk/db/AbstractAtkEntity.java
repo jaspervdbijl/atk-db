@@ -64,6 +64,16 @@ public class AbstractAtkEntity<T extends AbstractAtkEntity, O> extends AbstractA
         return new AtkEnFields(getFields());
     }
 
+    @SneakyThrows
+    public T clone() {
+        T clone = (T) super.clone();
+        // copy fetch types
+        for (Field field : Reflect.getFields(getClass()).filterType(AtkEnRelation.class)) {
+            ((AtkEnRelation)field.get(clone)).setFetchType(((AtkEnRelation)field.get(this)).getFetchType());
+        }
+        return clone;
+    }
+
     public T set(ResultSet rs) {
         isLoadedFromDB = true;
         getEnFields().excludeIgnore().stream().forEach(f -> {
