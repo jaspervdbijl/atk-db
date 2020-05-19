@@ -161,27 +161,25 @@ public class AtkEntityProcessor extends AtkProcessor {
                 type, getClassName(element), name, getClassName(element), name);
     }
 
+    private boolean isAuditField(String name) {
+        return "createdBy".equalsIgnoreCase(name) || "createdDate".equalsIgnoreCase(name)
+                || "lastModifiedBy".equalsIgnoreCase(name) || "lastModifiedDate".equalsIgnoreCase(name);
+
+    }
+
     private Strings getAuditFields(Element element) {
         Strings append = new Strings();
         AtkEntity atk = element.getAnnotation(AtkEntity.class);
         if (atk.addAuditFields()) {
             Strings fNames = getFieldNames(element);
-            if (!fNames.contains("createdBy")) {
-                append.add("@CreatedBy @Column(name = \"created_by\") private String createdBy");
-                append.add("@CreatedBy " + getAuditAtkEnField(element, "createdBy", "String"));
-            }
-            if (!fNames.contains("createdDate")) {
-                append.add("@CreatedDate @Column(name = \"created_date\") private LocalDateTime createdDate");
-                append.add("@CreatedDate " + getAuditAtkEnField(element, "createdDate", "LocalDateTime"));
-            }
-            if (!fNames.contains("lastModifiedBy")) {
-                append.add("@LastModifiedBy @Column(name = \"last_modified_by\") private String lastModifiedBy");
-                append.add("@LastModifiedBy " + getAuditAtkEnField(element, "lastModifiedBy", "String"));
-            }
-            if (!fNames.contains("lastModifiedDate")) {
-                append.add("@LastModifiedDate @Column(name = \"last_modified_date\") private LocalDateTime lastModifiedDate");
-                append.add("@LastModifiedDate " + getAuditAtkEnField(element, "lastModifiedDate", "LocalDateTime"));
-            }
+            append.add("@CreatedBy @Column(name = \"created_by\") private String createdBy");
+            append.add("@CreatedBy " + getAuditAtkEnField(element, "createdBy", "String"));
+            append.add("@CreatedDate @Column(name = \"created_date\") private LocalDateTime createdDate");
+            append.add("@CreatedDate " + getAuditAtkEnField(element, "createdDate", "LocalDateTime"));
+            append.add("@LastModifiedBy @Column(name = \"last_modified_by\") private String lastModifiedBy");
+            append.add("@LastModifiedBy " + getAuditAtkEnField(element, "lastModifiedBy", "String"));
+            append.add("@LastModifiedDate @Column(name = \"last_modified_date\") private LocalDateTime lastModifiedDate");
+            append.add("@LastModifiedDate " + getAuditAtkEnField(element, "lastModifiedDate", "LocalDateTime"));
         }
         return append;
     }
@@ -199,6 +197,12 @@ public class AtkEntityProcessor extends AtkProcessor {
     @Override
     protected Strings getExtraFields(Element element) {
         return getIndexes(element).plus(getAuditFields(element)).prepend("\t");
+    }
+
+    @Override
+    protected boolean shouldExcludeField(Element element, String name) {
+        AtkEntity atk = element.getAnnotation(AtkEntity.class);
+        return atk.addAuditFields() && isAuditField(name);
     }
 
     @Override
@@ -315,9 +319,9 @@ public class AtkEntityProcessor extends AtkProcessor {
         FieldFilter fieldFilter = element.getAnnotation(FieldFilter.class);
 
         // TODO - Validate that there is exactly one ForeignKey Match
-        if (manyToOne != null || oneToOne != null ) {
+        if (manyToOne != null || oneToOne != null) {
             String fetchType = manyToOne != null ? manyToOne.fetch().name() : oneToOne.fetch().name();
-            values.add(String.format("@" + (manyToOne != null ? "ManyToOne" : "OneToOne") + String.format("(fetch = javax.persistence.FetchType.%s)",fetchType)));
+            values.add(String.format("@" + (manyToOne != null ? "ManyToOne" : "OneToOne") + String.format("(fetch = javax.persistence.FetchType.%s)", fetchType)));
             values.add(String.format("private transient Optional<%s> %s;", className, element.toString()));
             values.add(getLazyLoadMethodForOptional(className, element, "Connection"));
             values.add(getLazyLoadMethodForOptional(className, element, "DataSource"));
