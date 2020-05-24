@@ -134,7 +134,7 @@ public class Query<T extends AbstractAtkEntity, O> {
             String key = keyToString(entity);
             boolean existed = map.containsKey(key);
             if (!map.containsKey(key)) {
-                map.put(key, (AbstractAtkEntity) entity.clone());
+                map.put(key, entity.clone());
             }
             AbstractAtkEntity local = map.get(key);
             if (selectFilter == null) {

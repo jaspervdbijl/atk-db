@@ -195,6 +195,19 @@ public class AtkEntityProcessor extends AtkProcessor {
     }
 
     @Override
+    protected Strings getStaticFields(Element parent) {
+        Strings fields = super.getStaticFields(parent);
+        AtkEntity atk = parent.getAnnotation(AtkEntity.class);
+        if (atk.addAuditFields()) {
+            fields.add(getStaticField(parent,"createdBy"));
+            fields.add(getStaticField(parent,"createdDate"));
+            fields.add(getStaticField(parent,"lastModifiedBy"));
+            fields.add(getStaticField(parent,"lastModifiedDate"));
+        }
+        return fields.stream().distinct().collect(Collectors.toCollection(Strings::new));
+    }
+
+    @Override
     protected Strings getExtraFields(Element element) {
         return getIndexes(element).plus(getAuditFields(element)).prepend("\t");
     }
