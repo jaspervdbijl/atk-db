@@ -93,7 +93,11 @@ public class FEHelper {
     private static void populateValues(Connection connection, AbstractAtkEntity entity, Map source) {
         entity = entity.getClass().getConstructor().newInstance();
         for (Field field : Reflect.getFields(entity.getClass()).filter(f -> source.containsKey(f.getName()))) {
-            field.set(entity, source.get(field.getName()));
+            if (field.getType().isEnum()) {
+                field.set(entity, field.getType().getMethod("valueOf",String.class).invoke(null,source.get(field.getName())));
+            } else {
+                field.set(entity, source.get(field.getName()));
+            }
         }
         entity.persist().insert(connection);
     }
