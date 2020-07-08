@@ -31,7 +31,7 @@ import static com.acutus.atk.util.StringUtils.removeAllASpaces;
 
 @SupportedAnnotationTypes(
         "com.acutus.atk.db.processor.AtkEntity")
-@SupportedSourceVersion(SourceVersion.RELEASE_8)
+@SupportedSourceVersion(SourceVersion.RELEASE_11)
 @AutoService(Processor.class)
 public class AtkEntityProcessor extends AtkProcessor {
 
