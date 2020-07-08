@@ -48,6 +48,11 @@ public class FEHelper {
 
     @SneakyThrows
     private static void maintainDataDefinition(Connection connection, AbstractAtkEntity... entities) {
+        // filter
+        entities = Arrays.stream(entities)
+                .filter(c -> c.getClass().isAnnotationPresent(SkipFE.class))
+                .collect(Collectors.toList()).toArray(new AbstractAtkEntity[]{});
+
         AbstractDriver driver = DriverFactory.getDriver(connection);
         // maintain schema's
         for (AbstractAtkEntity entity : entities) {
