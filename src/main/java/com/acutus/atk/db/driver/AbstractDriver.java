@@ -180,8 +180,10 @@ public abstract class AbstractDriver {
             return "longtext";
         } else if (Integer.class.equals(type)) {
             return "int";
+        } else if (field.getField().isAnnotationPresent(ForeignKey.class) && (Long.class.equals(type) || BigInteger.class.equals(type))) {
+            return "int unsigned";
         } else if (Long.class.equals(type) || BigInteger.class.equals(type)) {
-            return "long";
+            return "bigint";
         } else if (BigDecimal.class.equals(type) || Double.class.equals(type)) {
             return "double";
         } else if (Float.class.equals(type)) {

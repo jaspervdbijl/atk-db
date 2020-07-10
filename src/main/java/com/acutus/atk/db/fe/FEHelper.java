@@ -50,7 +50,7 @@ public class FEHelper {
     private static void maintainDataDefinition(Connection connection, AbstractAtkEntity... entities) {
         // filter
         entities = Arrays.stream(entities)
-                .filter(c -> c.getClass().isAnnotationPresent(SkipFE.class))
+                .filter(c -> !c.getClass().isAnnotationPresent(SkipFE.class))
                 .collect(Collectors.toList()).toArray(new AbstractAtkEntity[]{});
 
         AbstractDriver driver = DriverFactory.getDriver(connection);
