@@ -10,6 +10,7 @@ import javax.persistence.Enumerated;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
+import static javax.persistence.EnumType.ORDINAL;
 import static javax.persistence.EnumType.STRING;
 
 public class AtkEnUtil {
@@ -46,8 +47,16 @@ public class AtkEnUtil {
             if (enumerated == null) {
                 return (T) value;
             } else if (enumerated != null && enumerated.value().equals(STRING)) {
-                Method valueOf = Reflect.getMethods(field.getType()).get(false, "valueOf");
+                    Method valueOf = Reflect.getMethods(field.getType()).get(false, "valueOf");
                 return (T) valueOf.invoke(null, value);
+            } else if (enumerated != null && enumerated.value().equals(ORDINAL)) {
+                Enum[] values = (Enum[]) Reflect.getMethods(field.getType()).get(false, "values").invoke(null);
+                for (Enum e : values) {
+                    if (value.equals(e.ordinal())) {
+                        return (T) e;
+                    }
+                }
+                throw new RuntimeException("Unsupported enum type " + field.getType() + " for value " + value);
             } else {
                 throw new UnsupportedOperationException("Enum Oridinal Type Not implemented");
             }

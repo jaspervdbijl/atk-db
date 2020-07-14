@@ -49,7 +49,7 @@ public class AtkEntityProcessor extends AtkProcessor {
 
     private static int UPPER_OFFSET = ((int) 'a') - ((int) 'A');
 
-    private static String convertCamelCaseToUnderscore(String name) {
+    public static String convertCamelCaseToUnderscore(String name) {
         String under = "";
         int index = 0;
         for (char c : name.toCharArray()) {
