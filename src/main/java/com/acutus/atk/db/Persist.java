@@ -76,6 +76,7 @@ public class Persist<T extends AbstractAtkEntity> {
                     .getLastInsertValue(connection, ids.get(0).getType()));
         }
         PERSIST_CALLBACK.ifPresent(c -> handle(() -> c.call(connection, entity, true)));
+        entity.setLoadedFromDB(true);
         return entity;
     }
 
