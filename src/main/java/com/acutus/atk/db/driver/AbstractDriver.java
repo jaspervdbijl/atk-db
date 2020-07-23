@@ -216,7 +216,7 @@ public abstract class AbstractDriver {
     }
 
     public String getFieldTypeForTimestamp(Optional<Column> column) {
-        return "timestamp";
+        return "datetime";
     }
 
     public String getFieldTypeForDate(Optional<Column> column) {
