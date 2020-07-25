@@ -110,8 +110,7 @@ public class SQLHelper {
     public static PreparedStatement prepare(Connection connection, String query, Object... params) {
         PreparedStatement ps = connection.prepareStatement(query);
         if (params != null) {
-            IntStream.range(0, params.length)
-                    .forEach(i -> handle(() -> ps.setObject(i + 1, params[i])));
+            IntStream.range(0, params.length).forEach(i -> handle(() -> ps.setObject(i + 1, params[i])));
         }
         return ps;
     }
