@@ -63,18 +63,27 @@ public class SQLHelper {
 
     @SneakyThrows
     private static <T> T unwrap(Class<T> type, Object value) {
-        if (value == null) return (T) value;
-        if (type.equals(value.getClass())) return (T) value;
-        if (Clob.class.equals(type)) return (T) value;
-        if (Blob.class.equals(type)) return (T) value;
-        if (LocalDateTime.class.equals(type) && value.getClass().equals(Timestamp.class))
-            return (T) ((Timestamp) value).toLocalDateTime();
-        if (LocalDate.class.equals(type) && value.getClass().equals(Timestamp.class))
-            return (T) ((Timestamp) value).toLocalDateTime().toLocalDate();
-        if (LocalTime.class.equals(type) && value.getClass().equals(Time.class))
-            return (T) ((Time) value).toLocalTime();
-        throw new UnsupportedOperationException(
-                String.format("Could not unwrap types from %s to %s", type.getName(), value.getClass().getName()));
+        try {
+            if (value == null) return (T) value;
+            if (type.equals(value.getClass())) return (T) value;
+            if (Clob.class.equals(type)) return (T) value;
+            if (Blob.class.equals(type)) return (T) value;
+            if (LocalDateTime.class.equals(type) && value.getClass().equals(Timestamp.class))
+                return (T) ((Timestamp) value).toLocalDateTime();
+            if (LocalDate.class.equals(type) && value.getClass().equals(Timestamp.class))
+                return (T) ((Timestamp) value).toLocalDateTime().toLocalDate();
+            if (LocalTime.class.equals(type) && value.getClass().equals(Time.class))
+                return (T) ((Time) value).toLocalTime();
+            throw new UnsupportedOperationException(
+                    String.format("Could not unwrap types from %s to %s", type.getName(), value.getClass().getName()));
+        } catch (Exception ex) {
+            log.warn("Error unwrapping type {} value {}",type,value);
+            if (ex instanceof RuntimeException) {
+                throw (RuntimeException) ex;
+            } else {
+                throw new RuntimeException(ex);
+            }
+        }
     }
 
     @SneakyThrows
@@ -224,7 +233,7 @@ public class SQLHelper {
             sql = sql.replace(tNames.get(i) + "_", ((char) (letter + i)) + "_");
             sql = sql.replace(tNames.get(i) + ".", ((char) (letter + i)) + ".");
             sql = sql.replace(tNames.get(i), tNames.get(i) + " " + ((char) (letter + i)));
-            sql = sql.replace(((char) (letter + i)) + "_",tNames.get(i) + "_");
+            sql = sql.replace(((char) (letter + i)) + "_", tNames.get(i) + "_");
         }
         return head + sql;
     }
