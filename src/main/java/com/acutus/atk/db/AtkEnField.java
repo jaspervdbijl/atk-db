@@ -56,6 +56,13 @@ public class AtkEnField<T, R extends AbstractAtkEntity> extends AtkField<T, R> {
         return Optional.ofNullable(getField().getAnnotation(Column.class));
     }
 
+    public String getColumnDefinitionType() {
+
+        if (getColumn().isPresent() == false || getColumn().get().columnDefinition().isEmpty()) {
+            return "";
+        }
+        return getColumn().get().columnDefinition().split(" ")[0];
+    }
     public int getColLength() {
         return getColumn().isPresent() ? getColumn().get().length() : 255;
     }

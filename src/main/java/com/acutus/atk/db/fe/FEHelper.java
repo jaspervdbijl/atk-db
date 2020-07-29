@@ -140,8 +140,9 @@ public class FEHelper {
             Optional<AtkEnField> atkField = entity.getEnFields().getByColName(meta.getColumnName(i + 1));
             if (atkField.isPresent()) {
                 boolean typeMatch =
-                        driver.getFieldType(atkField.get()).equalsIgnoreCase(meta.getColumnTypeName(i + 1))
-                                || atkField.get().getColumnType(driver).getName().equals(meta.getColumnClassName(i + 1));
+                        driver.getFieldType(atkField.get()).equalsIgnoreCase(meta.getColumnTypeName(i + 1)) ||
+                                atkField.get().getColumnType(driver).getName().equals(meta.getColumnClassName(i + 1)) ||
+                                atkField.get().getColumnDefinitionType().equalsIgnoreCase(meta.getColumnTypeName(i + 1));
 
                 boolean sizeMatch = Clob.class.equals(atkField.get().getColumnType(driver))
                         || Blob.class.equals(atkField.get().getColumnType(driver))
@@ -158,8 +159,12 @@ public class FEHelper {
                 DatabaseMetaData md = connection.getMetaData();
                 String columnDefaultVal = "";
                 try (ResultSet rs = md.getColumns(connection.getCatalog(), md.getUserName(), entity.getTableName(), atkField.get().getColName())) {
-                    if(rs.next()) {
+                    if (rs.next()) {
                         columnDefaultVal = StringUtils.defaultString(rs.getString("COLUMN_DEF"));
+
+                        if (!columnDefaultVal.isEmpty() && atkField.get().getField().getType().isAssignableFrom(Boolean.class)) {
+                            columnDefaultVal = Boolean.valueOf(columnDefaultVal).toString();
+                        }
                     }
                 }
                 boolean defaultMatch = driver.getColumnDefinitionDefault(atkField.get()).equalsIgnoreCase(columnDefaultVal);

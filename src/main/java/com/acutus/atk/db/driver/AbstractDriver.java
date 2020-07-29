@@ -87,18 +87,32 @@ public abstract class AbstractDriver {
     public String getColumnDefinition(AtkEnField field) {
         Optional<Column> column = field.getColumn();
         if (column.isPresent() && !StringUtils.isEmpty(column.get().columnDefinition())) {
-            return column.get().columnDefinition();
+            return column.get().columnDefinition().toLowerCase().indexOf("null") > 0 ? column.get().columnDefinition() :
+                    String.format("%s %s", column.get().columnDefinition(), field.isNullable() ? "null" : "not null");
         }
         return String.format("%s %s", getFieldType(field), field.isNullable() ? "null" : "not null");
     }
 
     public String getColumnDefinitionDefault(AtkEnField field) {
         String defaultFieldValue = getColumnDefinition(field);
-        return StringUtils.isEmpty(defaultFieldValue) || defaultFieldValue.toLowerCase().indexOf("default") == -1 ? "" :
+
+        if (StringUtils.isEmpty(defaultFieldValue) || defaultFieldValue.toLowerCase().indexOf("default") == -1) {
+            return "";
+        }
+
+        String result =
                 defaultFieldValue.substring(defaultFieldValue.toLowerCase().indexOf("default")).
                         replace("default", "").
                         replace("DEFAULT", "").
+                        replaceAll("not null", "").
+                        replaceAll("null", "").
                         replaceAll("'", "").trim();
+
+        if (field.getField().getType().isAssignableFrom(Boolean.class)) {
+            return Boolean.valueOf(result).toString();
+        }
+
+        return result;
     }
 
     public boolean shouldDropConstraintPriorToAlter() {
