@@ -92,6 +92,15 @@ public abstract class AbstractDriver {
         return String.format("%s %s", getFieldType(field), field.isNullable() ? "null" : "not null");
     }
 
+    public String getColumnDefinitionDefault(AtkEnField field) {
+        String defaultFieldValue = getColumnDefinition(field);
+        return StringUtils.isEmpty(defaultFieldValue) || defaultFieldValue.toLowerCase().indexOf("default") == -1 ? "" :
+                defaultFieldValue.substring(defaultFieldValue.toLowerCase().indexOf("default")).
+                        replace("default", "").
+                        replace("DEFAULT", "").
+                        replaceAll("'", "").trim();
+    }
+
     public boolean shouldDropConstraintPriorToAlter() {
         return true;
     }
@@ -148,13 +157,13 @@ public abstract class AbstractDriver {
 
     // Indexes
 
-    public String getCreateIndex(AbstractAtkEntity entity,AtkEnIndex index) {
-        return String.format("create %s index %s on %s (%s)",index.isUnique()?"unique":"",index.getName()
-                ,entity.getTableName(),index.getFields().getColNames().toString(","));
+    public String getCreateIndex(AbstractAtkEntity entity, AtkEnIndex index) {
+        return String.format("create %s index %s on %s (%s)", index.isUnique() ? "unique" : "", index.getName()
+                , entity.getTableName(), index.getFields().getColNames().toString(","));
     }
 
     public String getDropIndex(AbstractAtkEntity entity, Index index) {
-        return String.format("drop index %s on %s",index.getINDEX_NAME(),entity.getTableName());
+        return String.format("drop index %s on %s", index.getINDEX_NAME(), entity.getTableName());
     }
 
     /**
@@ -229,6 +238,6 @@ public abstract class AbstractDriver {
 
     public abstract <T> T getLastInsertValue(Connection connection, Class<T> clazz);
 
-    public abstract String limit(String sql,int limit);
+    public abstract String limit(String sql, int limit);
 
 }

@@ -12,6 +12,7 @@ import com.acutus.atk.db.fe.keys.FrKeys;
 import com.acutus.atk.db.processor.Populate;
 import com.acutus.atk.reflection.Reflect;
 import com.acutus.atk.util.Assert;
+import com.acutus.atk.util.StringUtils;
 import com.acutus.atk.util.Strings;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
@@ -99,7 +100,7 @@ public class FEHelper {
         entity = entity.getClass().getConstructor().newInstance();
         for (Field field : Reflect.getFields(entity.getClass()).filter(f -> source.containsKey(f.getName()))) {
             if (field.getType().isEnum()) {
-                field.set(entity, field.getType().getMethod("valueOf",String.class).invoke(null,source.get(field.getName())));
+                field.set(entity, field.getType().getMethod("valueOf", String.class).invoke(null, source.get(field.getName())));
             } else {
                 field.set(entity, source.get(field.getName()));
             }
@@ -129,8 +130,7 @@ public class FEHelper {
     }
 
     @SneakyThrows
-    private static void maintainTable(Connection connection, AbstractDriver driver, AbstractAtkEntity entity
-            , ResultSetMetaData meta) {
+    private static void maintainTable(Connection connection, AbstractDriver driver, AbstractAtkEntity entity, ResultSetMetaData meta) {
 
         FrKeys dbKeys = driver.shouldDropConstraintPriorToAlter() ? FrKeys.load(driver.getForeignKeys(connection, entity.getTableName())) : null;
 
@@ -142,6 +142,7 @@ public class FEHelper {
                 boolean typeMatch =
                         driver.getFieldType(atkField.get()).equalsIgnoreCase(meta.getColumnTypeName(i + 1))
                                 || atkField.get().getColumnType(driver).getName().equals(meta.getColumnClassName(i + 1));
+
                 boolean sizeMatch = Clob.class.equals(atkField.get().getColumnType(driver))
                         || Blob.class.equals(atkField.get().getColumnType(driver))
                         || Date.class.isAssignableFrom(atkField.get().getColumnType(driver))
@@ -150,33 +151,40 @@ public class FEHelper {
                         || Number.class.isAssignableFrom(atkField.get().getColumnType(driver))
                         || atkField.get().getField().getAnnotation(Enumerated.class) != null
                         || atkField.get().getColLength() == meta.getColumnDisplaySize(i + 1);
+
                 boolean nullMatch = atkField.get().isNullable() == (meta.isNullable(i + 1) == 1);
-                if (!(typeMatch && (sizeMatch || !DB_FE_STRICT.get()) && nullMatch)) {
+
+                // Check default
+                DatabaseMetaData md = connection.getMetaData();
+                String columnDefaultVal = "";
+                try (ResultSet rs = md.getColumns(connection.getCatalog(), md.getUserName(), entity.getTableName(), atkField.get().getColName())) {
+                    if(rs.next()) {
+                        columnDefaultVal = StringUtils.defaultString(rs.getString("COLUMN_DEF"));
+                    }
+                }
+                boolean defaultMatch = driver.getColumnDefinitionDefault(atkField.get()).equalsIgnoreCase(columnDefaultVal);
+
+                if (!(typeMatch && (sizeMatch || !DB_FE_STRICT.get()) && nullMatch) || !defaultMatch) {
                     // alter the column
 
                     // drop any f-key constraints before changing the column size - this might only be necessary for mysql
                     if (driver.shouldDropConstraintPriorToAlter() && dbKeys.containsField(atkField.get())) {
-                        logAndExecute(connection, driver.dropForeignKey(entity.getTableName()
-                                , dbKeys.get(dbKeys.indexOf(atkField.get()))));
+                        logAndExecute(connection, driver.dropForeignKey(entity.getTableName(), dbKeys.get(dbKeys.indexOf(atkField.get()))));
                     }
-                    logAndExecute(connection, DriverFactory.getDriver(connection)
-                            .getAlterColumnDefinition(atkField.get()));
+                    logAndExecute(connection, DriverFactory.getDriver(connection).getAlterColumnDefinition(atkField.get()));
                 }
             } else {
                 // drop the extra column
                 entity.getEnFields().getByColName(meta.getColumnName(i + 1));
-                Assert.isTrue(DB_FE_ALLOW_DROP.get(), "Dropping of columns %s not allowed"
-                        , meta.getColumnName(i + 1));
-                logAndExecute(connection, DriverFactory.getDriver(connection)
-                        .getDropColumnColumnDefinition(entity.getTableName(), meta.getColumnName(i + 1)));
+                Assert.isTrue(DB_FE_ALLOW_DROP.get(), "Dropping of columns %s not allowed", meta.getColumnName(i + 1));
+                logAndExecute(connection, DriverFactory.getDriver(connection).getDropColumnColumnDefinition(entity.getTableName(), meta.getColumnName(i + 1)));
             }
         }
         // add all the missing columns
         AtkEnFields toAdd = entity.getEnFields().clone();
         toAdd.removeIf(p -> colNames.contains(p.getColName()));
         for (AtkEnField field : toAdd) {
-            logAndExecute(connection, DriverFactory.getDriver(connection)
-                    .getAddColumnColumnDefinition(field));
+            logAndExecute(connection, DriverFactory.getDriver(connection).getAddColumnColumnDefinition(field));
         }
     }
 
