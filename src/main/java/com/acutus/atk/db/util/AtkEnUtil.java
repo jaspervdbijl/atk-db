@@ -9,6 +9,8 @@ import lombok.SneakyThrows;
 import javax.persistence.Enumerated;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.Optional;
 
 import static javax.persistence.EnumType.ORDINAL;
 import static javax.persistence.EnumType.STRING;
@@ -65,7 +67,6 @@ public class AtkEnUtil {
         }
     }
 
-
     @SneakyThrows
     public static Object wrapForPreparedStatement(AtkEnField field) {
         Enumerated enumerated = field.getField().getAnnotation(Enumerated.class);
@@ -75,7 +76,7 @@ public class AtkEnUtil {
         if (enumerated != null && enumerated.value().equals(STRING)) {
             return field.get().toString();
         } else {
-            throw new UnsupportedOperationException("Enum Ordinal Type Not implemented");
+            return ((Enum)field.get()).ordinal();
         }
     }
 
