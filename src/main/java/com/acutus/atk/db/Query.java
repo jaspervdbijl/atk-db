@@ -205,7 +205,7 @@ public class Query<T extends AbstractAtkEntity, O> {
         }
 
         String star = selectFilter != null ? selectFilter.getColNames().toString(",") : "*";
-        sql = "select " + entity.getTableName() + "." + star + split.toString(" ");
+        sql = "select " + entity.getTableName() + "." + star +" "+ split.toString(" ");
         // transform the select *
         Map<String, AbstractAtkEntity> map = new HashMap<>();
         Two<AbstractAtkEntity, Boolean> lastEntity = null;
