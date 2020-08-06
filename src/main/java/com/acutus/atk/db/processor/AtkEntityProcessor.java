@@ -146,7 +146,7 @@ public class AtkEntityProcessor extends AtkProcessor {
     private String getIndex(Element field, Index index, Strings fNames) {
         // ensure that all the columns are actual indexes
         Strings mismatch = Arrays.stream(index.columns())
-                .filter(c -> !fNames.contains(c))
+                .filter(c -> !fNames.contains(c) && !isAuditField(c))
                 .collect(Collectors.toCollection(Strings::new));
         if (!mismatch.isEmpty()) {
             error(String.format("Index [%s] column mismatch [%s]", index.name(), mismatch));
