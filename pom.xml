@@ -15,7 +15,6 @@
         <auto-service.version>1.0-rc4</auto-service.version>
         <lombok.version>1.18.4</lombok.version>
 
-        <javaee.version>8.0</javaee.version>
         <mysqldriver.version>8.0.13</mysqldriver.version>
     </properties>
 
@@ -40,10 +39,11 @@
             <artifactId>atk</artifactId>
             <version>${project.version}</version>
         </dependency>
+
         <dependency>
-            <groupId>javax</groupId>
-            <artifactId>javaee-api</artifactId>
-            <version>${javaee.version}</version>
+            <groupId>javax.persistence</groupId>
+            <artifactId>javax.persistence-api</artifactId>
+            <version>2.2</version>
         </dependency>
 
         <!-- TESTS -->
