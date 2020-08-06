@@ -15,7 +15,7 @@
         <auto-service.version>1.0-rc4</auto-service.version>
         <lombok.version>1.18.4</lombok.version>
 
-        <javaee.version>7.0</javaee.version>
+        <javaee.version>8.0</javaee.version>
         <mysqldriver.version>8.0.13</mysqldriver.version>
     </properties>
 
