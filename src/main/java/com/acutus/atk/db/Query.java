@@ -49,7 +49,7 @@ public class Query<T extends AbstractAtkEntity, O> {
     private AtkEnFields selectFilter;
 
     public Query(T entity) {
-        this.entity = entity;
+        this.entity = (T) entity.clone();
     }
 
     private String getTmpTablename(int dept) {
