@@ -1,9 +1,12 @@
 package com.acutus.atk.db;
 
+import com.acutus.atk.db.driver.AbstractDriver;
+import com.acutus.atk.db.driver.DriverFactory;
 import com.acutus.atk.db.sql.Filter;
 import com.acutus.atk.reflection.Reflect;
 import com.acutus.atk.reflection.ReflectFields;
 import com.acutus.atk.util.Assert;
+import com.acutus.atk.util.SimpleTimer;
 import com.acutus.atk.util.Strings;
 import com.acutus.atk.util.call.CallNilRet;
 import com.acutus.atk.util.call.CallOne;
@@ -99,6 +102,10 @@ public class Query<T extends AbstractAtkEntity, O> {
         return entity.getRefFields().filter(f -> (f.getAnnotation(OneToMany.class) != null));
     }
 
+    public static ReflectFields getOneToOneOrManyToOne(AbstractAtkEntity entity) {
+        return entity.getRefFields().filter(f -> (f.getAnnotation(ManyToOne.class) != null || f.getAnnotation(OneToOne.class) != null));
+    }
+
     @SneakyThrows
     public static ReflectFields getEagerFields(AbstractAtkEntity entity) {
         ReflectFields rFields = entity.getRefFields().filterType(AtkEnRelation.class);
@@ -137,11 +144,11 @@ public class Query<T extends AbstractAtkEntity, O> {
      * @return the mapped entity, if the entity has alrady been loaded into the map, and if the entity's id is null
      */
     @SneakyThrows
-    private Three<AbstractAtkEntity, Boolean, Boolean> loadCascade(AtomicInteger cnt, Map<String, AbstractAtkEntity> map, AbstractAtkEntity entity, ResultSet rs) {
+    private Three<AbstractAtkEntity, Boolean, Boolean> loadCascade(AbstractDriver driver,AtomicInteger cnt, Map<String, AbstractAtkEntity> map, AbstractAtkEntity entity, ResultSet rs) {
         if (cnt.get() > -1) {
             entity.setTableName(getTmpTablename(cnt.get()));
         }
-        entity.set(rs);
+        entity.set(driver, rs);
         Two<String,Boolean> keyIsNul = keyToString(entity);
         String key = keyIsNul.getFirst();
         boolean existed = map.containsKey(key);
@@ -153,7 +160,7 @@ public class Query<T extends AbstractAtkEntity, O> {
             for (Field f : getEagerFields(local)) {
                 AbstractAtkEntity child = (AbstractAtkEntity) getGenericFieldType(f).getConstructor().newInstance();
                 cnt.getAndIncrement();
-                Three<AbstractAtkEntity, Boolean, Boolean> value = loadCascade(cnt, map, child, rs);
+                Three<AbstractAtkEntity, Boolean, Boolean> value = loadCascade(driver, cnt, map, child, rs);
                 if (value.getThird()) {
                     // id was null
                     if (Optional.class.isAssignableFrom(f.getType())) {
@@ -197,6 +204,7 @@ public class Query<T extends AbstractAtkEntity, O> {
 
     @SneakyThrows
     public void getAll(Connection connection, Filter filter, CallOne<T> iterate, int limit) {
+        AbstractDriver driver = DriverFactory.getDriver(connection);
         boolean shouldLeftJoin = selectFilter == null;
         String sql = prepareSql(filter).replaceAll("\\p{Cntrl}", " ");
         // add all the left joins
@@ -225,9 +233,9 @@ public class Query<T extends AbstractAtkEntity, O> {
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next() && (limit > 0 || limit < 0)) {
                     if (!shouldLeftJoin) {
-                        iterate.call((T) entity.set(rs).clone());
+                        iterate.call((T) entity.set(driver, rs).clone());
                     } else {
-                        Three<AbstractAtkEntity, Boolean, Boolean> value = loadCascade(new AtomicInteger(-1), map, entity, rs);
+                        Three<AbstractAtkEntity, Boolean, Boolean> value = loadCascade(driver, new AtomicInteger(-1), map, entity, rs);
                         if (lastEntity != null &&
                                 !value.getFirst().isIdEqual(lastEntity.getFirst())) {
                             limit--;

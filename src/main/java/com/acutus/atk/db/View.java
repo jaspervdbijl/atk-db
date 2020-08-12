@@ -1,5 +1,7 @@
 package com.acutus.atk.db;
 
+import com.acutus.atk.db.driver.AbstractDriver;
+import com.acutus.atk.db.driver.DriverFactory;
 import com.acutus.atk.db.sql.SQLHelper;
 import com.acutus.atk.reflection.Reflect;
 import com.acutus.atk.util.Assert;
@@ -43,10 +45,11 @@ public class View<T extends View> {
     @SneakyThrows
     public void iterate(Connection connection, String sql, CallOne call, Object... params) {
         AtkEntities entities = getEntities();
+        AbstractDriver driver = DriverFactory.getDriver(connection);
         try (PreparedStatement ps = SQLHelper.prepare(connection, sql, params)) {
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    entities.stream().forEach(e -> ((AbstractAtkEntity)e).set(rs));
+                    entities.stream().forEach(e -> ((AbstractAtkEntity)e).set(driver, rs));
                     call.call(this);
                 }
             }

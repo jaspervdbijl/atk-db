@@ -1,5 +1,6 @@
 package com.acutus.atk.db;
 
+import com.acutus.atk.db.driver.AbstractDriver;
 import com.acutus.atk.entity.AbstractAtk;
 import com.acutus.atk.entity.AtkFieldList;
 import com.acutus.atk.reflection.Reflect;
@@ -13,10 +14,10 @@ import javax.sql.DataSource;
 import java.lang.reflect.Field;
 import java.sql.ResultSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static com.acutus.atk.db.Query.getEagerFields;
-import static com.acutus.atk.db.Query.getOneToMany;
+import static com.acutus.atk.db.Query.*;
 import static com.acutus.atk.util.AtkUtil.handle;
 
 public class AbstractAtkEntity<T extends AbstractAtkEntity, O> extends AbstractAtk<T, O> {
@@ -56,6 +57,7 @@ public class AbstractAtkEntity<T extends AbstractAtkEntity, O> extends AbstractA
     public boolean hasIdValue() {
         return !getEnFields().getIds().getValues().contains(null);
     }
+
     public int version() {
         return 0;
     }
@@ -69,15 +71,16 @@ public class AbstractAtkEntity<T extends AbstractAtkEntity, O> extends AbstractA
         T clone = (T) super.clone();
         // copy fetch types
         for (Field field : Reflect.getFields(getClass()).filterType(AtkEnRelation.class)) {
-            ((AtkEnRelation)field.get(clone)).setFetchType(((AtkEnRelation)field.get(this)).getFetchType());
+            ((AtkEnRelation) field.get(clone)).setFetchType(((AtkEnRelation) field.get(this)).getFetchType());
         }
         return clone;
     }
 
-    public T set(ResultSet rs) {
+    @SneakyThrows
+    public T set(AbstractDriver driver, ResultSet rs) {
         isLoadedFromDB = true;
         getEnFields().excludeIgnore().stream().forEach(f -> {
-            f.setFromRs(rs);
+            f.setFromRs(driver, rs);
             f.setSet(false);
         });
         return (T) this;
@@ -93,7 +96,12 @@ public class AbstractAtkEntity<T extends AbstractAtkEntity, O> extends AbstractA
                         .set(base, values.stream().map(v -> v.toBase()).collect(Collectors.toList()));
             }
         }));
-        // TODO - add one To one
+        getOneToOneOrManyToOne(this).forEach(f -> handle(() -> {
+            if (f.get(this) != null && ((Optional) f.get(this)).isPresent()) {
+                AbstractAtkEntity value = (AbstractAtkEntity) ((Optional) f.get(this)).get();
+                Reflect.getFields(base.getClass()).get(f.getName()).get().set(base, value.toBase());
+            }
+        }));
         return base;
     }
 
@@ -117,12 +125,6 @@ public class AbstractAtkEntity<T extends AbstractAtkEntity, O> extends AbstractA
 
     public T initFrom(O base) {
         return super.initFrom(base, new AtkFieldList());
-    }
-
-    @Override
-    public T restoreSet() {
-        getFields().restoreSet();
-        return (T) this;
     }
 
     public Persist<T> persist() {
