@@ -138,7 +138,7 @@ public class Persist<T extends AbstractAtkEntity> {
      * @return
      */
     public T update(Connection connection) {
-        return update(connection, entity.getEnFields().getChanged());
+        return update(connection, entity.getEnFields().getSet());
     }
 
     /**

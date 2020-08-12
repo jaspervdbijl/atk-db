@@ -80,8 +80,7 @@ public class AtkEnField<T, R extends AbstractAtkEntity> extends AtkField<T, R> {
     }
 
     @SneakyThrows
-    public void setFromRs(ResultSet rs) {
-        set((T) unwrapEnumerated(getField(), mapFromRs(rs
-                , getColumnType(DriverFactory.getDriver(rs.getStatement().getConnection())), getTableAndColName())));
+    public void setFromRs(AbstractDriver driver, ResultSet rs) {
+        set((T) unwrapEnumerated(getField(), mapFromRs(rs, getColumnType(driver), getTableAndColName())));
     }
 }
