@@ -7,6 +7,7 @@ import com.acutus.atk.util.Assert;
 import com.acutus.atk.util.Strings;
 import com.acutus.atk.util.call.CallNilRet;
 import com.acutus.atk.util.call.CallOne;
+import com.acutus.atk.util.collection.Three;
 import com.acutus.atk.util.collection.Two;
 import lombok.SneakyThrows;
 
@@ -57,24 +58,24 @@ public class Query<T extends AbstractAtkEntity, O> {
     }
 
     @SneakyThrows
-    private String getLeftJoinOneTo(AtomicInteger cnt, String tableName,AbstractAtkEntity entity, AtkEnRelation re,AbstractAtkEntity e) {
+    private String getLeftJoinOneTo(AtomicInteger cnt, String tableName, AbstractAtkEntity entity, AtkEnRelation re, AbstractAtkEntity e) {
         AtkEnFields fk = e.getEnFields().getForeignKeys(entity.getClass());
         String realTableName = e.getTableName();
         e.setTableName(getTmpTablename(cnt.getAndIncrement()));
         Assert.isTrue(fk.size() == 1, "FK [" + fk.getColNames() + "] not located for " + entity.getTableName());
         return String.format("left join %s %s on %s.%s = %s", realTableName, e.getTableName(),
-                tableName,entity.getEnFields().getSingleId().getColName(), fk.get(0).getTableAndColName()) + " " +
+                tableName, entity.getEnFields().getSingleId().getColName(), fk.get(0).getTableAndColName()) + " " +
                 getLeftJoin(cnt, e);
     }
 
     @SneakyThrows
-    private String getLeftJoinManyToOne(AtomicInteger cnt, String tableName,AbstractAtkEntity entity, AtkEnRelation re,AbstractAtkEntity e) {
+    private String getLeftJoinManyToOne(AtomicInteger cnt, String tableName, AbstractAtkEntity entity, AtkEnRelation re, AbstractAtkEntity e) {
         AtkEnFields fk = entity.getEnFields().getForeignKeys(e.getClass());
         String realTableName = e.getTableName();
         e.setTableName(getTmpTablename(cnt.getAndIncrement()));
         Assert.isTrue(fk.size() == 1, "FK [" + fk.getColNames() + "] not located for " + entity.getTableName());
         return String.format("left join %s %s on %s =%s.%s", realTableName, e.getTableName(),
-                fk.get(0).getTableAndColName(), e.getTableName(),entity.getEnFields().getSingleId().getColName()) + " " +
+                fk.get(0).getTableAndColName(), e.getTableName(), entity.getEnFields().getSingleId().getColName()) + " " +
                 getLeftJoin(cnt, e);
     }
 
@@ -82,26 +83,26 @@ public class Query<T extends AbstractAtkEntity, O> {
     private String getLeftJoin(AtomicInteger cnt, AbstractAtkEntity entity, AtkEnRelation re) {
         String tableName = entity.getTableName();
         if (cnt.get() > 0) {
-            tableName = getTmpTablename(cnt.get()-1);
+            tableName = getTmpTablename(cnt.get() - 1);
         }
         AbstractAtkEntity e = (AbstractAtkEntity) re.getType().getConstructor().newInstance();
         if (re.getRelType() == AtkEnRelation.RelType.OneToMany || re.getRelType() == AtkEnRelation.RelType.OneToOne) {
-            return getLeftJoinOneTo(cnt,tableName,entity,re,e);
+            return getLeftJoinOneTo(cnt, tableName, entity, re, e);
         } else {
-            return getLeftJoinManyToOne(cnt,tableName,entity,re,e);
+            return getLeftJoinManyToOne(cnt, tableName, entity, re, e);
         }
     }
 
     public static ReflectFields getOneToMany(AbstractAtkEntity entity) {
-        return entity.getRefFields().filter(f ->(f.getAnnotation(OneToMany.class) != null));
+        return entity.getRefFields().filter(f -> (f.getAnnotation(OneToMany.class) != null));
     }
 
     @SneakyThrows
     public static ReflectFields getEagerFields(AbstractAtkEntity entity) {
         ReflectFields rFields = entity.getRefFields().filterType(AtkEnRelation.class);
         return entity.getRefFields().filter(f ->
-                handle(() -> rFields.getNames().contains(f.getName()+"Ref") &&
-                        ((AtkEnRelation)rFields.getByName(f.getName()+"Ref").get().get(entity)).isEager() ||
+                handle(() -> rFields.getNames().contains(f.getName() + "Ref") &&
+                        ((AtkEnRelation) rFields.getByName(f.getName() + "Ref").get().get(entity)).isEager() ||
                         f.getAnnotation(OneToMany.class) != null && f.getAnnotation(OneToMany.class).fetch().equals(FetchType.EAGER) ||
                         f.getAnnotation(ManyToOne.class) != null && f.getAnnotation(ManyToOne.class).fetch().equals(FetchType.EAGER) ||
                         f.getAnnotation(OneToOne.class) != null && f.getAnnotation(OneToOne.class).fetch().equals(FetchType.EAGER)
@@ -119,49 +120,57 @@ public class Query<T extends AbstractAtkEntity, O> {
         return leftJoin.toString(" ");
     }
 
-    private String keyToString(AbstractAtkEntity entity) {
-        return entity.getTableName() + "_" + entity.getEnFields().getIds()
-                .stream().map((f1 -> f1.get().toString())).reduce((o1, o2) -> o1 + "" + o2).get();
+    private Two<String,Boolean> keyToString(AbstractAtkEntity entity) {
+        Optional<AtkEnField> hasNull = entity.getEnFields().getIds().stream().filter(f -> f.get() == null).findAny();
+        return new Two(entity.getTableName() + "_" + entity.getEnFields().getIds()
+                .stream().map((f1 -> ""+f1.get())).reduce((o1, o2) -> o1 + "" + o2).get(),!hasNull.isEmpty());
     }
 
+    /**
+     *
+     * @param cnt
+     * @param map
+     * @param entity
+     * @param rs
+     * @return the mapped entity, if the entity has alrady been loaded into the map, and if the entity's id is null
+     */
     @SneakyThrows
-    private Two<AbstractAtkEntity, Boolean> loadCascade(AtomicInteger cnt, Map<String, AbstractAtkEntity> map, AbstractAtkEntity entity, ResultSet rs) {
+    private Three<AbstractAtkEntity, Boolean, Boolean> loadCascade(AtomicInteger cnt, Map<String, AbstractAtkEntity> map, AbstractAtkEntity entity, ResultSet rs) {
         if (cnt.get() > -1) {
             entity.setTableName(getTmpTablename(cnt.get()));
         }
         entity.set(rs);
-        if (entity.hasIdValue()) {
-            String key = keyToString(entity);
-            boolean existed = map.containsKey(key);
-            if (!map.containsKey(key)) {
-                map.put(key, entity.clone());
-            }
-            AbstractAtkEntity local = map.get(key);
-            if (selectFilter == null) {
-                for (Field f : getEagerFields(local)) {
-                    AbstractAtkEntity child = (AbstractAtkEntity) getGenericFieldType(f).getConstructor().newInstance();
-                    cnt.getAndIncrement();
-                    Two<AbstractAtkEntity, Boolean> value = loadCascade(cnt, map, child, rs);
-                    if (value == null) {
-                        if (Optional.class.isAssignableFrom(f.getType())) {
-                            f.set(local, Optional.empty());
-                        } else {
-                            f.set(local, new AtkEntities<>());
-                        }
-                    } else if (!value.getSecond()) {
-                        if (Optional.class.isAssignableFrom(f.getType())) {
-                            f.set(local, f.get(local) == null ? Optional.of(value.getFirst()) : f.get(local));
-                        } else {
-                            f.set(local, f.get(local) == null ? new AtkEntities<>() : f.get(local));
-                            ((List) f.get(local)).add(value.getFirst());
-                        }
+        Two<String,Boolean> keyIsNul = keyToString(entity);
+        String key = keyIsNul.getFirst();
+        boolean existed = map.containsKey(key);
+        if (!map.containsKey(key)) {
+            map.put(key, entity.clone());
+        }
+        AbstractAtkEntity local = map.get(key);
+        if (selectFilter == null) {
+            for (Field f : getEagerFields(local)) {
+                AbstractAtkEntity child = (AbstractAtkEntity) getGenericFieldType(f).getConstructor().newInstance();
+                cnt.getAndIncrement();
+                Three<AbstractAtkEntity, Boolean, Boolean> value = loadCascade(cnt, map, child, rs);
+                if (value.getThird()) {
+                    // id was null
+                    if (Optional.class.isAssignableFrom(f.getType())) {
+                        f.set(local, Optional.empty());
+                    } else {
+                        f.set(local, new AtkEntities<>());
+                    }
+                } else if (!value.getSecond()) {
+                    // entity has not been loaded into the map
+                    if (Optional.class.isAssignableFrom(f.getType())) {
+                        f.set(local, f.get(local) == null ? Optional.of(value.getFirst()) : f.get(local));
+                    } else {
+                        f.set(local, f.get(local) == null ? new AtkEntities<>() : f.get(local));
+                        ((List) f.get(local)).add(value.getFirst());
                     }
                 }
             }
-            return new Two<>(local, existed);
-        } else {
-            return null;
         }
+        return new Three<>(local, existed, keyIsNul.getSecond());
     }
 
     private String prepareSql(Filter filter) {
@@ -197,18 +206,18 @@ public class Query<T extends AbstractAtkEntity, O> {
 
         if (!lj.isEmpty()) {
             int offset = split.indexOfIgnoreCase(entity.getTableName());
-            String selectLJ = IntStream.range(0, lj.split("left join").length-1)
-                    .mapToObj(i -> getTmpTablename(i)+".*").reduce((t1, t2) -> t1+", " + t2).get();
+            String selectLJ = IntStream.range(0, lj.split("left join").length - 1)
+                    .mapToObj(i -> getTmpTablename(i) + ".*").reduce((t1, t2) -> t1 + ", " + t2).get();
 
-            split.add(0,","+selectLJ);
-            split.add(2+offset,lj);
+            split.add(0, "," + selectLJ);
+            split.add(2 + offset, lj);
         }
 
         String star = selectFilter != null ? selectFilter.getColNames().toString(",") : "*";
-        sql = "select " + entity.getTableName() + "." + star +" "+ split.toString(" ");
+        sql = "select " + entity.getTableName() + "." + star + " " + split.toString(" ");
         // transform the select *
         Map<String, AbstractAtkEntity> map = new HashMap<>();
-        Two<AbstractAtkEntity, Boolean> lastEntity = null;
+        Three<AbstractAtkEntity, Boolean, Boolean> lastEntity = null;
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             filter.prepare(ps);
             try (ResultSet rs = ps.executeQuery()) {
@@ -216,7 +225,7 @@ public class Query<T extends AbstractAtkEntity, O> {
                     if (!shouldLeftJoin) {
                         iterate.call((T) entity.set(rs).clone());
                     } else {
-                        Two<AbstractAtkEntity, Boolean> value = loadCascade(new AtomicInteger(-1), map, entity, rs);
+                        Three<AbstractAtkEntity, Boolean, Boolean> value = loadCascade(new AtomicInteger(-1), map, entity, rs);
                         if (lastEntity != null &&
                                 !value.getFirst().isIdEqual(lastEntity.getFirst())) {
                             limit--;
