@@ -10,6 +10,7 @@ import com.acutus.atk.util.call.CallOne;
 import com.acutus.atk.util.collection.Three;
 import com.acutus.atk.util.collection.Two;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.persistence.FetchType;
 import javax.persistence.ManyToOne;
@@ -36,6 +37,7 @@ import static com.acutus.atk.db.sql.SQLHelper.*;
 import static com.acutus.atk.util.AtkUtil.getGenericFieldType;
 import static com.acutus.atk.util.AtkUtil.handle;
 
+@Slf4j
 public class Query<T extends AbstractAtkEntity, O> {
 
     public enum OrderBy {
