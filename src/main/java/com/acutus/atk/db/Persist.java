@@ -4,7 +4,6 @@ import com.acutus.atk.db.driver.DriverFactory;
 import com.acutus.atk.db.util.AtkEnUtil;
 import com.acutus.atk.util.Assert;
 import com.acutus.atk.util.call.CallThree;
-import com.acutus.atk.util.call.CallTwo;
 import lombok.SneakyThrows;
 
 import javax.persistence.GeneratedValue;
@@ -40,8 +39,7 @@ public class Persist<T extends AbstractAtkEntity> {
 
     private boolean populateIdAndReturnIsAutoIncrement(AtkEnField id) {
         GeneratedValue generatedValue = id.getField().getAnnotation(GeneratedValue.class);
-        if (generatedValue != null
-                && (generatedValue.strategy().equals(AUTO) || generatedValue.strategy().equals(IDENTITY))) {
+        if (generatedValue != null && (generatedValue.strategy().equals(AUTO) || generatedValue.strategy().equals(IDENTITY))) {
             if (String.class.equals(id.getType()) && id.get() == null) {
                 id.set(UUID.randomUUID().toString());
             }
@@ -72,8 +70,7 @@ public class Persist<T extends AbstractAtkEntity> {
         }
         // load any auto inc fields
         if (autoInc) {
-            ids.get(0).set(DriverFactory.getDriver(connection)
-                    .getLastInsertValue(connection, ids.get(0).getType()));
+            ids.get(0).set(DriverFactory.getDriver(connection).getLastInsertValue(connection, ids.get(0).getType()));
         }
         PERSIST_CALLBACK.ifPresent(c -> handle(() -> c.call(connection, entity, true)));
         entity.setLoadedFromDB(true);
