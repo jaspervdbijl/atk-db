@@ -154,6 +154,10 @@ public class SQLHelper {
         return (List<One<A>>) query(connection, One.class, new Class[]{type}, query, params);
     }
 
+    public static <A> List<A> reMap(List<One<A>> map) {
+        return map.stream().map(a -> a.getFirst()).collect(Collectors.toList());
+    }
+
     public static <A> List<One<A>> query(DataSource dataSource, Class<A> type, String query, Object... params) {
         return runAndReturn(dataSource, connection -> query(connection, type, query, params));
     }
