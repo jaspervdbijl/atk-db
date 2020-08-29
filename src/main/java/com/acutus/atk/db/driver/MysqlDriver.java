@@ -25,7 +25,7 @@ public class MysqlDriver extends AbstractDriver {
 
     @Override
     public String limit(String sql, int limit) {
-        return String.format("%s limit %d",sql,limit);
+        return String.format("%s limit %d", sql, limit);
     }
 
     @SneakyThrows
@@ -36,7 +36,9 @@ public class MysqlDriver extends AbstractDriver {
         return String.format("alter table %s add foreign key (%s) references %s (%s) %s ",
                 field.getEntity().getTableName(),
                 field.getColName(),
-                fEntity.getTableName(), fEntity.getEnFields().getIds().getColNames().toString(","),
+                fEntity.getTableName(),
+                key.field() != null && !key.field().isEmpty() ? key.field() :
+                        fEntity.getEnFields().getIds().getColNames().toString(","),
                 (key.onDeleteAction() != NoAction ? ("on delete " + getCascadeRule(key.onDeleteAction())) : " ")
                         + " " + getDeferRule(key.deferrable()));
     }
