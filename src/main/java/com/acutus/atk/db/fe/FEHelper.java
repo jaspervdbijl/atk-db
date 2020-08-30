@@ -90,9 +90,9 @@ public class FEHelper {
     }
 
     private static void logAndExecute(Connection connection, String sql) {
+        if (sql == null || sql.isEmpty()) return;
         log.warn(sql);
         execute(connection, sql);
-
     }
 
     @SneakyThrows
@@ -111,7 +111,6 @@ public class FEHelper {
     @SneakyThrows
     public static void createTable(Connection connection, AbstractAtkEntity entity) {
         logAndExecute(connection, DriverFactory.getDriver(connection).getCreateSql(entity));
-        // populate data
         Populate populate = entity.getClass().getAnnotation(Populate.class);
         if (populate != null) {
             new ObjectMapper().readValue(Thread.currentThread().getContextClassLoader().getResourceAsStream(populate.value()), List.class)
@@ -200,6 +199,7 @@ public class FEHelper {
                 .removeWhen(f -> dbPks.containsIgnoreCase(f.getColName()));
         if (!pkToAdd.isEmpty()) {
             logAndExecute(connection, driver.getAddPrimaryKeyDefinition(pkToAdd));
+            logAndExecute(connection, DriverFactory.getDriver(connection).addAutoIncrementPK(pkToAdd));
         }
 
     }

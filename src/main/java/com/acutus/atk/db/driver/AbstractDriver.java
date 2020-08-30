@@ -15,6 +15,7 @@ import com.acutus.atk.util.Strings;
 import lombok.SneakyThrows;
 
 import javax.persistence.Column;
+import javax.persistence.GeneratedValue;
 import javax.persistence.Lob;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -82,6 +83,23 @@ public abstract class AbstractDriver {
                 , entity.getEnFields().stream()
                         .map(f -> String.format("%s %s", f.getColName(), getColumnDefinition(f)))
                         .reduce((s1, s2) -> s1 + "," + s2).get());
+    }
+
+    @SneakyThrows
+    public String addAutoIncrementPK(AtkEnFields ids) {
+
+        Optional<AtkEnField> atkEnFieldOptional =
+                ids.stream().filter(field ->
+                        field.getField().isAnnotationPresent(GeneratedValue.class) &&
+                                field.getType().isAssignableFrom(Integer.class) || field.getType().isAssignableFrom(Long.class)).findFirst();
+
+        if (atkEnFieldOptional.isPresent()) {
+            return String.format("alter table %s modify %s int auto_increment;", ids.get(0).getEntity().getTableName(),
+                    atkEnFieldOptional.get().getColName());
+        } else {
+            return null;
+
+        }
     }
 
     public String getColumnDefinition(AtkEnField field) {

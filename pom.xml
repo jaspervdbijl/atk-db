@@ -76,22 +76,37 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
-            <version>2.9.8</version>
+            <version>2.11.1</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>2.9.8</version>
+            <version>2.11.1</version>
             <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.module</groupId>
+            <artifactId>jackson-module-parameter-names</artifactId>
+            <version>2.11.1</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jdk8</artifactId>
+            <version>2.11.1</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+            <version>2.11.1</version>
         </dependency>
 
         <!-- -->
-<!--        <dependency>-->
-<!--            <groupId>com.github.jasync-sql</groupId>-->
-<!--            <artifactId>jasync-r2dbc-mysql</artifactId>-->
-<!--            <version>1.0.14</version>-->
-<!--        </dependency>-->
+        <!--        <dependency>-->
+        <!--            <groupId>com.github.jasync-sql</groupId>-->
+        <!--            <artifactId>jasync-r2dbc-mysql</artifactId>-->
+        <!--            <version>1.0.14</version>-->
+        <!--        </dependency>-->
     </dependencies>
 
     <build>
@@ -110,37 +125,37 @@
                 </configuration>
             </plugin>
         </plugins>
-<!--        <extensions>-->
-<!--            <extension>-->
-<!--                <groupId>com.gkatzioura.maven.cloud</groupId>-->
-<!--                <artifactId>azure-storage-wagon</artifactId>-->
-<!--                <version>1.0</version>-->
-<!--            </extension>-->
-<!--        </extensions>-->
+        <!--        <extensions>-->
+        <!--            <extension>-->
+        <!--                <groupId>com.gkatzioura.maven.cloud</groupId>-->
+        <!--                <artifactId>azure-storage-wagon</artifactId>-->
+        <!--                <version>1.0</version>-->
+        <!--            </extension>-->
+        <!--        </extensions>-->
 
     </build>
 
-<!--    <distributionManagement>-->
-<!--        <snapshotRepository>-->
-<!--            <id>dev-azure-com-jaspervdbijl-jaspervdbijl</id>-->
-<!--            <url>https://pkgs.dev.azure.com/jaspervdbijl/_packaging/jaspervdbijl/maven/v1</url>-->
-<!--        </snapshotRepository>-->
-<!--        <repository>-->
-<!--            <id>dev-azure-com-jaspervdbijl-jaspervdbijl</id>-->
-<!--            <url>https://pkgs.dev.azure.com/jaspervdbijl/_packaging/jaspervdbijl/maven/v1</url>-->
-<!--        </repository>-->
-<!--    </distributionManagement>-->
+    <!--    <distributionManagement>-->
+    <!--        <snapshotRepository>-->
+    <!--            <id>dev-azure-com-jaspervdbijl-jaspervdbijl</id>-->
+    <!--            <url>https://pkgs.dev.azure.com/jaspervdbijl/_packaging/jaspervdbijl/maven/v1</url>-->
+    <!--        </snapshotRepository>-->
+    <!--        <repository>-->
+    <!--            <id>dev-azure-com-jaspervdbijl-jaspervdbijl</id>-->
+    <!--            <url>https://pkgs.dev.azure.com/jaspervdbijl/_packaging/jaspervdbijl/maven/v1</url>-->
+    <!--        </repository>-->
+    <!--    </distributionManagement>-->
 
-<!--    <repositories>-->
-<!--        <repository>-->
-<!--            <id>dev-azure-com-jaspervdbijl-jaspervdbijl</id>-->
-<!--            <url>https://pkgs.dev.azure.com/jaspervdbijl/_packaging/jaspervdbijl/maven/v1</url>-->
-<!--            <releases>-->
-<!--                <enabled>true</enabled>-->
-<!--            </releases>-->
-<!--            <snapshots>-->
-<!--                <enabled>true</enabled>-->
-<!--            </snapshots>-->
-<!--        </repository>-->
-<!--    </repositories>-->
+    <!--    <repositories>-->
+    <!--        <repository>-->
+    <!--            <id>dev-azure-com-jaspervdbijl-jaspervdbijl</id>-->
+    <!--            <url>https://pkgs.dev.azure.com/jaspervdbijl/_packaging/jaspervdbijl/maven/v1</url>-->
+    <!--            <releases>-->
+    <!--                <enabled>true</enabled>-->
+    <!--            </releases>-->
+    <!--            <snapshots>-->
+    <!--                <enabled>true</enabled>-->
+    <!--            </snapshots>-->
+    <!--        </repository>-->
+    <!--    </repositories>-->
 </project>
