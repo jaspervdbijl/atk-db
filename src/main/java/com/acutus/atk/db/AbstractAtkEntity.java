@@ -44,7 +44,7 @@ public class AbstractAtkEntity<T extends AbstractAtkEntity, O> extends AbstractA
 
     @SneakyThrows
     public AtkEntity.Type getAtkEnType() {
-        return (AtkEntity.Type) Reflect.getMethods(getClass()).getByName("getType").get().invoke(this,null);
+        return (AtkEntity.Type) Reflect.getMethods(getClass()).getByName("getEntityType").get().invoke(this,null);
     }
 
     public String getTableName() {

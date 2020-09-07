@@ -326,7 +326,7 @@ public class AtkEntityProcessor extends AtkProcessor {
         String className = type + atk.classNameExt();
 
         FieldFilter filter = element.getAnnotation(FieldFilter.class);
-        String filterStr = filter != null ? "\"" + filter.value()[0] + "\", " : "";
+        String filterStr = filter != null ? "\"" + filter.fields()[0] + "\", " : "";
         values.add(String.format("\tpublic transient AtkEnRelation<%s> %sRef = new AtkEnRelation<>(%s.class, AtkEnRelation.RelType.ManyToOne,%s this);"
                 , className, element.toString(), className, filterStr));
         // add reference
@@ -384,13 +384,13 @@ public class AtkEntityProcessor extends AtkProcessor {
         methods.add(String.format("\tpublic Query<%s,%s> query() {return new Query(this);}", getClassName(element), element.getSimpleName()));
         methods.add(String.format("\tpublic Persist<%s> persist() {return new Persist(this);}", getClassName(element)));
         methods.add(String.format("\tpublic int version() {return %d;}", atk.version()));
-        methods.add(String.format("\tpublic AtkEntity.Type getType() {return AtkEntity.Type.%s;}", atk.type().name()));
+        methods.add(String.format("\tpublic AtkEntity.Type getEntityType() {return AtkEntity.Type.%s;}", atk.type().name()));
         // views
         if (atk.type() == AtkEntity.Type.VIEW) {
             methods.add(String.format("\tpublic String getViewResource() {return \"%s\";}", atk.viewSqlResource()));
             if (isNotEmpty(atk.viewSqlResource())) {
                 methods.add(String.format("\tpublic List<%s> view(Connection c) {return new Query(this).getAllFromResource(c,\"%s\");}", getClassName(element),atk.viewSqlResource()));
-                methods.add(String.format("\tpublic List<%s> view(Connection c,CallOne<%s> itr, int limit,Object ... params) {return new Query(this).getAllFromResource(c,itr,limit,\"%s\",params);}", getClassName(element),getClassName(element), atk.viewSqlResource()));
+                methods.add(String.format("\tpublic void view(Connection c,CallOne<%s> itr, int limit,Object ... params) {new Query(this).getAllFromResource(c,itr,limit,\"%s\",params);}", getClassName(element), atk.viewSqlResource()));
             }
         }
 

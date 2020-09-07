@@ -238,9 +238,7 @@ public class Query<T extends AbstractAtkEntity, O> {
         }
 
         String star = selectFilter != null ? selectFilter.getColNames().toString(",") : select;
-        return "select " + entity.getTableName() +
-                (isNotEmpty(entity.getTableName()) ? "." : "") +
-                star + " " + split.toString(" ");
+        return "select " + star + " " + split.toString(" ");
     }
 
     @SneakyThrows
@@ -303,8 +301,8 @@ public class Query<T extends AbstractAtkEntity, O> {
         return getAll(connection, new Filter(getSqlResource(resource), params), -1);
     }
 
-    public AtkEntities<T> getAllFromResource(Connection connection, CallOne<T> iterate, int limit,String resource, Object... params) {
-        return getAll(connection, new Filter(getSqlResource(resource), params), -1);
+    public void getAllFromResource(Connection connection, CallOne<T> iterate, int limit,String resource, Object... params) {
+        getAll(connection, new Filter(getSqlResource(resource),params),iterate, limit);
     }
 
 
