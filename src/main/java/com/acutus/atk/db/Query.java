@@ -202,15 +202,12 @@ public class Query<T extends AbstractAtkEntity, O> {
                 ? getDriver(connection).limit(sql, limit) : sql));
     }
 
-    @SneakyThrows
-    public void getAll(Connection connection, Filter filter, CallOne<T> iterate, int limit) {
-        AbstractDriver driver = DriverFactory.getDriver(connection);
-        boolean shouldLeftJoin = selectFilter == null;
+    private String getProcessedSql(Filter filter) {
         String sql = prepareSql(filter).replaceAll("\\p{Cntrl}", " ");
         // add all the left joins
         sql = sql.substring(sql.toLowerCase().indexOf("from "));
 
-        String lj = shouldLeftJoin ? getLeftJoin(new AtomicInteger(0), entity) : "";
+        String lj = selectFilter == null ? getLeftJoin(new AtomicInteger(0), entity) : "";
 
         Strings split = Strings.asList(sql.replace(",", " , ").split("\\s+"));
 
@@ -224,7 +221,15 @@ public class Query<T extends AbstractAtkEntity, O> {
         }
 
         String star = selectFilter != null ? selectFilter.getColNames().toString(",") : "*";
-        sql = "select " + entity.getTableName() + "." + star + " " + split.toString(" ");
+        return "select " + entity.getTableName() + "." + star + " " + split.toString(" ");
+    }
+
+    @SneakyThrows
+    public void getAll(Connection connection, Filter filter, CallOne<T> iterate, int limit) {
+        AbstractDriver driver = DriverFactory.getDriver(connection);
+        boolean shouldLeftJoin = selectFilter == null;
+        String sql = getProcessedSql(filter);
+
         // transform the select *
         Map<String, AbstractAtkEntity> map = new HashMap<>();
         Three<AbstractAtkEntity, Boolean, Boolean> lastEntity = null;

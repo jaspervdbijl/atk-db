@@ -17,6 +17,8 @@ public @interface AtkEntity {
     // if no table name is defined, what naming stratergy should be used
     TableNamingStrategy tableNamingStrategy() default TableNamingStrategy.LOWER_CASE_UNDERSCORE;
 
+    Type type() default Type.TABLE;
+
     String className() default "";
 
     String classNameExt() default "Entity";
@@ -42,4 +44,9 @@ public @interface AtkEntity {
     enum TableNamingStrategy {
         NONE, LOWER_CASE_UNDERSCORE
     }
+
+    enum Type {
+        TABLE, VIEW
+    }
+
 }
