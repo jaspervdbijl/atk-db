@@ -91,7 +91,6 @@ public class AtkEntityProcessor extends AtkProcessor {
 
     }
 
-    // TODO support other Table features
     private String copyTable(String tableName, Table table) {
         return String.format("name = \"%s\""
                 , table.name().isEmpty() ? tableName : table.name());
@@ -104,10 +103,14 @@ public class AtkEntityProcessor extends AtkProcessor {
                 , "@Table", "@javax.persistence.Table", "@com.acutus.atk.db.processor.AtkEntity");
 
         Table table = element.getAnnotation(Table.class);
+        AtkEntity atkEntity = element.getAnnotation(AtkEntity.class);
         String tableName = convertCamelCaseToUnderscore(element.getSimpleName().toString());
-        String tableAno = String.format("@Table(%s)", table != null
-                ? copyTable(tableName, table)
-                : String.format("name=\"%s\"", tableName));
+        String tableAno =
+                atkEntity.type() == AtkEntity.Type.TABLE ?
+                        String.format("@Table(%s)", table != null
+                                ? copyTable(tableName, table)
+                                : String.format("name=\"%s\"", tableName)) :
+                        "";
 
         return className.substring(0, className.indexOf("public class "))
                 + tableAno + " " + String.format("public class %s extends AbstractAtkEntity<%s,%s> {"
@@ -199,10 +202,10 @@ public class AtkEntityProcessor extends AtkProcessor {
         Strings fields = super.getStaticFields(parent);
         AtkEntity atk = parent.getAnnotation(AtkEntity.class);
         if (atk.addAuditFields()) {
-            fields.add(getStaticField(parent,"createdBy"));
-            fields.add(getStaticField(parent,"createdDate"));
-            fields.add(getStaticField(parent,"lastModifiedBy"));
-            fields.add(getStaticField(parent,"lastModifiedDate"));
+            fields.add(getStaticField(parent, "createdBy"));
+            fields.add(getStaticField(parent, "createdDate"));
+            fields.add(getStaticField(parent, "lastModifiedBy"));
+            fields.add(getStaticField(parent, "lastModifiedDate"));
         }
         return fields.stream().distinct().collect(Collectors.toCollection(Strings::new));
     }
@@ -323,7 +326,7 @@ public class AtkEntityProcessor extends AtkProcessor {
         String className = type + atk.classNameExt();
 
         FieldFilter filter = element.getAnnotation(FieldFilter.class);
-        String filterStr = filter != null ? "\"" + filter.fields()[0] + "\", " : "";
+        String filterStr = filter != null ? "\"" + filter.value()[0] + "\", " : "";
         values.add(String.format("\tpublic transient AtkEnRelation<%s> %sRef = new AtkEnRelation<>(%s.class, AtkEnRelation.RelType.ManyToOne,%s this);"
                 , className, element.toString(), className, filterStr));
         // add reference
@@ -381,6 +384,7 @@ public class AtkEntityProcessor extends AtkProcessor {
         methods.add(String.format("\tpublic Query<%s,%s> query() {return new Query(this);}", getClassName(element), element.getSimpleName()));
         methods.add(String.format("\tpublic Persist<%s> persist() {return new Persist(this);}", getClassName(element)));
         methods.add(String.format("\tpublic int version() {return %d;}", atk.version()));
+        methods.add(String.format("\tpublic AtkEntity.Type getType() {return AtkEntity.Type.%s;}", atk.type().name()));
 
         // add Execute methods
         methods.addAll(getExecuteOrQueries(atk, element));
@@ -410,7 +414,9 @@ public class AtkEntityProcessor extends AtkProcessor {
                 .plus("import javax.persistence.OneToOne")
                 .plus("import javax.sql.DataSource")
                 .plus("import com.acutus.atk.db.*")
-                .plus("import com.acutus.atk.util.collection.*");
+                .plus("import com.acutus.atk.util.collection.*")
+                .plus("import com.acutus.atk.db.processor.AtkEntity")
+                ;
     }
 
 

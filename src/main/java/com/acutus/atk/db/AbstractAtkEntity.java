@@ -1,6 +1,7 @@
 package com.acutus.atk.db;
 
 import com.acutus.atk.db.driver.AbstractDriver;
+import com.acutus.atk.db.processor.AtkEntity;
 import com.acutus.atk.entity.AbstractAtk;
 import com.acutus.atk.entity.AtkFieldList;
 import com.acutus.atk.reflection.Reflect;
@@ -41,10 +42,16 @@ public class AbstractAtkEntity<T extends AbstractAtkEntity, O> extends AbstractA
         return indexes;
     }
 
+    @SneakyThrows
+    public AtkEntity.Type getAtkEnType() {
+        return (AtkEntity.Type) Reflect.getMethods(getClass()).getByName("getType").get().invoke(this,null);
+    }
+
     public String getTableName() {
         if (tableName == null) {
             Table table = getClass().getAnnotation(Table.class);
-            tableName = table != null && !StringUtils.isEmpty(table.name()) ? table.name() : getClass().getSimpleName();
+            tableName = table != null && !StringUtils.isEmpty(table.name()) ? table.name() :
+            getAtkEnType() == AtkEntity.Type.VIEW ? "" : getClass().getSimpleName();
         }
         return tableName;
     }

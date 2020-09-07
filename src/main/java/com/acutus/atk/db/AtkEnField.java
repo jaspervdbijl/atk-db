@@ -39,7 +39,8 @@ public class AtkEnField<T, R extends AbstractAtkEntity> extends AtkField<T, R> {
     }
 
     public String getTableAndColName() {
-        return String.format("%s.%s", getEntity().getTableName(), getColName());
+        return isEmpty(getEntity().getTableName()) ?  getColName() :
+                String.format("%s.%s", getEntity().getTableName(), getColName());
     }
 
 

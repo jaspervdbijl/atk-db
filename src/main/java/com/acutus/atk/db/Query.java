@@ -2,6 +2,7 @@ package com.acutus.atk.db;
 
 import com.acutus.atk.db.driver.AbstractDriver;
 import com.acutus.atk.db.driver.DriverFactory;
+import com.acutus.atk.db.processor.AtkEntity;
 import com.acutus.atk.db.sql.Filter;
 import com.acutus.atk.reflection.Reflect;
 import com.acutus.atk.reflection.ReflectFields;
@@ -39,6 +40,8 @@ import static com.acutus.atk.db.sql.Filter.or;
 import static com.acutus.atk.db.sql.SQLHelper.*;
 import static com.acutus.atk.util.AtkUtil.getGenericFieldType;
 import static com.acutus.atk.util.AtkUtil.handle;
+import static com.acutus.atk.util.StringUtils.isEmpty;
+import static com.acutus.atk.util.StringUtils.isNotEmpty;
 
 @Slf4j
 public class Query<T extends AbstractAtkEntity, O> {
@@ -204,6 +207,10 @@ public class Query<T extends AbstractAtkEntity, O> {
 
     private String getProcessedSql(Filter filter) {
         String sql = prepareSql(filter).replaceAll("\\p{Cntrl}", " ");
+
+        String select = sql.substring(sql.toLowerCase().indexOf("select ") + "select ".length());
+        select = select.substring(0,select.toLowerCase().indexOf(" from "));
+
         // add all the left joins
         sql = sql.substring(sql.toLowerCase().indexOf("from "));
 
@@ -220,14 +227,16 @@ public class Query<T extends AbstractAtkEntity, O> {
             split.add(2 + offset, lj);
         }
 
-        String star = selectFilter != null ? selectFilter.getColNames().toString(",") : "*";
-        return "select " + entity.getTableName() + "." + star + " " + split.toString(" ");
+        String star = selectFilter != null ? selectFilter.getColNames().toString(",") : select;
+        return "select " + entity.getTableName() +
+                (isNotEmpty(entity.getTableName()) ? "." : "") +
+                star + " " + split.toString(" ");
     }
 
     @SneakyThrows
     public void getAll(Connection connection, Filter filter, CallOne<T> iterate, int limit) {
         AbstractDriver driver = DriverFactory.getDriver(connection);
-        boolean shouldLeftJoin = selectFilter == null;
+        boolean shouldLeftJoin = selectFilter == null && entity.getAtkEnType() == AtkEntity.Type.TABLE;
         String sql = getProcessedSql(filter);
 
         // transform the select *
