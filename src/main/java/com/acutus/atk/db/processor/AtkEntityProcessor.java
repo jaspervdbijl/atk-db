@@ -27,7 +27,7 @@ import java.util.stream.IntStream;
 
 import static com.acutus.atk.db.processor.AtkEntity.ColumnNamingStrategy.CAMEL_CASE_UNDERSCORE;
 import static com.acutus.atk.db.processor.ProcessorHelper.*;
-import static com.acutus.atk.util.StringUtils.removeAllASpaces;
+import static com.acutus.atk.util.StringUtils.*;
 
 @SupportedAnnotationTypes(
         "com.acutus.atk.db.processor.AtkEntity")
@@ -385,6 +385,14 @@ public class AtkEntityProcessor extends AtkProcessor {
         methods.add(String.format("\tpublic Persist<%s> persist() {return new Persist(this);}", getClassName(element)));
         methods.add(String.format("\tpublic int version() {return %d;}", atk.version()));
         methods.add(String.format("\tpublic AtkEntity.Type getType() {return AtkEntity.Type.%s;}", atk.type().name()));
+        // views
+        if (atk.type() == AtkEntity.Type.VIEW) {
+            methods.add(String.format("\tpublic String getViewResource() {return \"%s\";}", atk.viewSqlResource()));
+            if (isNotEmpty(atk.viewSqlResource())) {
+                methods.add(String.format("\tpublic List<%s> view(Connection c) {return new Query(this).getAllFromResource(c,\"%s\");}", getClassName(element),atk.viewSqlResource()));
+                methods.add(String.format("\tpublic List<%s> view(Connection c,CallOne<%s> itr, int limit,Object ... params) {return new Query(this).getAllFromResource(c,itr,limit,\"%s\",params);}", getClassName(element),getClassName(element), atk.viewSqlResource()));
+            }
+        }
 
         // add Execute methods
         methods.addAll(getExecuteOrQueries(atk, element));
@@ -416,6 +424,7 @@ public class AtkEntityProcessor extends AtkProcessor {
                 .plus("import com.acutus.atk.db.*")
                 .plus("import com.acutus.atk.util.collection.*")
                 .plus("import com.acutus.atk.db.processor.AtkEntity")
+                .plus("import com.acutus.atk.util.call.CallOne")
                 ;
     }
 

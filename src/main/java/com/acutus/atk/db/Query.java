@@ -4,6 +4,7 @@ import com.acutus.atk.db.driver.AbstractDriver;
 import com.acutus.atk.db.driver.DriverFactory;
 import com.acutus.atk.db.processor.AtkEntity;
 import com.acutus.atk.db.sql.Filter;
+import com.acutus.atk.io.IOUtil;
 import com.acutus.atk.reflection.Reflect;
 import com.acutus.atk.reflection.ReflectFields;
 import com.acutus.atk.util.Assert;
@@ -40,11 +41,12 @@ import static com.acutus.atk.db.sql.Filter.or;
 import static com.acutus.atk.db.sql.SQLHelper.*;
 import static com.acutus.atk.util.AtkUtil.getGenericFieldType;
 import static com.acutus.atk.util.AtkUtil.handle;
-import static com.acutus.atk.util.StringUtils.isEmpty;
-import static com.acutus.atk.util.StringUtils.isNotEmpty;
+import static com.acutus.atk.util.StringUtils.*;
 
 @Slf4j
 public class Query<T extends AbstractAtkEntity, O> {
+
+    private static Map<String,String> RESOURCE_MAP = new HashMap<>();
 
     public enum OrderBy {
         ASC, DESC
@@ -56,6 +58,14 @@ public class Query<T extends AbstractAtkEntity, O> {
     private OrderBy orderByType;
 
     private AtkEnFields selectFilter;
+
+    @SneakyThrows
+    public static synchronized String getSqlResource(String name) {
+        if (!RESOURCE_MAP.containsKey(name)) {
+            RESOURCE_MAP.put(name,new String(IOUtil.readAvailable(Thread.currentThread().getContextClassLoader().getResourceAsStream(name))));
+        }
+        return RESOURCE_MAP.get(name);
+    }
 
     public Query(T entity) {
         this.entity = (T) entity.clone();
@@ -288,6 +298,15 @@ public class Query<T extends AbstractAtkEntity, O> {
     public AtkEntities<T> getAll(Connection connection, String sql, Object... params) {
         return getAll(connection, new Filter(sql, params), -1);
     }
+
+    public AtkEntities<T> getAllFromResource(Connection connection, String resource, Object... params) {
+        return getAll(connection, new Filter(getSqlResource(resource), params), -1);
+    }
+
+    public AtkEntities<T> getAllFromResource(Connection connection, CallOne<T> iterate, int limit,String resource, Object... params) {
+        return getAll(connection, new Filter(getSqlResource(resource), params), -1);
+    }
+
 
     @SneakyThrows
     public Optional<T> get(Connection connection, Filter filter) {

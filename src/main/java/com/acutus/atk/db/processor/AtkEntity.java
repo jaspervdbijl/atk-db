@@ -19,6 +19,8 @@ public @interface AtkEntity {
 
     Type type() default Type.TABLE;
 
+    String viewSqlResource() default "";
+
     String className() default "";
 
     String classNameExt() default "Entity";
