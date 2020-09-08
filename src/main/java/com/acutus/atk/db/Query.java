@@ -2,7 +2,9 @@ package com.acutus.atk.db;
 
 import com.acutus.atk.db.driver.AbstractDriver;
 import com.acutus.atk.db.driver.DriverFactory;
+import com.acutus.atk.db.processor.AtkEntity;
 import com.acutus.atk.db.sql.Filter;
+import com.acutus.atk.io.IOUtil;
 import com.acutus.atk.reflection.Reflect;
 import com.acutus.atk.reflection.ReflectFields;
 import com.acutus.atk.util.Assert;
@@ -39,9 +41,12 @@ import static com.acutus.atk.db.sql.Filter.or;
 import static com.acutus.atk.db.sql.SQLHelper.*;
 import static com.acutus.atk.util.AtkUtil.getGenericFieldType;
 import static com.acutus.atk.util.AtkUtil.handle;
+import static com.acutus.atk.util.StringUtils.*;
 
 @Slf4j
 public class Query<T extends AbstractAtkEntity, O> {
+
+    private static Map<String,String> RESOURCE_MAP = new HashMap<>();
 
     public enum OrderBy {
         ASC, DESC
@@ -53,6 +58,14 @@ public class Query<T extends AbstractAtkEntity, O> {
     private OrderBy orderByType;
 
     private AtkEnFields selectFilter;
+
+    @SneakyThrows
+    public static synchronized String getSqlResource(String name) {
+        if (!RESOURCE_MAP.containsKey(name)) {
+            RESOURCE_MAP.put(name,new String(IOUtil.readAvailable(Thread.currentThread().getContextClassLoader().getResourceAsStream(name))));
+        }
+        return RESOURCE_MAP.get(name);
+    }
 
     public Query(T entity) {
         this.entity = (T) entity.clone();
@@ -168,7 +181,7 @@ public class Query<T extends AbstractAtkEntity, O> {
                     } else {
                         f.set(local, new AtkEntities<>());
                     }
-                } else if (!value.getSecond()) {
+                } else {
                     // entity has not been loaded into the map
                     if (Optional.class.isAssignableFrom(f.getType())) {
                         f.set(local, f.get(local) == null ? Optional.of(value.getFirst()) : f.get(local));
@@ -202,15 +215,16 @@ public class Query<T extends AbstractAtkEntity, O> {
                 ? getDriver(connection).limit(sql, limit) : sql));
     }
 
-    @SneakyThrows
-    public void getAll(Connection connection, Filter filter, CallOne<T> iterate, int limit) {
-        AbstractDriver driver = DriverFactory.getDriver(connection);
-        boolean shouldLeftJoin = selectFilter == null;
+    private String getProcessedSql(Filter filter) {
         String sql = prepareSql(filter).replaceAll("\\p{Cntrl}", " ");
+
+        String select = sql.substring(sql.toLowerCase().indexOf("select ") + "select ".length());
+        select = select.substring(0,select.toLowerCase().indexOf(" from "));
+
         // add all the left joins
         sql = sql.substring(sql.toLowerCase().indexOf("from "));
 
-        String lj = shouldLeftJoin ? getLeftJoin(new AtomicInteger(0), entity) : "";
+        String lj = selectFilter == null ? getLeftJoin(new AtomicInteger(0), entity) : "";
 
         Strings split = Strings.asList(sql.replace(",", " , ").split("\\s+"));
 
@@ -223,8 +237,16 @@ public class Query<T extends AbstractAtkEntity, O> {
             split.add(2 + offset, lj);
         }
 
-        String star = selectFilter != null ? selectFilter.getColNames().toString(",") : "*";
-        sql = "select " + entity.getTableName() + "." + star + " " + split.toString(" ");
+        String star = selectFilter != null ? selectFilter.getColNames().toString(",") : select;
+        return "select " + star + " " + split.toString(" ");
+    }
+
+    @SneakyThrows
+    public void getAll(Connection connection, Filter filter, CallOne<T> iterate, int limit) {
+        AbstractDriver driver = DriverFactory.getDriver(connection);
+        boolean shouldLeftJoin = selectFilter == null && entity.getEntityType() == AtkEntity.Type.TABLE;
+        String sql = getProcessedSql(filter);
+
         // transform the select *
         Map<String, AbstractAtkEntity> map = new HashMap<>();
         Three<AbstractAtkEntity, Boolean, Boolean> lastEntity = null;
@@ -274,6 +296,15 @@ public class Query<T extends AbstractAtkEntity, O> {
     public AtkEntities<T> getAll(Connection connection, String sql, Object... params) {
         return getAll(connection, new Filter(sql, params), -1);
     }
+
+    public AtkEntities<T> getAllFromResource(Connection connection, String resource, Object... params) {
+        return getAll(connection, new Filter(getSqlResource(resource), params), -1);
+    }
+
+    public void getAllFromResource(Connection connection, CallOne<T> iterate, int limit,String resource, Object... params) {
+        getAll(connection, new Filter(getSqlResource(resource),params),iterate, limit);
+    }
+
 
     @SneakyThrows
     public Optional<T> get(Connection connection, Filter filter) {
