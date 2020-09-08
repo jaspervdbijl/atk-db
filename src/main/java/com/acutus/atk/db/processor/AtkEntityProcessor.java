@@ -384,7 +384,7 @@ public class AtkEntityProcessor extends AtkProcessor {
         methods.add(String.format("\tpublic Query<%s,%s> query() {return new Query(this);}", getClassName(element), element.getSimpleName()));
         methods.add(String.format("\tpublic Persist<%s> persist() {return new Persist(this);}", getClassName(element)));
         methods.add(String.format("\tpublic int version() {return %d;}", atk.version()));
-        methods.add(String.format("\tpublic AtkEntity.Type getEntityType() {return AtkEntity.Type.%s;}", atk.type().name()));
+        methods.add(String.format("\t@Override\n\tpublic AtkEntity.Type getEntityType() {return AtkEntity.Type.%s;}", atk.type().name()));
         // views
         if (atk.type() == AtkEntity.Type.VIEW) {
             methods.add(String.format("\tpublic String getViewResource() {return \"%s\";}", atk.viewSqlResource()));

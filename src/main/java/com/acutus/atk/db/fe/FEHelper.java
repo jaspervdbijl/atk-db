@@ -10,10 +10,12 @@ import com.acutus.atk.db.fe.indexes.Index;
 import com.acutus.atk.db.fe.indexes.Indexes;
 import com.acutus.atk.db.fe.keys.FrKeys;
 import com.acutus.atk.db.processor.Populate;
+import com.acutus.atk.db.sql.SQLHelper;
 import com.acutus.atk.reflection.Reflect;
 import com.acutus.atk.util.Assert;
 import com.acutus.atk.util.StringUtils;
 import com.acutus.atk.util.Strings;
+import com.acutus.atk.util.collection.One;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -47,11 +49,32 @@ public class FEHelper {
         maintainDataDefinition(connection, Arrays.asList(classes));
     }
 
+    private static void createRecordLogTableIfNotExists(Connection connection) {
+        if (!DriverFactory.getDriver(connection).doesTableExist(connection,"atk_db_record")) {
+            SQLHelper.execute(connection, "create table atk_db_record(table_name varchar(200), checksum varchar(100), modified_time datetime DEFAULT CURRENT_TIMESTAMP)");
+        }
+    }
+
+    private static boolean recordMismatch(Connection connection,AbstractAtkEntity entity) {
+        Optional<One<String>> hash = SQLHelper.queryOne(connection,String.class,"select checksum from atk_db_record where lower(table_name) = ?"
+                ,entity.getTableName().toLowerCase());
+        return !hash.isPresent() || !hash.get().getFirst().equalsIgnoreCase(entity.getMd5Hash());
+    }
+
+    @SneakyThrows
+    private static void maintainChecksum(Connection connection, AbstractAtkEntity entity) {
+        SQLHelper.executeUpdate(connection,"delete from atk_db_record where lower(table_name) = ? ",entity.getTableName());
+        SQLHelper.executeUpdate(connection,"insert into atk_db_record(table_name,checksum) values (?,?) ",entity.getTableName(),entity.getMd5Hash());
+    }
+
     @SneakyThrows
     private static void maintainDataDefinition(Connection connection, AbstractAtkEntity... entities) {
+        createRecordLogTableIfNotExists(connection);
+
         // filter
         entities = Arrays.stream(entities)
                 .filter(c -> !c.getClass().isAnnotationPresent(SkipFE.class))
+                .filter(c -> recordMismatch(connection,c))
                 .collect(Collectors.toList()).toArray(new AbstractAtkEntity[]{});
 
         AbstractDriver driver = DriverFactory.getDriver(connection);
@@ -79,6 +102,10 @@ public class FEHelper {
         // INDEXES
         for (AbstractAtkEntity entity : entities) {
             maintainIndexes(connection, driver, entity);
+        }
+        // update checksums
+        for (AbstractAtkEntity entity : entities) {
+            maintainChecksum(connection, entity);
         }
     }
 

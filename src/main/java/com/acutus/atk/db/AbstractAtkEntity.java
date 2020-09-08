@@ -42,16 +42,11 @@ public class AbstractAtkEntity<T extends AbstractAtkEntity, O> extends AbstractA
         return indexes;
     }
 
-    @SneakyThrows
-    public AtkEntity.Type getAtkEnType() {
-        return (AtkEntity.Type) Reflect.getMethods(getClass()).getByName("getEntityType").get().invoke(this,null);
-    }
-
     public String getTableName() {
         if (tableName == null) {
             Table table = getClass().getAnnotation(Table.class);
             tableName = table != null && !StringUtils.isEmpty(table.name()) ? table.name() :
-            getAtkEnType() == AtkEntity.Type.VIEW ? "" : getClass().getSimpleName();
+            getEntityType() == AtkEntity.Type.VIEW ? "" : getClass().getSimpleName();
         }
         return tableName;
     }
@@ -140,6 +135,10 @@ public class AbstractAtkEntity<T extends AbstractAtkEntity, O> extends AbstractA
 
     public Query<T, O> query() {
         return new Query(this);
+    }
+
+    public AtkEntity.Type getEntityType() {
+        throw new RuntimeException("Not implemented");
     }
 
 }

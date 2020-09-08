@@ -181,7 +181,7 @@ public class Query<T extends AbstractAtkEntity, O> {
                     } else {
                         f.set(local, new AtkEntities<>());
                     }
-                } else if (!value.getSecond()) {
+                } else {
                     // entity has not been loaded into the map
                     if (Optional.class.isAssignableFrom(f.getType())) {
                         f.set(local, f.get(local) == null ? Optional.of(value.getFirst()) : f.get(local));
@@ -244,7 +244,7 @@ public class Query<T extends AbstractAtkEntity, O> {
     @SneakyThrows
     public void getAll(Connection connection, Filter filter, CallOne<T> iterate, int limit) {
         AbstractDriver driver = DriverFactory.getDriver(connection);
-        boolean shouldLeftJoin = selectFilter == null && entity.getAtkEnType() == AtkEntity.Type.TABLE;
+        boolean shouldLeftJoin = selectFilter == null && entity.getEntityType() == AtkEntity.Type.TABLE;
         String sql = getProcessedSql(filter);
 
         // transform the select *
