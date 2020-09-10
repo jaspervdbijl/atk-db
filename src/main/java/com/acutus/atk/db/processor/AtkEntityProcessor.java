@@ -5,6 +5,7 @@ import com.acutus.atk.db.annotations.Index;
 import com.acutus.atk.entity.processor.Atk;
 import com.acutus.atk.entity.processor.AtkProcessor;
 import com.acutus.atk.util.Strings;
+import com.acutus.atk.util.collection.Three;
 import com.acutus.atk.util.collection.Two;
 import com.google.auto.service.AutoService;
 import lombok.SneakyThrows;
@@ -369,11 +370,11 @@ public class AtkEntityProcessor extends AtkProcessor {
 
     @SneakyThrows
     @Override
-    protected Optional<Two<Element, Atk.Match>> getDaoClass(Element element) {
+    protected Optional<Three<Element, Atk.Match,Boolean>> getDaoClass(Element element) {
         AtkEntity atk = element.getAnnotation(AtkEntity.class);
         return atk == null || "java.lang.Void".equals(extractDaoClassName(atk.toString()))
                 ? Optional.empty()
-                : Optional.of(new Two<>(getClassElement(extractDaoClassName(atk.toString())), atk.daoMatch()));
+                : Optional.of(new Three<>(getClassElement(extractDaoClassName(atk.toString())), atk.daoMatch(),atk.daoCopyAll()));
     }
 
     @Override

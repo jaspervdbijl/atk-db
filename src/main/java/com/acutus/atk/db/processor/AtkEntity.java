@@ -37,6 +37,7 @@ public @interface AtkEntity {
 
     Class daoClass() default Void.class;
     Atk.Match daoMatch() default Atk.Match.FULL;
+    boolean daoCopyAll() default true;
 
 
     enum ColumnNamingStrategy {
