@@ -161,7 +161,7 @@ public class AtkEntityProcessor extends AtkProcessor {
 
     private String getAuditAtkEnField(Element element, String name, String type) {
         return String.format(
-                "public transient AtkEnField<%s,%s> _%s = new AtkEnField<>(Reflect.getFields(%s.class).getByName(\"%s\").get(),this)",
+                "private transient AtkEnField<%s,%s> _%s = new AtkEnField<>(Reflect.getFields(%s.class).getByName(\"%s\").get(),this)",
                 type, getClassName(element), name, getClassName(element), name);
     }
 
@@ -386,6 +386,11 @@ public class AtkEntityProcessor extends AtkProcessor {
         methods.add(String.format("\tpublic Persist<%s> persist() {return new Persist(this);}", getClassName(element)));
         methods.add(String.format("\tpublic int version() {return %d;}", atk.version()));
         methods.add(String.format("\t@Override\n\tpublic AtkEntity.Type getEntityType() {return AtkEntity.Type.%s;}", atk.type().name()));
+
+        methods.add(String.format("\t@Override\n\tpublic boolean maintainColumns() {return %s;}", atk.maintainColumns()+""));
+        methods.add(String.format("\t@Override\n\tpublic boolean maintainForeignKeys() {return %s;}", atk.maintainForeignKeys()+""));
+        methods.add(String.format("\t@Override\n\tpublic boolean maintainIndex() {return %s;}", atk.maintainIndex()+""));
+
         // views
         if (atk.type() == AtkEntity.Type.VIEW) {
             methods.add(String.format("\tpublic String getViewResource() {return \"%s\";}", atk.viewSqlResource()));

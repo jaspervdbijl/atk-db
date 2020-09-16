@@ -77,7 +77,7 @@ public class AtkEnField<T, R extends AbstractAtkEntity> extends AtkField<T, R> {
             return Blob.class;
         }
         if (String.class.equals(getType())
-                && (getField().getAnnotation(Lob.class) != null || getColLength() >= driver.getMaxVarcharLength())) {
+                && (getField().getAnnotation(Lob.class) != null || getColLength() > driver.getMaxVarcharLength())) {
             return Clob.class;
         }
         Enumerated enumerated = getField().getAnnotation(Enumerated.class);
