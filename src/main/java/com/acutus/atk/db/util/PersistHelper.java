@@ -9,6 +9,7 @@ import com.acutus.atk.db.annotations.audit.CreatedDate;
 import com.acutus.atk.db.annotations.audit.LastModifiedBy;
 import com.acutus.atk.db.annotations.audit.LastModifiedDate;
 import com.acutus.atk.entity.AtkField;
+import com.acutus.atk.io.IOUtil;
 import com.acutus.atk.util.Assert;
 import com.acutus.atk.util.call.CallOne;
 import com.acutus.atk.util.call.CallOneRet;
@@ -29,6 +30,7 @@ import static com.acutus.atk.db.util.UserContextHolder.getUsername;
 import static com.acutus.atk.util.AtkUtil.handle;
 
 public class PersistHelper {
+    private static Map<String,String> defaultResourceMap = new HashMap<>();
     private static Map<Class<? extends Annotation>, CallOneRet<AtkEnField,Optional<AtkEnField>>> insertPreProcessor = new HashMap<>();
     private static Map<Class<? extends Annotation>, CallOneRet<AtkEnField,Optional<AtkEnField>>> updatePreProcessor = new HashMap<>();
 
@@ -99,6 +101,15 @@ public class PersistHelper {
         return Optional.of(field);
     }
 
+    @SneakyThrows
+    private static String getDefaultResource(String keyName) {
+        if (!defaultResourceMap.containsKey(keyName)) {
+            defaultResourceMap.put(keyName,IOUtil.readAvailableAsStr(Thread.currentThread().getContextClassLoader().getResourceAsStream(keyName)));
+        }
+        return defaultResourceMap.get(keyName);
+    }
+
+    @SneakyThrows
     public static Optional<AtkEnField> processDefault(AtkEnField field, boolean insert) {
         Default def = field.getField().getAnnotation(Default.class);
         if (insert == (def.type() == Default.Type.INSERT || def.type() == Default.Type.BOTH)
@@ -108,7 +119,9 @@ public class PersistHelper {
                     ? enumerated.value().equals(EnumType.STRING)
                     ? String.class : Integer.class
                     : field.getType();
-            field.set(unwrapEnumerated(field.getField(), decode(type, def.value())));
+            String value = def.value();
+            value = value.startsWith("res://") ? getDefaultResource(value) : value;
+            field.set(unwrapEnumerated(field.getField(), decode(type, value)));
             return Optional.of(field);
         }
         return Optional.empty();

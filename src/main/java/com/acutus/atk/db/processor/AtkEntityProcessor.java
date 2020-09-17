@@ -5,6 +5,7 @@ import com.acutus.atk.db.annotations.Index;
 import com.acutus.atk.entity.processor.Atk;
 import com.acutus.atk.entity.processor.AtkProcessor;
 import com.acutus.atk.util.Strings;
+import com.acutus.atk.util.collection.Three;
 import com.acutus.atk.util.collection.Two;
 import com.google.auto.service.AutoService;
 import lombok.SneakyThrows;
@@ -160,7 +161,7 @@ public class AtkEntityProcessor extends AtkProcessor {
 
     private String getAuditAtkEnField(Element element, String name, String type) {
         return String.format(
-                "public transient AtkEnField<%s,%s> _%s = new AtkEnField<>(Reflect.getFields(%s.class).getByName(\"%s\").get(),this)",
+                "private transient AtkEnField<%s,%s> _%s = new AtkEnField<>(Reflect.getFields(%s.class).getByName(\"%s\").get(),this)",
                 type, getClassName(element), name, getClassName(element), name);
     }
 
@@ -369,11 +370,11 @@ public class AtkEntityProcessor extends AtkProcessor {
 
     @SneakyThrows
     @Override
-    protected Optional<Two<Element, Atk.Match>> getDaoClass(Element element) {
+    protected Optional<Three<Element, Atk.Match,Boolean>> getDaoClass(Element element) {
         AtkEntity atk = element.getAnnotation(AtkEntity.class);
         return atk == null || "java.lang.Void".equals(extractDaoClassName(atk.toString()))
                 ? Optional.empty()
-                : Optional.of(new Two<>(getClassElement(extractDaoClassName(atk.toString())), atk.daoMatch()));
+                : Optional.of(new Three<>(getClassElement(extractDaoClassName(atk.toString())), atk.daoMatch(),atk.daoCopyAll()));
     }
 
     @Override
@@ -385,6 +386,11 @@ public class AtkEntityProcessor extends AtkProcessor {
         methods.add(String.format("\tpublic Persist<%s> persist() {return new Persist(this);}", getClassName(element)));
         methods.add(String.format("\tpublic int version() {return %d;}", atk.version()));
         methods.add(String.format("\t@Override\n\tpublic AtkEntity.Type getEntityType() {return AtkEntity.Type.%s;}", atk.type().name()));
+
+        methods.add(String.format("\t@Override\n\tpublic boolean maintainColumns() {return %s;}", atk.maintainColumns()+""));
+        methods.add(String.format("\t@Override\n\tpublic boolean maintainForeignKeys() {return %s;}", atk.maintainForeignKeys()+""));
+        methods.add(String.format("\t@Override\n\tpublic boolean maintainIndex() {return %s;}", atk.maintainIndex()+""));
+
         // views
         if (atk.type() == AtkEntity.Type.VIEW) {
             methods.add(String.format("\tpublic String getViewResource() {return \"%s\";}", atk.viewSqlResource()));

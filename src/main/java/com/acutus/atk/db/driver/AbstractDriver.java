@@ -4,6 +4,7 @@ import com.acutus.atk.db.AbstractAtkEntity;
 import com.acutus.atk.db.AtkEnField;
 import com.acutus.atk.db.AtkEnFields;
 import com.acutus.atk.db.AtkEnIndex;
+import com.acutus.atk.db.annotations.Default;
 import com.acutus.atk.db.annotations.ForeignKey;
 import com.acutus.atk.db.fe.indexes.Index;
 import com.acutus.atk.db.fe.indexes.Indexes;
@@ -204,7 +205,7 @@ public abstract class AbstractDriver {
      * @return
      */
     public int getMaxVarcharLength() {
-        return 4000;
+        return 4096;
     }
 
     private boolean isClob(AtkEnField field) {
@@ -213,6 +214,8 @@ public abstract class AbstractDriver {
     }
 
     public String getFieldType(AtkEnField field) {
+        GeneratedValue generated = field.getField().getAnnotation(GeneratedValue.class);
+        String unsigned = (generated  != null ? " unsigned" : "");
         Optional<Column> column = field.getColumn();
         Class type = field.getColumnType(this);
         if (String.class.equals(type)) {
@@ -220,23 +223,23 @@ public abstract class AbstractDriver {
         } else if (Clob.class.equals(type)) {
             return "longtext";
         } else if (Integer.class.equals(type)) {
-            return "int";
+            return "int" + unsigned;
         } else if (field.getField().isAnnotationPresent(ForeignKey.class) && (Long.class.equals(type) || BigInteger.class.equals(type))) {
             return "int unsigned";
         } else if (Long.class.equals(type) || BigInteger.class.equals(type)) {
-            return "bigint";
+            return "bigint" + unsigned;
         } else if (BigDecimal.class.equals(type) || Double.class.equals(type)) {
             return "double";
         } else if (Float.class.equals(type)) {
             return "float";
         } else if (Short.class.equals(type)) {
-            return "shortint";
+            return "shortint" + unsigned ;
         } else if (Boolean.class.equals(type)) {
             return "bool";
-        } else if (Blob.class.equals(type)) {
-            return "blob";
-        } else if (Byte[].class.equals(type)) {
-            return String.format("varchar2(%d)", column.isPresent() ? column.get().length() : 255);
+        } else if (Character.class.equals(type)) {
+            return "char";
+        } else if (Blob.class.equals(type) || Byte[].class.equals(type) || byte[].class.equals(type)) {
+            return "longblob";
         } else if (Timestamp.class.equals(type) || LocalDateTime.class.equals(type)) {
             return getFieldTypeForTimestamp(column);
         } else if (java.sql.Date.class.equals(type) || LocalDate.class.equals(type)) {

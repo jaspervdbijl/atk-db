@@ -23,6 +23,7 @@ import java.util.stream.IntStream;
 import static com.acutus.atk.db.constants.SQLConstants.RS_FUNC_INT_MAP;
 import static com.acutus.atk.db.constants.SQLConstants.RS_FUNC_INT_STR;
 import static com.acutus.atk.util.AtkUtil.handle;
+import static com.acutus.atk.util.StringUtils.isNotEmpty;
 
 @Slf4j
 public class SQLHelper {
@@ -68,6 +69,7 @@ public class SQLHelper {
             if (type.equals(value.getClass())) return (T) value;
             if (Clob.class.equals(type)) return (T) value;
             if (Blob.class.equals(type)) return (T) value;
+            if (Character.class.equals(type)) return (T) (isNotEmpty(value.toString()) ? value.toString().charAt(0) : null);
             if (LocalDateTime.class.equals(type) && value.getClass().equals(Timestamp.class))
                 return (T) ((Timestamp) value).toLocalDateTime();
             if (LocalDate.class.equals(type) && value.getClass().equals(Timestamp.class))

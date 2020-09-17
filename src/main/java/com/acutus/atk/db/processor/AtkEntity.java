@@ -33,10 +33,13 @@ public @interface AtkEntity {
 
     boolean auditTable() default false;
 
-    boolean addDeclaredFields() default false;
+    boolean maintainColumns() default true;
+    boolean maintainForeignKeys() default true;
+    boolean maintainIndex() default true;
 
     Class daoClass() default Void.class;
     Atk.Match daoMatch() default Atk.Match.FULL;
+    boolean daoCopyAll() default true;
 
 
     enum ColumnNamingStrategy {

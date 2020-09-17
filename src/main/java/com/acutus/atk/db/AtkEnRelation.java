@@ -17,7 +17,6 @@ import java.util.Optional;
 
 import static com.acutus.atk.db.sql.Filter.Type.AND;
 import static com.acutus.atk.db.sql.SQLHelper.run;
-import static com.acutus.atk.db.util.AtkEnUtil.getQuery;
 
 public class AtkEnRelation<T extends AbstractAtkEntity> {
 
@@ -104,26 +103,26 @@ public class AtkEnRelation<T extends AbstractAtkEntity> {
     }
 
     public AtkEntities<T> getAll(DataSource dataSource) {
-        return getQuery(getEntity(),selectFilter).getAll(dataSource);
+        return getEntity().query().setSelectFilter(selectFilter).getAll(dataSource);
     }
 
     public AtkEntities<T> getAll(Connection c) {
-        return getQuery(getEntity(),selectFilter).getAll(c);
+        return getEntity().query().setSelectFilter(selectFilter).getAll(c);
     }
 
     public Optional<T> get(DataSource dataSource) {
         T entity = getEntity();
-        return entity != null ? getQuery(entity,selectFilter).get(dataSource) : Optional.empty();
+        return entity != null ? entity.query().setSelectFilter(selectFilter).get(dataSource) : Optional.empty();
     }
 
     public Optional<T> get(Connection connection) {
         T entity = getEntity();
-        return entity != null ? getQuery(entity,selectFilter).get(connection) : Optional.empty();
+        return entity != null ? entity.query().setSelectFilter(selectFilter).get(connection) : Optional.empty();
     }
 
     public void iterate(Connection connection, CallOne<T> call) {
         T entity = getEntity();
-        getQuery(entity,selectFilter).getAll(connection, new Filter(AND, entity.getEnFields().getSet()), call, -1);
+        entity.query().setSelectFilter(selectFilter).getAll(connection, new Filter(AND, entity.getEnFields().getSet()), call, -1);
     }
 
     public void iterate(DataSource dataSource, CallOne<T> call) {

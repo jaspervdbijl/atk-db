@@ -141,4 +141,10 @@ public class AbstractAtkEntity<T extends AbstractAtkEntity, O> extends AbstractA
         throw new RuntimeException("Not implemented");
     }
 
+    public boolean maintainColumns() {return true;}
+    public boolean maintainForeignKeys() {return true;}
+    public boolean maintainIndex() {return true;}
+
+
+
 }

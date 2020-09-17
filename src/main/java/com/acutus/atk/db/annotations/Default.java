@@ -22,4 +22,5 @@ public @interface Default {
 
     Type type() default Type.INSERT;
     String value();
+
 }
