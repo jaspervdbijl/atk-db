@@ -289,6 +289,10 @@ public class Query<T extends AbstractAtkEntity, O> {
         return entities;
     }
 
+    public AtkEntities<T> getAll(DataSource dataSource, Filter filter, int limit) {
+        return runAndReturn(dataSource,c -> getAll(c,filter,limit));
+    }
+
     public AtkEntities<T> getAll(Connection connection, Filter filter) {
         return getAll(connection, filter, -1);
     }

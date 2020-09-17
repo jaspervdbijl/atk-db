@@ -19,6 +19,7 @@ public class SQLConstants {
         put(Integer.class, handle(() -> ResultSet.class.getMethod("getInt", int.class)));
         put(Long.class, handle(() -> ResultSet.class.getMethod("getLong", int.class)));
         put(String.class, handle(() -> ResultSet.class.getMethod("getString", int.class)));
+        put(Character.class, handle(() -> ResultSet.class.getMethod("getString", int.class)));
         put(BigDecimal.class, handle(() -> ResultSet.class.getMethod("getBigDecimal", int.class)));
         put(Boolean.class, handle(() -> ResultSet.class.getMethod("getBoolean", int.class)));
         put(Byte.class, handle(() -> ResultSet.class.getMethod("getByte", int.class)));
@@ -38,6 +39,7 @@ public class SQLConstants {
         put(Integer.class, handle(() -> ResultSet.class.getMethod("getInt", String.class)));
         put(Long.class, handle(() -> ResultSet.class.getMethod("getLong", String.class)));
         put(String.class, handle(() -> ResultSet.class.getMethod("getString", String.class)));
+        put(Character.class, handle(() -> ResultSet.class.getMethod("getString", String.class)));
         put(BigDecimal.class, handle(() -> ResultSet.class.getMethod("getBigDecimal", String.class)));
         put(Boolean.class, handle(() -> ResultSet.class.getMethod("getBoolean", String.class)));
         put(Byte.class, handle(() -> ResultSet.class.getMethod("getByte", String.class)));

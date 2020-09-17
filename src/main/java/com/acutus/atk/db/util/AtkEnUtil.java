@@ -18,38 +18,13 @@ import static javax.persistence.EnumType.STRING;
 public class AtkEnUtil {
 
     @SneakyThrows
-    public static Method getMethod(Class type, String name) {
-        ReflectMethods methods = Reflect.getMethods(type).filter(name).filterParams();
-        Assert.isTrue(methods.size() > 0, "Expected a %s method in %s ", name, type.getName());
-        return methods.get(0);
-    }
-
-    @SneakyThrows
-    public static Query getQuery(AbstractAtkEntity entity, Field ... selectFilter) {
-        Query query = (Query) getMethod(entity.getClass(), "query").invoke(entity);
-        if (selectFilter != null) {
-            query.setSelectFilter(selectFilter);
-        }
-        return query;
-    }
-
-    public static Query getQuery(AbstractAtkEntity entity) {
-        return getQuery(entity,null);
-    }
-
-    @SneakyThrows
-    public static Persist getPersist(AbstractAtkEntity entity) {
-        return (Persist) getMethod(entity.getClass(), "persist").invoke(entity);
-    }
-
-    @SneakyThrows
     public static <T> T unwrapEnumerated(Field field, Object value) {
         if (value != null) {
             Enumerated enumerated = field.getAnnotation(Enumerated.class);
             if (enumerated == null) {
                 return (T) value;
             } else if (enumerated != null && enumerated.value().equals(STRING)) {
-                    Method valueOf = Reflect.getMethods(field.getType()).get(false, "valueOf");
+                Method valueOf = Reflect.getMethods(field.getType()).get(false, "valueOf");
                 return (T) valueOf.invoke(null, value);
             } else if (enumerated != null && enumerated.value().equals(ORDINAL)) {
                 Enum[] values = (Enum[]) Reflect.getMethods(field.getType()).get(false, "values").invoke(null);
@@ -71,12 +46,14 @@ public class AtkEnUtil {
     public static Object wrapForPreparedStatement(AtkEnField field) {
         Enumerated enumerated = field.getField().getAnnotation(Enumerated.class);
         if (enumerated == null || field.get() == null) {
-            return field.get();
+            return field.getType().equals(Character.class)
+                    ? field.get() != null ? field.get().toString() : field.get()
+                    : field.get();
         }
         if (enumerated != null && enumerated.value().equals(STRING)) {
             return field.get().toString();
         } else {
-            return ((Enum)field.get()).ordinal();
+            return ((Enum) field.get()).ordinal();
         }
     }
 
