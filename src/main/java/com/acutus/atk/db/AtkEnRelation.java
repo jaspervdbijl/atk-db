@@ -103,26 +103,26 @@ public class AtkEnRelation<T extends AbstractAtkEntity> {
     }
 
     public AtkEntities<T> getAll(DataSource dataSource) {
-        return getEntity().query().setSelectFilter(selectFilter).getAll(dataSource);
+        return getEntity().query().setSelectFilterIfNotNull(selectFilter).getAll(dataSource);
     }
 
     public AtkEntities<T> getAll(Connection c) {
-        return getEntity().query().setSelectFilter(selectFilter).getAll(c);
+        return getEntity().query().setSelectFilterIfNotNull(selectFilter).getAll(c);
     }
 
     public Optional<T> get(DataSource dataSource) {
         T entity = getEntity();
-        return entity != null ? entity.query().setSelectFilter(selectFilter).get(dataSource) : Optional.empty();
+        return entity != null ? entity.query().setSelectFilterIfNotNull(selectFilter).get(dataSource) : Optional.empty();
     }
 
     public Optional<T> get(Connection connection) {
         T entity = getEntity();
-        return entity != null ? entity.query().setSelectFilter(selectFilter).get(connection) : Optional.empty();
+        return entity != null ? entity.query().setSelectFilterIfNotNull(selectFilter).get(connection) : Optional.empty();
     }
 
     public void iterate(Connection connection, CallOne<T> call) {
         T entity = getEntity();
-        entity.query().setSelectFilter(selectFilter).getAll(connection, new Filter(AND, entity.getEnFields().getSet()), call, -1);
+        entity.query().setSelectFilterIfNotNull(selectFilter).getAll(connection, new Filter(AND, entity.getEnFields().getSet()), call, -1);
     }
 
     public void iterate(DataSource dataSource, CallOne<T> call) {

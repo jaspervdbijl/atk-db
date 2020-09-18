@@ -424,6 +424,13 @@ public class Query<T extends AbstractAtkEntity, O> {
         return this;
     }
 
+    public Query<T, O> setSelectFilterIfNotNull(Field... filter) {
+        if (filter != null) {
+            setSelectFilter(filter);
+        }
+        return this;
+    }
+
     public Query<T, O> setOrderBy(Field... orderBys) {
         return setOrderBy(DESC, orderBys);
     }
