@@ -155,13 +155,13 @@ public class AtkEntityProcessor extends AtkProcessor {
         if (!mismatch.isEmpty()) {
             error(String.format("Index [%s] column mismatch [%s]", index.name(), mismatch));
         }
-        return String.format("private transient AtkEnIndex %s = new AtkEnIndex(\"%s\",this);"
+        return String.format("public transient AtkEnIndex %s = new AtkEnIndex(\"%s\",this);"
                 , formatIndexName(index.name()), field.getSimpleName());
     }
 
     private String getAuditAtkEnField(Element element, String name, String type) {
         return String.format(
-                "private transient AtkEnField<%s,%s> _%s = new AtkEnField<>(Reflect.getFields(%s.class).getByName(\"%s\").get(),this)",
+                "public transient AtkEnField<%s,%s> _%s = new AtkEnField<>(Reflect.getFields(%s.class).getByName(\"%s\").get(),this)",
                 type, getClassName(element), name, getClassName(element), name);
     }
 
