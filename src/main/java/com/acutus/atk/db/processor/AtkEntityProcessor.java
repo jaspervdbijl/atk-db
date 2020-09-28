@@ -4,6 +4,7 @@ import com.acutus.atk.db.annotations.FieldFilter;
 import com.acutus.atk.db.annotations.Index;
 import com.acutus.atk.entity.processor.Atk;
 import com.acutus.atk.entity.processor.AtkProcessor;
+import com.acutus.atk.io.IOUtil;
 import com.acutus.atk.util.Strings;
 import com.acutus.atk.util.collection.Three;
 import com.acutus.atk.util.collection.Two;
@@ -245,9 +246,10 @@ public class AtkEntityProcessor extends AtkProcessor {
         );
     }
 
+
     @SneakyThrows
     protected String getExecute(Execute execute, Element element) {
-        return "\n\n" + getExecuteMethod(element.getSimpleName().toString(), execute.value());
+        return "\n\n" + getExecuteMethod(element.getSimpleName().toString(), execute);
     }
 
     protected String getQuery(AtkEntity atk, com.acutus.atk.db.processor.Query query, Element element) {

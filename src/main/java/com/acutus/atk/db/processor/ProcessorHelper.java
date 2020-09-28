@@ -3,6 +3,9 @@ package com.acutus.atk.db.processor;
 import javax.lang.model.type.TypeMirror;
 import javax.persistence.FetchType;
 
+import static com.acutus.atk.util.StringUtils.isEmpty;
+import static com.acutus.atk.util.StringUtils.isNotEmpty;
+
 public class ProcessorHelper {
 
     public static final String EXECUTE_METHOD = "   public static int _EXECUTE_(javax.sql.DataSource dataSource,Object ... params) {\n" +
@@ -12,7 +15,7 @@ public class ProcessorHelper {
             "    }";
 
     public static final String EXECUTE_METHOD_CONNECTION = "    public static int _EXECUTE_(java.sql.Connection c,Object ... params) {\n" +
-            "       try (PreparedStatement ps = c.prepareStatement(\"_SQL_\")) {\n" +
+            "       try (PreparedStatement ps = c.prepareStatement(_SQL_)) {\n" +
             "           if (params != null) {\n" +
             "               for (int i = 0; i < params.length; i++) {\n" +
             "                   ps.setObject(i + 1, params[i]);\n" +
@@ -23,7 +26,6 @@ public class ProcessorHelper {
             "           throw new RuntimeException(e);\n" +
             "       }\n" +
             "   }";
-
 
     public static String QUERY_METHOD = "\tpublic static java.util.Optional<_TYPE_> _METHOD_NAME_(javax.sql.DataSource dataSource, Object ... params) {\n" +
             "        return new _TYPE_().query().get(dataSource,\"_SQL_\",params);\n" +
@@ -76,13 +78,12 @@ public class ProcessorHelper {
                 .replace("_GET_ALL_METHOD_",FetchType.EAGER.equals(fetchType) ? "getAll" : "getAll");
     }
 
-    public static String getExecuteMethod(String methodName, String sql) {
+    public static String getExecuteMethod(String methodName, Execute execute) {
+        String sql = isNotEmpty(execute.resource())
+                ? String.format("getCachedResource(\"%s\")",execute.resource())
+                : String.format("\"%s\"",execute.value());
         return EXECUTE_METHOD_CONNECTION.replace("_EXECUTE_", methodName).replace("_SQL_", sql) + "\n\n" +
                 EXECUTE_METHOD.replace("_EXECUTE_", methodName).replace("_SQL_", sql) + "\n";
-    }
-
-    public static void main(String[] args) {
-        System.out.println(getExecuteMethod("deleteOld", "delete from"));
     }
 
 }
