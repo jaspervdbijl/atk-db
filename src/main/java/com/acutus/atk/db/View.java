@@ -19,6 +19,7 @@ import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
@@ -43,13 +44,23 @@ public class View<T extends View> {
     }
 
     @SneakyThrows
+    private void ignoreMissingFields(AtkEntities entities, ResultSetMetaData rsMeta) {
+        Strings colNames = IntStream.range(1, rsMeta.getColumnCount())
+                .mapToObj(i -> handle(() -> rsMeta.getTableName(i)+"."+rsMeta.getColumnName(i))).collect(Collectors.toCollection(Strings::new));
+        entities.stream().forEach(e -> ((AbstractAtkEntity) e).getEnFields().stream()
+                .filter(f -> !colNames.containsIgnoreCase(f.getTableAndColName()) && !colNames.containsIgnoreCase("."+f.getColName()))
+                .forEach(f -> f.setIgnore(true)));
+    }
+
+    @SneakyThrows
     public void iterate(Connection connection, String sql, CallOne call, Object... params) {
         AtkEntities entities = getEntities();
         AbstractDriver driver = DriverFactory.getDriver(connection);
         try (PreparedStatement ps = SQLHelper.prepare(connection, sql, params)) {
             try (ResultSet rs = ps.executeQuery()) {
+                ignoreMissingFields(entities,rs.getMetaData());
                 while (rs.next()) {
-                    entities.stream().forEach(e -> ((AbstractAtkEntity)e).set(driver, rs));
+                    entities.stream().forEach(e -> ((AbstractAtkEntity) e).set(driver, rs));
                     call.call(this);
                 }
             }
