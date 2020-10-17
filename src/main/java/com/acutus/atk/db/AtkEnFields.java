@@ -56,6 +56,11 @@ public class AtkEnFields extends AtkFieldList<AtkEnField> {
         return stream().filter(f -> f.isSet()).collect(Collectors.toCollection(AtkEnFields::new));
     }
 
+    public AtkEnFields setIgnore(boolean ignore) {
+        stream().forEach(f -> f.setIgnore(ignore));
+        return this;
+    }
+
     public void reset() {
         stream().forEach(f -> f.reset());
     }
