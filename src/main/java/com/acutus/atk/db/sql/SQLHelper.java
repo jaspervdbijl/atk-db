@@ -69,7 +69,8 @@ public class SQLHelper {
             if (type.equals(value.getClass())) return (T) value;
             if (Clob.class.equals(type)) return (T) value;
             if (Blob.class.equals(type)) return (T) value;
-            if (Character.class.equals(type)) return (T) (isNotEmpty(value.toString()) ? value.toString().charAt(0) : null);
+            if (Character.class.equals(type))
+                return (T) (isNotEmpty(value.toString()) ? value.toString().charAt(0) : null);
             if (LocalDateTime.class.equals(type) && value.getClass().equals(Timestamp.class))
                 return (T) ((Timestamp) value).toLocalDateTime();
             if (LocalDate.class.equals(type) && value.getClass().equals(Timestamp.class))
@@ -79,7 +80,7 @@ public class SQLHelper {
             throw new UnsupportedOperationException(
                     String.format("Could not unwrap types from %s to %s", type.getName(), value.getClass().getName()));
         } catch (Exception ex) {
-            log.warn("Error unwrapping type {} value {}",type,value);
+            log.warn("Error unwrapping type {} value {}", type, value);
             if (ex instanceof RuntimeException) {
                 throw (RuntimeException) ex;
             } else {
@@ -91,7 +92,12 @@ public class SQLHelper {
     @SneakyThrows
     public static <T> T mapFromRs(ResultSet rs, Class<T> type, String colName) {
         Assert.isTrue(RS_FUNC_INT_STR.containsKey(type), "Type not supported %s", type);
-        return (T) unwrap(type, RS_FUNC_INT_STR.get(type).invoke(rs, colName));
+
+        try {
+            return (T) unwrap(type, RS_FUNC_INT_STR.get(type).invoke(rs, colName));
+        } catch (Exception sqlException) {
+            return (T) unwrap(type, RS_FUNC_INT_STR.get(type).invoke(rs, colName.substring(colName.indexOf(".") + 1)));
+        }
     }
 
     /**
