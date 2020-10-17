@@ -6,6 +6,7 @@ import com.acutus.atk.entity.AbstractAtk;
 import com.acutus.atk.entity.AtkFieldList;
 import com.acutus.atk.reflection.Reflect;
 import com.acutus.atk.util.StringUtils;
+import com.acutus.atk.util.Strings;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
@@ -14,6 +15,7 @@ import javax.persistence.Table;
 import javax.sql.DataSource;
 import java.lang.reflect.Field;
 import java.sql.ResultSet;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -141,9 +143,18 @@ public class AbstractAtkEntity<T extends AbstractAtkEntity, O> extends AbstractA
         throw new RuntimeException("Not implemented");
     }
 
+    private static final String[] EMPTY_STRING = new String[]{};
+
+    public String[] maintainColumnsFilter() {return EMPTY_STRING;};
+    public boolean maintainEntity() {return true;}
     public boolean maintainColumns() {return true;}
     public boolean maintainForeignKeys() {return true;}
     public boolean maintainIndex() {return true;}
+
+    public boolean maintainEntityColumn(AtkEnField field) {
+        return maintainColumns() && (maintainColumnsFilter().length == 0
+                || new Strings(maintainColumnsFilter()).containsIgnoreCase(field.getField().getName()));
+    }
 
 
 

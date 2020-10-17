@@ -33,7 +33,9 @@ public @interface AtkEntity {
 
     boolean auditTable() default false;
 
+    boolean maintainEntity() default true;
     boolean maintainColumns() default true;
+    String[] maintainColumnsFilter() default {};
     boolean maintainForeignKeys() default true;
     boolean maintainIndex() default true;
 

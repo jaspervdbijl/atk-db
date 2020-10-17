@@ -41,7 +41,7 @@ public class DriverFactory {
             case "HSQL Database Engine":
                 throw new UnsupportedOperationException("Not implemented");
             case "PostgreSQL":
-                throw new UnsupportedOperationException("Not implemented");
+                return new PostgresqlDriver();
             case "Apache Derby":
                 throw new UnsupportedOperationException("Not implemented");
             default:
