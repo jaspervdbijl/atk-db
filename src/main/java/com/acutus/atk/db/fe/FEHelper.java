@@ -53,21 +53,22 @@ public class FEHelper {
     }
 
     private static void createRecordLogTableIfNotExists(Connection connection) {
-        if (!DriverFactory.getDriver(connection).doesTableExist(connection,"atk_db_record")) {
+        if (!DriverFactory.getDriver(connection).doesTableExist(connection, "atk_db_record")) {
             SQLHelper.execute(connection, "create table atk_db_record(table_name varchar(200), checksum varchar(100), modified_time datetime DEFAULT CURRENT_TIMESTAMP)");
         }
     }
 
-    private static boolean recordMismatch(Connection connection,AbstractAtkEntity entity) {
-        Optional<One<String>> hash = SQLHelper.queryOne(connection,String.class,"select checksum from atk_db_record where lower(table_name) = ?"
-                ,entity.getTableName().toLowerCase());
+    private static boolean recordMismatch(Connection connection, AbstractAtkEntity entity) {
+        Optional<One<String>> hash = SQLHelper.queryOne(connection, String.class, "select checksum from atk_db_record where lower(table_name) = ?"
+                , entity.getTableName().toLowerCase());
         return !hash.isPresent() || !hash.get().getFirst().equalsIgnoreCase(entity.getMd5Hash());
     }
 
     @SneakyThrows
     private static void maintainChecksum(Connection connection, AbstractAtkEntity entity) {
-        SQLHelper.executeUpdate(connection,"delete from atk_db_record where lower(table_name) = ? ",entity.getTableName());
-        SQLHelper.executeUpdate(connection,"insert into atk_db_record(table_name,checksum) values (?,?) ",entity.getTableName(),entity.getMd5Hash());
+        log.info("Maintain checksum {}", entity.getTableName());
+        SQLHelper.executeUpdate(connection, "delete from atk_db_record where lower(table_name) = ? ", entity.getTableName());
+        SQLHelper.executeUpdate(connection, "insert into atk_db_record(table_name,checksum) values (?,?) ", entity.getTableName(), entity.getMd5Hash());
     }
 
     @SneakyThrows
@@ -77,23 +78,22 @@ public class FEHelper {
         // filter
         entities = Arrays.stream(entities)
                 .filter(c -> c.maintainEntity())
-                .filter(c -> recordMismatch(connection,c))
+                .filter(c -> recordMismatch(connection, c))
                 .collect(Collectors.toList()).toArray(new AbstractAtkEntity[]{});
 
         AbstractDriver driver = DriverFactory.getDriver(connection);
         // maintain schema's
         for (AbstractAtkEntity entity : entities) {
+            log.info("Maintain {}", entity.getTableName());
 
             if (entity.maintainForeignKeys()) {
                 maintainForeignKeysDrop(connection, driver, entity);
             }
 
-            if (!driver.doesTableExist(connection, entity.getTableName())) {
-                if (entity.maintainEntity()) {
-                    createTable(connection, entity);
-                }
+            if (entity.maintainEntity() && !driver.doesTableExist(connection, entity.getTableName())) {
+                createTable(connection, entity);
             } else if (entity.maintainEntity()) {
-                maintainTable(connection, entity);
+                maintainTable(driver, connection, entity);
             }
         }
         // PK
@@ -118,9 +118,7 @@ public class FEHelper {
         }
         // update checksums
         for (AbstractAtkEntity entity : entities) {
-            if (entity.maintainColumns() && entity.maintainForeignKeys() && entity.maintainIndex()) {
-                maintainChecksum(connection, entity);
-            }
+            maintainChecksum(connection, entity);
         }
     }
 
@@ -152,6 +150,7 @@ public class FEHelper {
 
     @SneakyThrows
     public static void createTable(Connection connection, AbstractAtkEntity entity) {
+        log.info("Create entity {}", entity.getTableName());
         logAndExecute(connection, DriverFactory.getDriver(connection).getCreateSql(entity));
         Populate populate = entity.getClass().getAnnotation(Populate.class);
         if (populate != null) {
@@ -161,8 +160,7 @@ public class FEHelper {
     }
 
     @SneakyThrows
-    public static void maintainTable(Connection connection, AbstractAtkEntity entity) {
-        AbstractDriver driver = DriverFactory.getDriver(connection);
+    public static void maintainTable(AbstractDriver driver, Connection connection, AbstractAtkEntity entity) {
         try (Statement smt = connection.createStatement()) {
             try (ResultSet rs = smt.executeQuery(String.format("select * from %s", entity.getTableName()))) {
                 maintainTable(connection, driver, entity, rs.getMetaData());
@@ -171,13 +169,14 @@ public class FEHelper {
     }
 
     @SneakyThrows
-    private static boolean classTypeMatch(AbstractDriver driver,AtkEnField field,ResultSetMetaData meta,int i) {
+    private static boolean classTypeMatch(AbstractDriver driver, AtkEnField field, ResultSetMetaData meta, int i) {
         return field.getColumnType(driver).getName().equals(meta.getColumnClassName(i + 1))
                 || field.getColumnType(driver).equals(LocalTime.class) && meta.getColumnClassName(i + 1).equalsIgnoreCase("java.sql.Time")
                 || field.getColumnType(driver).equals(LocalDate.class) && meta.getColumnClassName(i + 1).equalsIgnoreCase("java.sql.Date")
                 || field.getColumnType(driver).equals(LocalDateTime.class) && meta.getColumnClassName(i + 1).equalsIgnoreCase("java.sql.Timestamp");
 
     }
+
     @SneakyThrows
     private static void maintainTable(Connection connection, AbstractDriver driver, AbstractAtkEntity entity, ResultSetMetaData meta) {
 
@@ -248,7 +247,7 @@ public class FEHelper {
                 if (entity.maintainColumns()) {
                     logAndExecute(connection, sql);
                 } else {
-                    log.warn("Maintain Columns disabled for {}. Did not execute: {}",entity.getTableName(),sql);
+                    log.warn("Maintain Columns disabled for {}. Did not execute: {}", entity.getTableName(), sql);
                 }
             }
         }
@@ -260,12 +259,13 @@ public class FEHelper {
             if (entity.maintainColumns()) {
                 logAndExecute(connection, sql);
             } else {
-                log.warn("Maintain Columns disabled for {}. Did not execute: {}",entity.getTableName(),sql);
+                log.warn("Maintain Columns disabled for {}. Did not execute: {}", entity.getTableName(), sql);
             }
         }
     }
 
     private static void maintainPrimaryKeys(Connection connection, AbstractDriver driver, AbstractAtkEntity entity) {
+        log.info("Maintain PK {}", entity.getTableName());
         Strings dbPks = driver.getPrimaryKeys(connection, entity.getTableName());
 
         AtkEnFields pkToAdd = entity.getEnFields().getIds()
@@ -294,6 +294,7 @@ public class FEHelper {
      * @param entity
      */
     private static void maintainForeignKeysAdd(Connection connection, AbstractDriver driver, AbstractAtkEntity entity) {
+        log.info("Maintain FK {}", entity.getTableName());
         FrKeys dbKeys = FrKeys.load(driver.getForeignKeys(connection, entity.getTableName()));
         AtkEnFields enKeys = entity.getEnFields().getForeignKeys();
 
@@ -305,6 +306,7 @@ public class FEHelper {
 
     @SneakyThrows
     public static void maintainIndexes(Connection connection, AbstractDriver driver, AbstractAtkEntity entity) {
+        log.info("Maintain Index {}", entity.getTableName());
         Indexes indexes = driver.getIndexes(connection, entity.getTableName());
 
         FrKeys dbKeys = FrKeys.load(driver.getForeignKeys(connection, entity.getTableName()));

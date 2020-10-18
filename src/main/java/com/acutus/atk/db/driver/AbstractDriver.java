@@ -68,7 +68,7 @@ public abstract class AbstractDriver {
     public boolean doesTableExist(Connection connection, String tableName) {
         try (Statement smt = connection.createStatement()) {
             try {
-                try (ResultSet rs = smt.executeQuery(String.format("select * from %s", tableName))) {
+                try (ResultSet rs = smt.executeQuery(limit(String.format("select * from %s", tableName),1))) {
                     return true;
                 }
             } catch (SQLException sqle) {
