@@ -41,7 +41,9 @@ public class SQLHelper {
                 con.commit();
             } catch (Exception ex) {
                 con.rollback();
-                throw new RuntimeException(ex.getMessage(), ex);
+                throw ex instanceof RuntimeException
+                        ? (RuntimeException) ex :
+                        new RuntimeException(ex.getMessage(), ex);
             }
         }
     }
