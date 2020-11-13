@@ -22,6 +22,7 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -63,7 +64,7 @@ public class View<T extends View> {
     }
 
     @SneakyThrows
-    public void iterate(Connection connection, String sql, CallOne call, Object... params) {
+    public void iterate(Connection connection, String sql, CallOne<T> call, Object... params) {
         AtkEntities entities = getEntities();
         AbstractDriver driver = DriverFactory.getDriver(connection);
 
@@ -81,7 +82,7 @@ public class View<T extends View> {
                 ignoreMissingFields(entities, rs.getMetaData());
                 while (rs.next()) {
                     entities.stream().forEach(e -> ((AbstractAtkEntity) e).set(driver, rs));
-                    call.call(this);
+                    call.call((T) this);
                 }
             }
         }
@@ -91,7 +92,7 @@ public class View<T extends View> {
     public T clone() {
         T view = (T) getClass().getConstructor().newInstance();
         Reflect.getFields(getClass())
-                .filter(f -> f.getType().isAssignableFrom(AbstractAtkEntity.class))
+                .filter(f -> AbstractAtkEntity.class.isAssignableFrom(f.getType()))
                 .forEach(f -> handle(() -> f.set(view, ((AbstractAtkEntity) f.get(this))
                         .clone())));
         return view;
@@ -105,6 +106,32 @@ public class View<T extends View> {
 
     public List<T> getAll(DataSource dataSource, String sql, Object... params) {
         return runAndReturn(dataSource, c -> getAll(c,sql,params));
+    }
+
+    @SneakyThrows
+    private <T> boolean observeMatch(Class observable, T v1,T v2) {
+        Field obField = Reflect.getFields(getClass())
+                .filterType(AbstractAtkEntity.class).stream().filter(c -> c.getType().equals(observable)).findFirst().get();
+        AbstractAtkEntity e1 = (AbstractAtkEntity) obField.get(v1);
+        AbstractAtkEntity e2 = (AbstractAtkEntity) obField.get(v2);
+        return e1.getEnFields().getIds().isEqual(e2.getEnFields().getIds());
+    }
+
+    @SneakyThrows
+    public void observe(Connection connection, Class observable, String sql, CallOne<List<T>> call, Object... params) {
+        List<T>  values = new ArrayList<>();
+        iterate(connection,sql,(value) -> {
+            if (!values.isEmpty()) {
+                if (!observeMatch(observable,values.get(values.size()-1),value)) {
+                    call.call(values);
+                    values.clear();
+                }
+            }
+            values.add((T) value.clone());
+        },params);
+        if (!values.isEmpty()) {
+            call.call(values);
+        }
     }
 
 }
