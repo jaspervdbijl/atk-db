@@ -154,7 +154,7 @@ public class Query<T extends AbstractAtkEntity, O> {
      * @param map
      * @param entity
      * @param rs
-     * @return the mapped entity, if the entity has alrady been loaded into the map, and if the entity's id is null
+     * @return the mapped entity, if the entity has already been loaded into the map, and if the entity's id is null
      */
     @SneakyThrows
     private Three<AbstractAtkEntity, Boolean, Boolean> loadCascade(AbstractDriver driver,AtomicInteger cnt, Map<String, AbstractAtkEntity> map, AbstractAtkEntity entity, ResultSet rs) {
@@ -166,6 +166,8 @@ public class Query<T extends AbstractAtkEntity, O> {
         String key = keyIsNul.getFirst();
         boolean existed = map.containsKey(key);
         if (!map.containsKey(key)) {
+            // if count is -1 then it means its a new row for the main entity and you can clear the map
+            map.clear();
             map.put(key, entity.clone());
         }
         AbstractAtkEntity local = map.get(key);
