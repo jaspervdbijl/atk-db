@@ -87,26 +87,14 @@ public class Query<T extends AbstractAtkEntity, O> {
     }
 
     @SneakyThrows
-    private String getLeftJoinManyToOneNormalised(AtomicInteger cnt, AbstractAtkEntity entity, AtkEnRelation re, AbstractAtkEntity e,
-                                                  AbstractAtkEntity parent, AbstractAtkEntity child) {
-        AtkEnFields fk = parent.getEnFields().getForeignKeys(child.getClass());
+    private String getLeftJoinManyToOne(AtomicInteger cnt, String tableName, AbstractAtkEntity entity, AtkEnRelation re, AbstractAtkEntity e) {
+        AtkEnFields fk = entity.getEnFields().getForeignKeys(e.getClass());
         String realTableName = e.getTableName();
         e.setTableName(getTmpTablename(cnt.getAndIncrement()));
         Assert.isTrue(fk.size() == 1, "FK [" + fk.getColNames() + "] not located for " + entity.getTableName());
-        return String.format("left join %s %s on %s = %s", realTableName, e.getTableName(),
-                fk.get(0).getTableAndColName(), entity.getEnFields().getSingleId().getTableAndColName()) + " " +
+        return String.format("left join %s %s on %s =%s.%s", realTableName, e.getTableName(),
+                fk.get(0).getTableAndColName(), e.getTableName(), entity.getEnFields().getSingleId().getColName()) + " " +
                 getLeftJoin(cnt, e);
-    }
-
-    @SneakyThrows
-    private String getLeftJoinManyToOne(AtomicInteger cnt, AbstractAtkEntity entity, AtkEnRelation re, AbstractAtkEntity e) {
-        AtkEnFields fk = entity.getEnFields().getForeignKeys(e.getClass());
-        if (fk.isEmpty()) {
-            // try inverse
-            return getLeftJoinManyToOneNormalised(cnt,entity,re,e,e,entity);
-        } else {
-            return getLeftJoinManyToOneNormalised(cnt,entity,re,e,entity,e);
-        }
     }
 
     @SneakyThrows
@@ -119,7 +107,7 @@ public class Query<T extends AbstractAtkEntity, O> {
         if (re.getRelType() == AtkEnRelation.RelType.OneToMany || re.getRelType() == AtkEnRelation.RelType.OneToOne) {
             return getLeftJoinOneTo(cnt, tableName, entity, re, e);
         } else {
-            return getLeftJoinManyToOne(cnt, entity, re, e);
+            return getLeftJoinManyToOne(cnt, tableName, entity, re, e);
         }
     }
 
@@ -154,20 +142,6 @@ public class Query<T extends AbstractAtkEntity, O> {
         return leftJoin.toString(" ");
     }
 
-    @SneakyThrows
-    private String getLeftJoinFields(Strings fields,AtomicInteger cnt, AbstractAtkEntity entity) {
-        for (Field f : getEagerFields(entity)) {
-            Optional<Field> enRefField = entity.getRefFields().get(f.getName() + "Ref");
-            Assert.isTrue(enRefField.isPresent(), "Field not found " + f.getName() + "Ref");
-            AbstractAtkEntity child = (AbstractAtkEntity) ((AtkEnRelation) enRefField.get().get(entity)).getType().getConstructor().newInstance();
-            fields.add(child.getEnFields().getColNames().stream().map(n -> (getTmpTablename(cnt.get())+"."+n))
-                    .reduce((s1,s2) -> s1+","+s2).get());
-            cnt.incrementAndGet();
-            getLeftJoinFields(fields,cnt, child);
-        }
-        return fields.toString(",");
-    }
-
     private Two<String,Boolean> keyToString(AbstractAtkEntity entity) {
         Optional<AtkEnField> hasNull = entity.getEnFields().getIds().stream().filter(f -> f.get() == null).findAny();
         return new Two(entity.getTableName() + "_" + entity.getEnFields().getIds()
@@ -180,7 +154,7 @@ public class Query<T extends AbstractAtkEntity, O> {
      * @param map
      * @param entity
      * @param rs
-     * @return the mapped entity, if the entity has alrady been loaded into the map, and if the entity's id is null
+     * @return the mapped entity, if the entity has already been loaded into the map, and if the entity's id is null
      */
     @SneakyThrows
     private Three<AbstractAtkEntity, Boolean, Boolean> loadCascade(AbstractDriver driver,AtomicInteger cnt, Map<String, AbstractAtkEntity> map, AbstractAtkEntity entity, ResultSet rs) {
@@ -192,9 +166,8 @@ public class Query<T extends AbstractAtkEntity, O> {
         String key = keyIsNul.getFirst();
         boolean existed = map.containsKey(key);
         if (!map.containsKey(key)) {
-            if (cnt.get() == -1) {
-                map.clear();
-            }
+            // if count is -1 then it means its a new row for the main entity and you can clear the map
+            map.clear();
             map.put(key, entity.clone());
         }
         AbstractAtkEntity local = map.get(key);
@@ -259,8 +232,10 @@ public class Query<T extends AbstractAtkEntity, O> {
 
         if (!lj.isEmpty()) {
             int offset = split.indexOfIgnoreCase(entity.getTableName());
-            split.add(0, "," +
-                    getLeftJoinFields(new Strings(),new AtomicInteger(0),entity));
+            String selectLJ = IntStream.range(0, lj.split("left join").length - 1)
+                    .mapToObj(i -> getTmpTablename(i) + ".*").reduce((t1, t2) -> t1 + ", " + t2).get();
+
+            split.add(0, "," + selectLJ);
             split.add(2 + offset, lj);
         }
 
@@ -280,7 +255,7 @@ public class Query<T extends AbstractAtkEntity, O> {
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             filter.prepare(ps);
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next() && limit != 0) {
+                while (rs.next() && (limit > 0 || limit < 0)) {
                     if (!shouldLeftJoin) {
                         iterate.call((T) entity.set(driver, rs).clone());
                     } else {
