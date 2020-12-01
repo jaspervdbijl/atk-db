@@ -167,7 +167,7 @@ public class Query<T extends AbstractAtkEntity, O> {
         boolean existed = map.containsKey(key);
         if (!map.containsKey(key)) {
             // if count is -1 then it means its a new row for the main entity and you can clear the map
-            map.clear();
+            if (cnt.get() == -1) map.clear();
             map.put(key, entity.clone());
         }
         AbstractAtkEntity local = map.get(key);
