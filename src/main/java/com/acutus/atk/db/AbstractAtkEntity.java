@@ -92,6 +92,7 @@ public class AbstractAtkEntity<T extends AbstractAtkEntity, O> extends AbstractA
 
     public O toBase() {
         O base = super.toBase();
+
         // process eager fetches and map them to their dao's
         getOneToMany(this).forEach(f -> handle(() -> {
             if (f.get(this) != null) {
