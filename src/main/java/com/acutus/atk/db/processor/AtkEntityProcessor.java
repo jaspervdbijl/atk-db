@@ -22,6 +22,7 @@ import javax.lang.model.type.TypeMirror;
 import javax.persistence.*;
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.stream.Collectors;
@@ -334,7 +335,7 @@ public class AtkEntityProcessor extends AtkProcessor {
 
         FieldFilter filter = element.getAnnotation(FieldFilter.class);
         String filterStr = filter != null ? "\"" + filter.fields()[0] + "\", " : "";
-        values.add(String.format("\tpublic transient AtkEnRelation<%s> %sRef = new AtkEnRelation<>(%s.class, AtkEnRelation.RelType."+(manyToOne != null ? "ManyToOne" : "OneToOne")+",%s this);"
+        values.add(String.format("\tpublic transient AtkEnRelation<%s> %sRef = new AtkEnRelation<>(%s.class, AtkEnRelation.RelType." + (manyToOne != null ? "ManyToOne" : "OneToOne") + ",%s this);"
                 , className, element.toString(), className, filterStr));
         FieldFilter fieldFilter = element.getAnnotation(FieldFilter.class);
 
@@ -373,11 +374,12 @@ public class AtkEntityProcessor extends AtkProcessor {
 
     @SneakyThrows
     @Override
-    protected Optional<Three<Element, Atk.Match,Boolean>> getDaoClass(Element element) {
+    protected List<Three<Element, Atk.Match, Boolean>> getDaoClass(Element element) {
         AtkEntity atk = element.getAnnotation(AtkEntity.class);
-        return atk == null || "java.lang.Void".equals(extractDaoClassName(atk.toString()))
-                ? Optional.empty()
-                : Optional.of(new Three<>(getClassElement(extractDaoClassName(atk.toString())), atk.daoMatch(),atk.daoCopyAll()));
+        return atk == null || extractDaoClassNames(atk.toString()).isEmpty()
+                ? List.of()
+                : extractDaoClassNames(atk.toString()).stream()
+                .map(c -> new Three<>(getClassElement(c), atk.daoMatch(), atk.daoCopyAll())).collect(Collectors.toList());
     }
 
     @Override
@@ -391,16 +393,16 @@ public class AtkEntityProcessor extends AtkProcessor {
         methods.add(String.format("\t@Override\n\tpublic AtkEntity.Type getEntityType() {return AtkEntity.Type.%s;}", atk.type().name()));
 
 
-        methods.add(String.format("\t@Override\n\tpublic boolean maintainEntity() {return %s;}", atk.maintainEntity()+""));
-        methods.add(String.format("\t@Override\n\tpublic boolean maintainColumns() {return %s;}", atk.maintainColumns()+""));
-        methods.add(String.format("\t@Override\n\tpublic boolean maintainForeignKeys() {return %s;}", atk.maintainForeignKeys()+""));
-        methods.add(String.format("\t@Override\n\tpublic boolean maintainIndex() {return %s;}", atk.maintainIndex()+""));
+        methods.add(String.format("\t@Override\n\tpublic boolean maintainEntity() {return %s;}", atk.maintainEntity() + ""));
+        methods.add(String.format("\t@Override\n\tpublic boolean maintainColumns() {return %s;}", atk.maintainColumns() + ""));
+        methods.add(String.format("\t@Override\n\tpublic boolean maintainForeignKeys() {return %s;}", atk.maintainForeignKeys() + ""));
+        methods.add(String.format("\t@Override\n\tpublic boolean maintainIndex() {return %s;}", atk.maintainIndex() + ""));
 
         // views
         if (atk.type() == AtkEntity.Type.VIEW) {
             methods.add(String.format("\tpublic static String getViewResource() {return getCachedResource(\"%s\");}", atk.viewSqlResource()));
             if (isNotEmpty(atk.viewSqlResource())) {
-                methods.add(String.format("\tpublic List<%s> view(Connection c,Object ... params) {return new Query(this).getAllFromResource(c,\"%s\",params);}", getClassName(element),atk.viewSqlResource()));
+                methods.add(String.format("\tpublic List<%s> view(Connection c,Object ... params) {return new Query(this).getAllFromResource(c,\"%s\",params);}", getClassName(element), atk.viewSqlResource()));
                 methods.add(String.format("\tpublic List<%s> viewFrom(Connection c,String sql,Object ... params) {return new Query(this).getAllFromResource(c,sql);}", getClassName(element)));
                 methods.add(String.format("\tpublic void view(Connection c,CallOne<%s> itr, int limit,Object ... params) {new Query(this).getAllFromResource(c,itr,limit,\"%s\",params);}", getClassName(element), atk.viewSqlResource()));
                 methods.add(String.format("\tpublic void view(Connection c,String sql, CallOne<%s> itr, int limit,Object ... params) {new Query(this).getAllFromResource(c,itr,limit,sql,params);}", getClassName(element)));
