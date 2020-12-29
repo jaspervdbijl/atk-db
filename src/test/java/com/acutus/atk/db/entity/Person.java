@@ -7,7 +7,7 @@ import javax.persistence.Column;
 import javax.persistence.Id;
 import javax.persistence.Lob;
 
-@AtkEntity(daoClass = PersonV1.class)
+@AtkEntity(daoClass = {PersonV1.class,PersonV2.class})
 public class Person {
 
     @Id

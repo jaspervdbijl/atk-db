@@ -4,11 +4,13 @@ import com.acutus.atk.db.AbstractAtkEntity;
 import com.acutus.atk.db.AtkEnField;
 import com.acutus.atk.db.annotations.ForeignKey;
 import com.acutus.atk.util.Assert;
+import com.acutus.atk.util.StringUtils;
 import com.acutus.atk.util.collection.One;
 import lombok.SneakyThrows;
 
 import javax.persistence.Column;
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.util.List;
 import java.util.Optional;
 
@@ -47,5 +49,12 @@ public class MysqlDriver extends AbstractDriver {
     public String getFieldTypeForClob(Optional<Column> column) {
         return "longtext";
     }
+
+    @SneakyThrows
+    public String getColMetadataDefault(ResultSet rs) {
+        String def = super.getColMetadataDefault(rs);
+        return "0000-00-00 00:00:00".equals(def) ? "" : def;
+    }
+
 
 }

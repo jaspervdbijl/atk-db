@@ -275,4 +275,9 @@ public abstract class AbstractDriver {
 
     public abstract String limit(String sql, int limit);
 
+    @SneakyThrows
+    public String getColMetadataDefault(ResultSet rs) {
+        return StringUtils.defaultString(rs.getString("COLUMN_DEF"));
+    }
+
 }
