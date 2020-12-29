@@ -164,6 +164,7 @@ public class FEHelper {
         try (Statement smt = connection.createStatement()) {
             try (ResultSet rs = smt.executeQuery(String.format("select * from %s", entity.getTableName()))) {
                 maintainTable(connection, driver, entity, rs.getMetaData());
+                connection.commit();
             }
         }
     }

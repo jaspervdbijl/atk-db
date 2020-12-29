@@ -248,7 +248,7 @@ public class Query<T extends AbstractAtkEntity, O> {
     public void getAll(Connection connection, Filter filter, CallOne<T> iterate, int limit) {
         AbstractDriver driver = DriverFactory.getDriver(connection);
         boolean shouldLeftJoin = selectFilter == null && entity.getEntityType() == AtkEntity.Type.TABLE;
-        String sql = getProcessedSql(filter);
+        String sql = limit > -1 ? driver.limit(getProcessedSql(filter),limit) : getProcessedSql(filter);
 
         // transform the select *
         Map<String, AbstractAtkEntity> map = new HashMap<>();
@@ -256,14 +256,13 @@ public class Query<T extends AbstractAtkEntity, O> {
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             filter.prepare(ps);
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next() && (limit > 0 || limit < 0)) {
+                while (rs.next()) {
                     if (!shouldLeftJoin) {
                         iterate.call((T) entity.set(driver, rs).clone());
                     } else {
                         Three<AbstractAtkEntity, Boolean, Boolean> value = loadCascade(driver, new AtomicInteger(-1), map, entity, rs);
                         if (lastEntity != null &&
                                 !value.getFirst().isIdEqual(lastEntity.getFirst())) {
-                            limit--;
                             iterate.call((T) lastEntity.getFirst());
                         }
                         lastEntity = value;
@@ -306,7 +305,7 @@ public class Query<T extends AbstractAtkEntity, O> {
         List<D> entities = new ArrayList<>();
         Optional<Method> m = Reflect.getMethods(entity.getClass()).getByName("to"+type.getSimpleName());
         Assert.isTrue(m.isPresent(),"No Method to"+type.getSimpleName() + " found in class " + entity.getClass());
-        getAll(connection, filter, t -> m.get().invoke(t), limit);
+        getAll(connection, filter, t -> entities.add((D) m.get().invoke(t)), limit);
         return entities;
     }
 
@@ -328,8 +327,8 @@ public class Query<T extends AbstractAtkEntity, O> {
         return getAll(connection, new Filter(sql, params), -1);
     }
 
-    public <D> List<D> getAll(Connection connection, Class<D> type, String sql, Object... params) {
-        return getAll(connection, new Filter(sql, params),type, -1);
+    public <D> List<D> getAll(Connection connection, Class<D> type, int limit, String sql, Object... params) {
+        return getAll(connection, new Filter(sql, params),type, limit);
     }
 
 
