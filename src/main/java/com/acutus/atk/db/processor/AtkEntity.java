@@ -41,6 +41,7 @@ public @interface AtkEntity {
 
     Class[] daoClass() default {};
     Atk.Match daoMatch() default Atk.Match.FULL;
+    String [] daoIgnore() default {};
     boolean daoCopyAll() default true;
 
 
