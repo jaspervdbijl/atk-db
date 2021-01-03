@@ -6,6 +6,7 @@ import com.acutus.atk.entity.processor.Atk;
 import com.acutus.atk.entity.processor.AtkProcessor;
 import com.acutus.atk.io.IOUtil;
 import com.acutus.atk.util.Strings;
+import com.acutus.atk.util.collection.Four;
 import com.acutus.atk.util.collection.Three;
 import com.acutus.atk.util.collection.Two;
 import com.google.auto.service.AutoService;
@@ -177,7 +178,7 @@ public class AtkEntityProcessor extends AtkProcessor {
         Strings append = new Strings();
         AtkEntity atk = element.getAnnotation(AtkEntity.class);
         if (atk.addAuditFields()) {
-            Strings fNames = getFieldNames(element);
+            Strings fNames = getFieldNames(element,false);
             append.add("@CreatedBy @Column(name = \"created_by\") private String createdBy");
             append.add("@CreatedBy " + getAuditAtkEnField(element, "createdBy", "String"));
             append.add("@CreatedDate @Column(name = \"created_date\") private LocalDateTime createdDate");
@@ -193,7 +194,7 @@ public class AtkEntityProcessor extends AtkProcessor {
     private Strings getIndexes(Element element) {
         // add all indexes
         Strings indexes = new Strings();
-        Strings fNames = getFieldNames(element);
+        Strings fNames = getFieldNames(element,false);
         getFields(element)
                 .filter(f -> f.getAnnotation(Index.class) != null)
                 .forEach(f -> indexes.add(getIndex(f, f.getAnnotation(Index.class), fNames)));
@@ -374,12 +375,12 @@ public class AtkEntityProcessor extends AtkProcessor {
 
     @SneakyThrows
     @Override
-    protected List<Three<Element, Atk.Match, Boolean>> getDaoClass(Element element) {
+    protected List<Four<Element, Atk.Match, Boolean,String[]>> getDaoClass(Element element) {
         AtkEntity atk = element.getAnnotation(AtkEntity.class);
         return atk == null || extractDaoClassNames(atk.toString()).isEmpty()
                 ? List.of()
                 : extractDaoClassNames(atk.toString()).stream()
-                .map(c -> new Three<>(getClassElement(c), atk.daoMatch(), atk.daoCopyAll())).collect(Collectors.toList());
+                .map(c -> new Four<>(getClassElement(c), atk.daoMatch(), atk.daoCopyAll(),atk.daoIgnore())).collect(Collectors.toList());
     }
 
     @Override
