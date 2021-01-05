@@ -1,5 +1,6 @@
 package com.acutus.atk.db.entity;
 
+import com.acutus.atk.entity.processor.Alternate;
 import lombok.Data;
 
 import javax.persistence.Column;
@@ -11,7 +12,8 @@ public class PersonV1 {
 
     private String id;
     private String name;
-    private String surname;
+    @Alternate("surname")
+    private String surnameV1;
 
 
 }

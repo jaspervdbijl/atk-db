@@ -1,6 +1,7 @@
 package com.acutus.atk.db.entity;
 
 import com.acutus.atk.db.processor.AtkEntity;
+import com.acutus.atk.entity.processor.Alternate;
 import com.acutus.atk.util.Strings;
 
 import javax.persistence.Column;
