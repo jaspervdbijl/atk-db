@@ -39,6 +39,7 @@ import static com.acutus.atk.util.StringUtils.*;
 @AutoService(Processor.class)
 public class AtkEntityProcessor extends AtkProcessor {
 
+
     @Override
     public boolean isPrimitive(Element e) {
         return super.isPrimitive(e) || e.getAnnotation(Enumerated.class) != null;
