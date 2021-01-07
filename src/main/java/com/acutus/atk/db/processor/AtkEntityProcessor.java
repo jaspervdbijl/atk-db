@@ -4,12 +4,11 @@ import com.acutus.atk.db.annotations.FieldFilter;
 import com.acutus.atk.db.annotations.Index;
 import com.acutus.atk.entity.processor.Atk;
 import com.acutus.atk.entity.processor.AtkProcessor;
-import com.acutus.atk.io.IOUtil;
 import com.acutus.atk.util.Strings;
 import com.acutus.atk.util.collection.Four;
-import com.acutus.atk.util.collection.Three;
-import com.acutus.atk.util.collection.Two;
 import com.google.auto.service.AutoService;
+import com.sun.source.tree.MethodTree;
+import com.sun.source.util.Trees;
 import lombok.SneakyThrows;
 
 import javax.annotation.processing.Processor;
@@ -24,14 +23,14 @@ import javax.persistence.*;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.acutus.atk.db.processor.AtkEntity.ColumnNamingStrategy.CAMEL_CASE_UNDERSCORE;
 import static com.acutus.atk.db.processor.ProcessorHelper.*;
-import static com.acutus.atk.util.StringUtils.*;
+import static com.acutus.atk.util.StringUtils.isNotEmpty;
+import static com.acutus.atk.util.StringUtils.removeAllASpaces;
 
 @SupportedAnnotationTypes(
         "com.acutus.atk.db.processor.AtkEntity")
@@ -117,9 +116,15 @@ public class AtkEntityProcessor extends AtkProcessor {
                                 : String.format("name=\"%s\"", tableName)) :
                         "";
 
+        String interFaces = getInterfaces(element).removeEmpty().toString(",");
+
+        if (!interFaces.isEmpty()) {
+            interFaces = "implements  " + interFaces;
+        }
+
         return className.substring(0, className.indexOf("public class "))
-                + tableAno + " " + String.format("public class %s extends AbstractAtkEntity<%s,%s> {"
-                , getClassName(element), getClassName(element), element.getSimpleName());
+                + tableAno + " " + String.format("public class %s extends AbstractAtkEntity<%s,%s> %s{"
+                , getClassName(element), getClassName(element), element.getSimpleName(), interFaces);
 
     }
 
@@ -179,7 +184,6 @@ public class AtkEntityProcessor extends AtkProcessor {
         Strings append = new Strings();
         AtkEntity atk = element.getAnnotation(AtkEntity.class);
         if (atk.addAuditFields()) {
-            Strings fNames = getFieldNames(element,false);
             append.add("@CreatedBy @Column(name = \"created_by\") private String createdBy");
             append.add("@CreatedBy " + getAuditAtkEnField(element, "createdBy", "String"));
             append.add("@CreatedDate @Column(name = \"created_date\") private LocalDateTime createdDate");
@@ -195,7 +199,7 @@ public class AtkEntityProcessor extends AtkProcessor {
     private Strings getIndexes(Element element) {
         // add all indexes
         Strings indexes = new Strings();
-        Strings fNames = getFieldNames(element,false);
+        Strings fNames = getFieldNames(element, false);
         getFields(element)
                 .filter(f -> f.getAnnotation(Index.class) != null)
                 .forEach(f -> indexes.add(getIndex(f, f.getAnnotation(Index.class), fNames)));
@@ -376,12 +380,12 @@ public class AtkEntityProcessor extends AtkProcessor {
 
     @SneakyThrows
     @Override
-    protected List<Four<Element, Atk.Match, Boolean,String[]>> getDaoClass(Element element) {
+    protected List<Four<Element, Atk.Match, Boolean, String[]>> getDaoClass(Element element) {
         AtkEntity atk = element.getAnnotation(AtkEntity.class);
         return atk == null || extractDaoClassNames(atk.toString()).isEmpty()
                 ? List.of()
                 : extractDaoClassNames(atk.toString()).stream()
-                .map(c -> new Four<>(getClassElement(c), atk.daoMatch(), atk.daoCopyAll(),atk.daoIgnore())).collect(Collectors.toList());
+                .map(c -> new Four<>(getClassElement(c), atk.daoMatch(), atk.daoCopyAll(), atk.daoIgnore())).collect(Collectors.toList());
     }
 
     @Override
@@ -389,8 +393,8 @@ public class AtkEntityProcessor extends AtkProcessor {
         AtkEntity atk = element.getAnnotation(AtkEntity.class);
         // add all query shortcuts
         Strings methods = new Strings();
-        methods.add(String.format("\tpublic Query<%s,%s> query() {return new Query(this);}", getClassName(element), element.getSimpleName()));
-        methods.add(String.format("\tpublic Persist<%s> persist() {return new Persist(this);}", getClassName(element)));
+        methods.add(String.format("\tpublic com.acutus.atk.db.Query<%s,%s> query() {return new com.acutus.atk.db.Query(this);}", getClassName(element), element.getSimpleName()));
+        methods.add(String.format("\tpublic com.acutus.atk.db.Persist<%s> persist() {return new com.acutus.atk.db.Persist(this);}", getClassName(element)));
         methods.add(String.format("\tpublic int version() {return %d;}", atk.version()));
         methods.add(String.format("\t@Override\n\tpublic AtkEntity.Type getEntityType() {return AtkEntity.Type.%s;}", atk.type().name()));
 
@@ -415,12 +419,28 @@ public class AtkEntityProcessor extends AtkProcessor {
         methods.addAll(getExecuteOrQueries(atk, element));
         methods.addAll(getOneToMany(atk, element));
         methods.addAll(getManyToOne(atk, element));
+
+        for (Element methodDeclaration : element.getEnclosedElements()) {
+            if (methodDeclaration instanceof ExecutableElement) {
+                MethodTree methodTree = Trees.instance(processingEnv).getTree((ExecutableElement) methodDeclaration);
+
+                if (methodTree != null &&
+                        !methodTree.toString().contains("<init>()") &&
+                        !methodTree.toString().contains("@Query") &&
+                        !methodTree.toString().contains("@Execute")) {
+                    System.out.println(methodTree);
+                    methods.add(methodTree.toString());
+                }
+            }
+        }
+
         return methods;
     }
 
     @Override
     protected Strings getImports(Element element) {
-        return super.getImports(element).plus("import com.acutus.atk.db.*").plus("import com.acutus.atk.db.annotations.*")
+        return super.getImports(element).plus("import com.acutus.atk.db.*")
+                .plus("import com.acutus.atk.db.annotations.*")
                 .plus("import static com.acutus.atk.db.sql.SQLHelper.runAndReturn")
                 .plus("import static com.acutus.atk.db.sql.SQLHelper.queryOne")
                 .plus("import static com.acutus.atk.db.sql.SQLHelper.query")
@@ -441,9 +461,6 @@ public class AtkEntityProcessor extends AtkProcessor {
                 .plus("import com.acutus.atk.db.*")
                 .plus("import com.acutus.atk.util.collection.*")
                 .plus("import com.acutus.atk.db.processor.AtkEntity")
-                .plus("import com.acutus.atk.util.call.CallOne")
-                ;
+                .plus("import com.acutus.atk.util.call.CallOne").removeDuplicates();
     }
-
-
 }
