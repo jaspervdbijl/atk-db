@@ -40,6 +40,7 @@ public class SQLHelper {
                 call.call(con);
                 con.commit();
             } catch (Exception ex) {
+                log.error(ex.getMessage(), ex);
                 con.rollback();
                 throw ex instanceof RuntimeException
                         ? (RuntimeException) ex :
