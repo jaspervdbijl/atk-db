@@ -8,7 +8,6 @@ import com.acutus.atk.io.IOUtil;
 import com.acutus.atk.reflection.Reflect;
 import com.acutus.atk.reflection.ReflectFields;
 import com.acutus.atk.util.Assert;
-import com.acutus.atk.util.SimpleTimer;
 import com.acutus.atk.util.Strings;
 import com.acutus.atk.util.call.CallNilRet;
 import com.acutus.atk.util.call.CallOne;
@@ -22,7 +21,6 @@ import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
 import javax.sql.DataSource;
-import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -33,16 +31,14 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import static com.acutus.atk.db.Query.OrderBy.DESC;
 import static com.acutus.atk.db.driver.DriverFactory.getDriver;
 import static com.acutus.atk.db.sql.Filter.Type.AND;
 import static com.acutus.atk.db.sql.Filter.and;
-import static com.acutus.atk.db.sql.Filter.or;
 import static com.acutus.atk.db.sql.SQLHelper.*;
-import static com.acutus.atk.util.AtkUtil.*;
-import static com.acutus.atk.util.StringUtils.*;
+import static com.acutus.atk.util.AtkUtil.getGenericFieldType;
+import static com.acutus.atk.util.AtkUtil.handle;
 
 @Slf4j
 public class Query<T extends AbstractAtkEntity, O> {
@@ -268,6 +264,9 @@ public class Query<T extends AbstractAtkEntity, O> {
                         lastEntity = value;
                     }
                 }
+            } catch (Exception ex) {
+                log.error("sql with error: " + sql);
+                throw ex;
             }
         }
         if (lastEntity != null) {
