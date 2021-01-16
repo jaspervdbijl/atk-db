@@ -420,16 +420,18 @@ public class AtkEntityProcessor extends AtkProcessor {
         methods.addAll(getOneToMany(atk, element));
         methods.addAll(getManyToOne(atk, element));
 
-        for (Element methodDeclaration : element.getEnclosedElements()) {
-            if (methodDeclaration instanceof ExecutableElement) {
-                MethodTree methodTree = Trees.instance(processingEnv).getTree((ExecutableElement) methodDeclaration);
+        if (atk.copyMethods()) {
+            for (Element methodDeclaration : element.getEnclosedElements()) {
+                if (methodDeclaration instanceof ExecutableElement) {
+                    MethodTree methodTree = Trees.instance(processingEnv).getTree((ExecutableElement) methodDeclaration);
 
-                if (methodTree != null &&
-                        !methodTree.toString().contains("<init>()") &&
-                        !methodTree.toString().contains("@Query") &&
-                        !methodTree.toString().contains("@Execute")) {
-                    System.out.println(methodTree);
-                    methods.add(methodTree.toString());
+                    if (methodTree != null &&
+                            !methodTree.toString().contains("<init>()") &&
+                            !methodTree.toString().contains("@Query") &&
+                            !methodTree.toString().contains("@Execute")) {
+                        System.out.println(methodTree);
+                        methods.add(methodTree.toString());
+                    }
                 }
             }
         }

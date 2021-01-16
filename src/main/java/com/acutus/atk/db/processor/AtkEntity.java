@@ -39,7 +39,9 @@ public @interface AtkEntity {
     boolean maintainForeignKeys() default true;
     boolean maintainIndex() default true;
 
-    Class[] daoClass() default {};
+    boolean copyMethods() default false;
+
+    Class[] daoClass() default  {};
     Atk.Match daoMatch() default Atk.Match.FULL;
     String [] daoIgnore() default {};
     boolean daoCopyAll() default true;
