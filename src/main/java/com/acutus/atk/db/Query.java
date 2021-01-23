@@ -244,7 +244,7 @@ public class Query<T extends AbstractAtkEntity, O> {
     public void getAll(Connection connection, Filter filter, CallOne<T> iterate, int limit) {
         AbstractDriver driver = DriverFactory.getDriver(connection);
         boolean shouldLeftJoin = selectFilter == null && entity.getEntityType() == AtkEntity.Type.TABLE;
-        String sql = limit > -1 ? driver.limit(getProcessedSql(filter),limit) : getProcessedSql(filter);
+        String sql = !shouldLeftJoin && limit > -1 ? driver.limit(getProcessedSql(filter),limit) : getProcessedSql(filter);
 
         // transform the select *
         Map<String, AbstractAtkEntity> map = new HashMap<>();
