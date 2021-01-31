@@ -43,7 +43,7 @@ import static com.acutus.atk.util.AtkUtil.handle;
 @Slf4j
 public class Query<T extends AbstractAtkEntity, O> {
 
-    private static Map<String,String> RESOURCE_MAP = new HashMap<>();
+    private static Map<String, String> RESOURCE_MAP = new HashMap<>();
 
     public enum OrderBy {
         ASC, DESC
@@ -59,7 +59,7 @@ public class Query<T extends AbstractAtkEntity, O> {
     @SneakyThrows
     public static synchronized String getSqlResource(String name) {
         if (!RESOURCE_MAP.containsKey(name)) {
-            RESOURCE_MAP.put(name,new String(IOUtil.readAvailable(Thread.currentThread().getContextClassLoader().getResourceAsStream(name))));
+            RESOURCE_MAP.put(name, new String(IOUtil.readAvailable(Thread.currentThread().getContextClassLoader().getResourceAsStream(name))));
         }
         return RESOURCE_MAP.get(name);
     }
@@ -139,14 +139,13 @@ public class Query<T extends AbstractAtkEntity, O> {
         return leftJoin.toString(" ");
     }
 
-    private Two<String,Boolean> keyToString(AbstractAtkEntity entity) {
+    private Two<String, Boolean> keyToString(AbstractAtkEntity entity) {
         Optional<AtkEnField> hasNull = entity.getEnFields().getIds().stream().filter(f -> f.get() == null).findAny();
         return new Two(entity.getTableName() + "_" + entity.getEnFields().getIds()
-                .stream().map((f1 -> ""+f1.get())).reduce((o1, o2) -> o1 + "" + o2).get(),!hasNull.isEmpty());
+                .stream().map((f1 -> "" + f1.get())).reduce((o1, o2) -> o1 + "" + o2).get(), !hasNull.isEmpty());
     }
 
     /**
-     *
      * @param cnt
      * @param map
      * @param entity
@@ -154,12 +153,12 @@ public class Query<T extends AbstractAtkEntity, O> {
      * @return the mapped entity, if the entity has already been loaded into the map, and if the entity's id is null
      */
     @SneakyThrows
-    private Three<AbstractAtkEntity, Boolean, Boolean> loadCascade(AbstractDriver driver,AtomicInteger cnt, Map<String, AbstractAtkEntity> map, AbstractAtkEntity entity, ResultSet rs) {
+    private Three<AbstractAtkEntity, Boolean, Boolean> loadCascade(AbstractDriver driver, AtomicInteger cnt, Map<String, AbstractAtkEntity> map, AbstractAtkEntity entity, ResultSet rs) {
         if (cnt.get() > -1) {
             entity.setTableName(getTmpTablename(cnt.get()));
         }
         entity.set(driver, rs);
-        Two<String,Boolean> keyIsNul = keyToString(entity);
+        Two<String, Boolean> keyIsNul = keyToString(entity);
         String key = keyIsNul.getFirst();
         boolean existed = map.containsKey(key);
         if (!map.containsKey(key)) {
@@ -218,7 +217,7 @@ public class Query<T extends AbstractAtkEntity, O> {
         String sql = prepareSql(filter).replaceAll("\\p{Cntrl}", " ");
 
         String select = sql.substring(sql.toLowerCase().indexOf("select ") + "select ".length());
-        select = select.substring(0,select.toLowerCase().indexOf(" from "));
+        select = select.substring(0, select.toLowerCase().indexOf(" from "));
 
         // add all the left joins
         sql = sql.substring(sql.toLowerCase().indexOf("from "));
@@ -244,7 +243,7 @@ public class Query<T extends AbstractAtkEntity, O> {
     public void getAll(Connection connection, Filter filter, CallOne<T> iterate, int limit) {
         AbstractDriver driver = DriverFactory.getDriver(connection);
         boolean shouldLeftJoin = selectFilter == null && entity.getEntityType() == AtkEntity.Type.TABLE;
-        String sql = !shouldLeftJoin && limit > -1 ? driver.limit(getProcessedSql(filter),limit) : getProcessedSql(filter);
+        String sql = !shouldLeftJoin && limit > -1 ? driver.limit(getProcessedSql(filter), limit) : getProcessedSql(filter);
 
         // transform the select *
         Map<String, AbstractAtkEntity> map = new HashMap<>();
@@ -257,9 +256,9 @@ public class Query<T extends AbstractAtkEntity, O> {
                         iterate.call((T) entity.set(driver, rs).clone());
                     } else {
                         Three<AbstractAtkEntity, Boolean, Boolean> value = loadCascade(driver, new AtomicInteger(-1), map, entity, rs);
-                        if (lastEntity != null &&
-                                !value.getFirst().isIdEqual(lastEntity.getFirst())) {
+                        if (lastEntity != null && !value.getFirst().isIdEqual(lastEntity.getFirst())) {
                             iterate.call((T) lastEntity.getFirst());
+                            if (--limit == 0) return;
                         }
                         lastEntity = value;
                     }
@@ -292,6 +291,7 @@ public class Query<T extends AbstractAtkEntity, O> {
 
     /**
      * get dao class
+     *
      * @param connection
      * @param filter
      * @param type
@@ -302,19 +302,19 @@ public class Query<T extends AbstractAtkEntity, O> {
     @SneakyThrows
     public <D> List<D> getAll(Connection connection, Filter filter, Class<D> type, int limit) {
         List<D> entities = new ArrayList<>();
-        Optional<Method> m = Reflect.getMethods(entity.getClass()).getByName("to"+type.getSimpleName());
-        Assert.isTrue(m.isPresent(),"No Method to"+type.getSimpleName() + " found in class " + entity.getClass());
+        Optional<Method> m = Reflect.getMethods(entity.getClass()).getByName("to" + type.getSimpleName());
+        Assert.isTrue(m.isPresent(), "No Method to" + type.getSimpleName() + " found in class " + entity.getClass());
         getAll(connection, filter, t -> entities.add((D) m.get().invoke(t)), limit);
         return entities;
     }
 
 
     public AtkEntities<T> getAll(DataSource dataSource, Filter filter, int limit) {
-        return runAndReturn(dataSource,c -> getAll(c,filter,limit));
+        return runAndReturn(dataSource, c -> getAll(c, filter, limit));
     }
 
     public <D> List<D> getAll(DataSource dataSource, Filter filter, Class<D> type, int limit) {
-        return runAndReturn(dataSource,c -> getAll(c,filter,type, limit));
+        return runAndReturn(dataSource, c -> getAll(c, filter, type, limit));
     }
 
 
@@ -327,7 +327,7 @@ public class Query<T extends AbstractAtkEntity, O> {
     }
 
     public <D> List<D> getAll(Connection connection, Class<D> type, int limit, String sql, Object... params) {
-        return getAll(connection, new Filter(sql, params),type, limit);
+        return getAll(connection, new Filter(sql, params), type, limit);
     }
 
 
@@ -335,8 +335,8 @@ public class Query<T extends AbstractAtkEntity, O> {
         return getAll(connection, new Filter(getSqlResource(resource), params), -1);
     }
 
-    public void getAllFromResource(Connection connection, CallOne<T> iterate, int limit,String resource, Object... params) {
-        getAll(connection, new Filter(getSqlResource(resource),params),iterate, limit);
+    public void getAllFromResource(Connection connection, CallOne<T> iterate, int limit, String resource, Object... params) {
+        getAll(connection, new Filter(getSqlResource(resource), params), iterate, limit);
     }
 
 
