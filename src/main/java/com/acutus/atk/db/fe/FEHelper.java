@@ -162,7 +162,7 @@ public class FEHelper {
     @SneakyThrows
     public static void maintainTable(AbstractDriver driver, Connection connection, AbstractAtkEntity entity) {
         try (Statement smt = connection.createStatement()) {
-            try (ResultSet rs = smt.executeQuery(String.format("select * from %s", entity.getTableName()))) {
+            try (ResultSet rs = smt.executeQuery(driver.limit(String.format("select * from %s", entity.getTableName()),1))) {
                 maintainTable(connection, driver, entity, rs.getMetaData());
                 connection.commit();
             }
@@ -193,6 +193,10 @@ public class FEHelper {
                             driver.getFieldType(atkField.get()).equalsIgnoreCase(meta.getColumnTypeName(i + 1)) ||
                                     classTypeMatch(driver, atkField.get(), meta, i) ||
                                     atkField.get().getColumnDefinitionType().equalsIgnoreCase(meta.getColumnTypeName(i + 1));
+
+                    if (!typeMatch) {
+                        log.info("Type mismatch {}.{}",entity.getTableName(),atkField.get().getColName());
+                    }
 
                     boolean sizeMatch = Clob.class.equals(atkField.get().getColumnType(driver))
                             || Blob.class.equals(atkField.get().getColumnType(driver))
