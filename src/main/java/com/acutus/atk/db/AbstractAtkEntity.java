@@ -77,6 +77,7 @@ public class AbstractAtkEntity<T extends AbstractAtkEntity, O> extends AbstractA
         for (Field field : Reflect.getFields(getClass()).filterType(AtkEnRelation.class)) {
             ((AtkEnRelation) field.get(clone)).setFetchType(((AtkEnRelation) field.get(this)).getFetchType());
         }
+        clone.setLoadedFromDB(this.isLoadedFromDB);
         return clone;
     }
 
