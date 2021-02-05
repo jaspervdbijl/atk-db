@@ -29,6 +29,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.acutus.atk.db.annotations.ForeignKey.Action.NoAction;
+import static com.acutus.atk.util.StringUtils.isNotEmpty;
 
 public abstract class AbstractDriver {
 
@@ -218,7 +219,9 @@ public abstract class AbstractDriver {
         String unsigned = (generated  != null ? " unsigned" : "");
         Optional<Column> column = field.getColumn();
         Class type = field.getColumnType(this);
-        if (String.class.equals(type)) {
+        if (column.isPresent() && isNotEmpty(column.get().columnDefinition())) {
+            return column.get().columnDefinition();
+        } else if (String.class.equals(type)) {
             return String.format("varchar(%d)", column.isPresent() ? column.get().length() : 255);
         } else if (Clob.class.equals(type)) {
             return "longtext";
