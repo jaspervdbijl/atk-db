@@ -211,6 +211,26 @@ public class SQLHelper {
         return runAndReturn(dataSource, connection -> query(connection, t1, t2, t3, t4, query, params));
     }
 
+    public static <A, B, C, D, E> List<Five<A, B, C, D, E>> query(Connection connection, Class<A> t1, Class<B> t2
+            , Class<C> t3, Class<D> t4, Class<E> t5, String query, Object... params) {
+        return (List<Five<A, B, C, D, E>>) query(connection, Five.class, new Class[]{t1, t2, t3, t4, t5}, query, params);
+    }
+
+    public static <A, B, C, D, E> List<Five<A, B, C, D, E>> query(DataSource dataSource, Class<A> t1, Class<B> t2
+            , Class<C> t3, Class<D> t4, Class<E> t5, String query, Object... params) {
+        return runAndReturn(dataSource, connection -> query(connection, t1, t2, t3, t4, t5, query, params));
+    }
+
+    public static <A, B, C, D, E,F> List<Six<A, B, C, D, E,F>> query(Connection connection, Class<A> t1, Class<B> t2
+            , Class<C> t3, Class<D> t4, Class<E> t5, Class<F> t6, String query, Object... params) {
+        return (List<Six<A, B, C, D, E, F>>) query(connection, Six.class, new Class[]{t1, t2, t3, t4, t5, t6}, query, params);
+    }
+
+    public static <A, B, C, D, E, F> List<Six<A, B, C, D, E, F>> query(DataSource dataSource, Class<A> t1, Class<B> t2
+            , Class<C> t3, Class<D> t4, Class<E> t5, Class<F> t6, String query, Object... params) {
+        return runAndReturn(dataSource, connection -> query(connection, t1, t2, t3, t4, t5, t6, query, params));
+    }
+
     @SneakyThrows
     public static int executeUpdate(Connection connection, String sql, Object... params) {
         try (PreparedStatement ps = prepare(connection, sql, params)) {
