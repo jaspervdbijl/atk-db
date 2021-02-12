@@ -221,7 +221,7 @@ public class SQLHelper {
         return runAndReturn(dataSource, connection -> query(connection, t1, t2, t3, t4, t5, query, params));
     }
 
-    public static <A, B, C, D, E,F> List<Six<A, B, C, D, E,F>> query(Connection connection, Class<A> t1, Class<B> t2
+    public static <A, B, C, D, E, F> List<Six<A, B, C, D, E, F>> query(Connection connection, Class<A> t1, Class<B> t2
             , Class<C> t3, Class<D> t4, Class<E> t5, Class<F> t6, String query, Object... params) {
         return (List<Six<A, B, C, D, E, F>>) query(connection, Six.class, new Class[]{t1, t2, t3, t4, t5, t6}, query, params);
     }
@@ -229,6 +229,16 @@ public class SQLHelper {
     public static <A, B, C, D, E, F> List<Six<A, B, C, D, E, F>> query(DataSource dataSource, Class<A> t1, Class<B> t2
             , Class<C> t3, Class<D> t4, Class<E> t5, Class<F> t6, String query, Object... params) {
         return runAndReturn(dataSource, connection -> query(connection, t1, t2, t3, t4, t5, t6, query, params));
+    }
+
+    public static <A, B, C, D, E, F, G> List<Seven<A, B, C, D, E, F, G>> query(Connection connection, Class<A> t1, Class<B> t2
+            , Class<C> t3, Class<D> t4, Class<E> t5, Class<F> t6, Class<G> t7,String query, Object... params) {
+        return (List<Seven<A, B, C, D, E, F, G>>) query(connection, Seven.class, new Class[]{t1, t2, t3, t4, t5, t6, t7}, query, params);
+    }
+
+    public static <A, B, C, D, E, F,G> List<Seven<A, B, C, D, E, F,G>> query(DataSource dataSource, Class<A> t1, Class<B> t2
+            , Class<C> t3, Class<D> t4, Class<E> t5, Class<F> t6, Class<G> t7,String query, Object... params) {
+        return runAndReturn(dataSource, connection -> query(connection, t1, t2, t3, t4, t5, t6,t7, query, params));
     }
 
     @SneakyThrows
