@@ -200,7 +200,7 @@ public class Query<T extends AbstractAtkEntity, O> {
                 , entity.getEnFields().excludeIgnore().getTableAndColName().toString(",")
                 , entity.getTableName(), filter.getSql(),
                 orderBy != null
-                        ? "order by " + orderBy.getColNames().toString(",") + " " + orderByType.name()
+                        ? "order by " + orderBy.getTableAndColName().toString(",") + " " + orderByType.name()
                         : ""
         );
         return sql;
