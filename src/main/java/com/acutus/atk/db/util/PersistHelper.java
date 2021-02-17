@@ -8,16 +8,13 @@ import com.acutus.atk.db.annotations.audit.CreatedBy;
 import com.acutus.atk.db.annotations.audit.CreatedDate;
 import com.acutus.atk.db.annotations.audit.LastModifiedBy;
 import com.acutus.atk.db.annotations.audit.LastModifiedDate;
-import com.acutus.atk.entity.AtkField;
 import com.acutus.atk.io.IOUtil;
 import com.acutus.atk.util.Assert;
-import com.acutus.atk.util.call.CallOne;
 import com.acutus.atk.util.call.CallOneRet;
 import lombok.SneakyThrows;
 
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
-import javax.swing.text.html.Option;
 import java.lang.annotation.Annotation;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -35,15 +32,15 @@ public class PersistHelper {
     private static Map<Class<? extends Annotation>, CallOneRet<AtkEnField,Optional<AtkEnField>>> updatePreProcessor = new HashMap<>();
 
     static {
-        insertPreProcessor.put(CreatedDate.class, (e) -> processCreatedDate(e));
-        insertPreProcessor.put(CreatedBy.class, (e) -> processCreatedBy(e));
+        insertPreProcessor.put(CreatedDate.class, (e) -> processCreatedOrLastModifiedDate(e,false));
+        insertPreProcessor.put(CreatedBy.class, (e) -> processCreatedOrModifiedBy(e,false));
         insertPreProcessor.put(UID.class, (e) -> processUID(e));
         insertPreProcessor.put(Default.class, (e) -> processDefault(e, true));
     }
 
     static {
-        updatePreProcessor.put(LastModifiedDate.class, (e) -> processCreatedDate(e));
-        updatePreProcessor.put(LastModifiedBy.class, (e) -> processCreatedBy(e));
+        updatePreProcessor.put(LastModifiedDate.class, (e) -> processCreatedOrLastModifiedDate(e,true));
+        updatePreProcessor.put(LastModifiedBy.class, (e) -> processCreatedOrModifiedBy(e,true));
     }
 
     @SneakyThrows
@@ -71,9 +68,9 @@ public class PersistHelper {
 
 
     @SneakyThrows
-    public static Optional<AtkEnField> processCreatedDate(AtkEnField field) {
+    public static Optional<AtkEnField> processCreatedOrLastModifiedDate(AtkEnField field, boolean update) {
         boolean wasNull = field.get() == null;
-        if (field.get() == null) {
+        if (field.get() == null || update) {
             if (LocalDateTime.class.isAssignableFrom(field.getType())) {
                 field.set(LocalDateTime.now());
             } else if (LocalTime.class.isAssignableFrom(field.getType())) {
@@ -89,9 +86,9 @@ public class PersistHelper {
         return wasNull && field.get() != null ? Optional.of(field) : Optional.empty();
     }
 
-    public static Optional<AtkEnField> processCreatedBy(AtkEnField field) {
+    public static Optional<AtkEnField> processCreatedOrModifiedBy(AtkEnField field, boolean update) {
         boolean wasNull = field.get() == null;
-        field.set(field.get() == null ? getUsername() : field.get());
+        field.set(field.get() == null || update ? getUsername() : field.get());
         return wasNull ? Optional.of(field) : Optional.empty();
     }
 
