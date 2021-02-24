@@ -242,7 +242,6 @@ public class Query<T extends AbstractAtkEntity, O> {
     @SneakyThrows
     public void getAll(Connection connection, Filter filter, CallOne<T> iterate, int limit) {
         long s1 = System.currentTimeMillis();
-        System.out.println("ELR QUERY STARTED");
         String sql ="";
         try {
             AbstractDriver driver = DriverFactory.getDriver(connection);
@@ -279,10 +278,8 @@ public class Query<T extends AbstractAtkEntity, O> {
         } finally {
             long s2 = System.currentTimeMillis();
             if (s2 - s1 > 1000) {
-                System.out.println("Query SLow " + ((s2 - s1) / 1000) + " " + sql);
+                log.debug("Query SLow " + ((s2 - s1) / 1000) + " " + sql);
             }
-
-            System.out.println("ELR QUERY ENDED");
         }
     }
 
