@@ -5,6 +5,7 @@ import com.acutus.atk.db.util.AtkEnUtil;
 import com.acutus.atk.util.Assert;
 import com.acutus.atk.util.call.CallThree;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.persistence.GeneratedValue;
 import javax.sql.DataSource;
@@ -23,6 +24,7 @@ import static com.acutus.atk.util.AtkUtil.handle;
 import static javax.persistence.GenerationType.AUTO;
 import static javax.persistence.GenerationType.IDENTITY;
 
+@Slf4j
 public class Persist<T extends AbstractAtkEntity> {
 
     private static Optional<CallThree<Connection, AbstractAtkEntity, Boolean>> PERSIST_CALLBACK = Optional.empty();
@@ -51,7 +53,6 @@ public class Persist<T extends AbstractAtkEntity> {
     @SneakyThrows
     public T insert(Connection connection) {
         long t1 = System.currentTimeMillis();
-        System.out.println("Insert Started");
         String sql = "";
         try {
             preProcessInsert(entity);
@@ -82,9 +83,8 @@ public class Persist<T extends AbstractAtkEntity> {
         } finally {
             long s2 = System.currentTimeMillis();
             if (s2 - t1 > 1000) {
-                System.out.println("Slow insert " + ((s2 - t1) / 1000) + " " + sql);
+                log.debug("Slow insert " + ((s2 - t1) / 1000) + " " + sql);
             }
-            System.out.println("Insert Complete");
         }
     }
 
@@ -116,7 +116,6 @@ public class Persist<T extends AbstractAtkEntity> {
     @SneakyThrows
     private T update(Connection connection, AtkEnFields updateFields) {
         long t1 = System.currentTimeMillis();
-        System.out.println("Update Started");
         String sql = "";
         try {
             List<Optional<AtkEnField>> mod = preProcessUpdate(entity);
@@ -146,9 +145,8 @@ public class Persist<T extends AbstractAtkEntity> {
         } finally {
             long s2 = System.currentTimeMillis();
             if (s2 - t1 > 1000) {
-                System.out.println("Update SLow " + ((s2 - t1) / 1000) + " " + sql);
+                log.debug("Update SLow " + ((s2 - t1) / 1000) + " " + sql);
             }
-            System.out.println("Update ended");
         }
     }
 
