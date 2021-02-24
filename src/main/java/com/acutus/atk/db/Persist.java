@@ -50,31 +50,42 @@ public class Persist<T extends AbstractAtkEntity> {
 
     @SneakyThrows
     public T insert(Connection connection) {
-        preProcessInsert(entity);
-        // no id
-        boolean autoInc = false;
-        AtkEnFields ids = entity.getEnFields().getIds();
-        if (ids.size() == 1) {
-            autoInc = populateIdAndReturnIsAutoIncrement(ids.get(0));
+        long t1 = System.currentTimeMillis();
+        System.out.println("Insert Started");
+        String sql = "";
+        try {
+            preProcessInsert(entity);
+            // no id
+            boolean autoInc = false;
+            AtkEnFields ids = entity.getEnFields().getIds();
+            if (ids.size() == 1) {
+                autoInc = populateIdAndReturnIsAutoIncrement(ids.get(0));
+            }
+            // exclude id is its a auto generated value
+            AtkEnFields clone = entity.getEnFields().clone().removeWhen(c -> c.get() == null);
+            if (autoInc) {
+                clone.removeAll(ids);
+            }
+            sql = String.format("insert into %s (%s) values(%s)", entity.getTableName(), clone.getColNames().toString(","),
+                    clone.stream().map(f -> "?").reduce((s1, s2) -> s1 + "," + s2).get());
+
+            try (PreparedStatement ps = prepare(connection, sql, wrapForPreparedStatement(clone).toArray())) {
+                ps.executeUpdate();
+            }
+            // load any auto inc fields
+            if (autoInc) {
+                ids.get(0).set(DriverFactory.getDriver(connection).getLastInsertValue(connection, ids.get(0).getType()));
+            }
+            PERSIST_CALLBACK.ifPresent(c -> handle(() -> c.call(connection, entity, true)));
+            entity.setLoadedFromDB(true);
+            return entity;
+        } finally {
+            long s2 = System.currentTimeMillis();
+            if (s2 - t1 > 1000) {
+                System.out.println("Slow insert " + ((s2 - t1) / 1000) + " " + sql);
+            }
+            System.out.println("Insert Complete");
         }
-        // exclude id is its a auto generated value
-        AtkEnFields clone = entity.getEnFields().clone().removeWhen(c -> c.get() == null);
-        if (autoInc) {
-            clone.removeAll(ids);
-        }
-        try (PreparedStatement ps = prepare(connection,
-                String.format("insert into %s (%s) values(%s)", entity.getTableName(), clone.getColNames().toString(","),
-                        clone.stream().map(f -> "?").reduce((s1, s2) -> s1 + "," + s2).get()),
-                wrapForPreparedStatement(clone).toArray())) {
-            ps.executeUpdate();
-        }
-        // load any auto inc fields
-        if (autoInc) {
-            ids.get(0).set(DriverFactory.getDriver(connection).getLastInsertValue(connection, ids.get(0).getType()));
-        }
-        PERSIST_CALLBACK.ifPresent(c -> handle(() -> c.call(connection, entity, true)));
-        entity.setLoadedFromDB(true);
-        return entity;
     }
 
     private List wrapForPreparedStatement(AtkEnFields fields) {
@@ -104,28 +115,41 @@ public class Persist<T extends AbstractAtkEntity> {
      */
     @SneakyThrows
     private T update(Connection connection, AtkEnFields updateFields) {
-        List<Optional<AtkEnField>> mod = preProcessUpdate(entity);
-        updateFields.addAll(mod.stream().filter(o -> o.isPresent()).map(o -> o.get()).collect(Collectors.toList()));
-        AtkEnFields ids = entity.getEnFields().getIds();
-        assertIdIsPresent(ids);
-        // remove the ids
-        updateFields = updateFields.removeWhen(f -> ids.contains(f));
-        AtkEnFields updateValues = updateFields.clone();
-        // add the ids to the end
-        updateValues.addAll(ids);
-        try (PreparedStatement ps = prepare(connection,
-                String.format("update %s set %s where %s"
-                        , entity.getTableName(), updateFields.getColNames().append("= ?").toString(",")
-                        , entity.getEnFields().getIds().getColNames().append("= ?").toString(","))
-                , wrapForPreparedStatement(updateValues).toArray(new Object[]{}))) {
-            int updated = ps.executeUpdate();
-            Assert.isTrue(updated == 1, "Failed to update %s on %s", entity.getTableName(), entity.getEnFields().getIds());
+        long t1 = System.currentTimeMillis();
+        System.out.println("Update Started");
+        String sql = "";
+        try {
+            List<Optional<AtkEnField>> mod = preProcessUpdate(entity);
+            updateFields.addAll(mod.stream().filter(o -> o.isPresent()).map(o -> o.get()).collect(Collectors.toList()));
+            AtkEnFields ids = entity.getEnFields().getIds();
+            assertIdIsPresent(ids);
+            // remove the ids
+            updateFields = updateFields.removeWhen(f -> ids.contains(f));
+            AtkEnFields updateValues = updateFields.clone();
+            // add the ids to the end
+            updateValues.addAll(ids);
 
-            PERSIST_CALLBACK.ifPresent(c -> handle(() -> c.call(connection, entity, false)));
+            sql = String.format("update %s set %s where %s",
+                    entity.getTableName(), updateFields.getColNames().append("= ?").toString(","),
+                    entity.getEnFields().getIds().getColNames().append("= ?").toString(","));
 
-            entity.getEnFields().reset();
+            try (PreparedStatement ps = prepare(connection, sql, wrapForPreparedStatement(updateValues).toArray(new Object[]{}))) {
+                int updated = ps.executeUpdate();
+
+                Assert.isTrue(updated == 1, "Failed to update %s on %s", entity.getTableName(), entity.getEnFields().getIds());
+
+                PERSIST_CALLBACK.ifPresent(c -> handle(() -> c.call(connection, entity, false)));
+
+                entity.getEnFields().reset();
+            }
+            return entity;
+        } finally {
+            long s2 = System.currentTimeMillis();
+            if (s2 - t1 > 1000) {
+                System.out.println("Update SLow " + ((s2 - t1) / 1000) + " " + sql);
+            }
+            System.out.println("Update ended");
         }
-        return entity;
     }
 
     /**
