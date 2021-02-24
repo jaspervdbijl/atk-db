@@ -139,7 +139,17 @@ public class SQLHelper {
     public static List<List> query(Connection connection, Class type[], String query, Object... params) {
         try (PreparedStatement ps = prepare(connection, query, params)) {
             try (ResultSet rs = ps.executeQuery()) {
-                return query(rs, type);
+                long s1 =0 ,s2 = 0;
+                try {
+                    s1 = System.currentTimeMillis();
+                    return query(rs, type);
+
+                } finally {
+                    s2 = System.currentTimeMillis();
+                    if (s2 - s1 > 1000) {
+                        System.out.println("Query SLow " + ((s2-s1) / 1000) + " "+ query);
+                    }
+                }
             }
         }
     }

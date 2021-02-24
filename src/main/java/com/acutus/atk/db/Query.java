@@ -241,35 +241,48 @@ public class Query<T extends AbstractAtkEntity, O> {
 
     @SneakyThrows
     public void getAll(Connection connection, Filter filter, CallOne<T> iterate, int limit) {
-        AbstractDriver driver = DriverFactory.getDriver(connection);
-        boolean shouldLeftJoin = selectFilter == null && entity.getEntityType() == AtkEntity.Type.TABLE;
-        String sql = !shouldLeftJoin && limit > -1 ? driver.limit(getProcessedSql(filter), limit) : getProcessedSql(filter);
+        long s1 = System.currentTimeMillis();
+        System.out.println("ELR QUERY STARTED");
+        String sql ="";
+        try {
+            AbstractDriver driver = DriverFactory.getDriver(connection);
+            boolean shouldLeftJoin = selectFilter == null && entity.getEntityType() == AtkEntity.Type.TABLE;
+            sql = !shouldLeftJoin && limit > -1 ? driver.limit(getProcessedSql(filter), limit) : getProcessedSql(filter);
 
-        // transform the select *
-        Map<String, AbstractAtkEntity> map = new HashMap<>();
-        Three<AbstractAtkEntity, Boolean, Boolean> lastEntity = null;
-        try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            filter.prepare(ps);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    if (!shouldLeftJoin) {
-                        iterate.call((T) entity.set(driver, rs).clone());
-                    } else {
-                        Three<AbstractAtkEntity, Boolean, Boolean> value = loadCascade(driver, new AtomicInteger(-1), map, entity, rs);
-                        if (lastEntity != null && !value.getFirst().isIdEqual(lastEntity.getFirst())) {
-                            iterate.call((T) lastEntity.getFirst());
-                            if (--limit == 0) return;
+            // transform the select *
+            Map<String, AbstractAtkEntity> map = new HashMap<>();
+            Three<AbstractAtkEntity, Boolean, Boolean> lastEntity = null;
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                filter.prepare(ps);
+                try (ResultSet rs = ps.executeQuery()) {
+
+                    while (rs.next()) {
+                        if (!shouldLeftJoin) {
+                            iterate.call((T) entity.set(driver, rs).clone());
+                        } else {
+                            Three<AbstractAtkEntity, Boolean, Boolean> value = loadCascade(driver, new AtomicInteger(-1), map, entity, rs);
+                            if (lastEntity != null && !value.getFirst().isIdEqual(lastEntity.getFirst())) {
+                                iterate.call((T) lastEntity.getFirst());
+                                if (--limit == 0) return;
+                            }
+                            lastEntity = value;
                         }
-                        lastEntity = value;
                     }
+                } catch (Exception ex) {
+                    log.error("sql with error: " + sql);
+                    throw ex;
                 }
-            } catch (Exception ex) {
-                log.error("sql with error: " + sql);
-                throw ex;
             }
-        }
-        if (lastEntity != null) {
-            iterate.call((T) lastEntity.getFirst());
+            if (lastEntity != null) {
+                iterate.call((T) lastEntity.getFirst());
+            }
+        } finally {
+            long s2 = System.currentTimeMillis();
+            if (s2 - s1 > 1000) {
+                System.out.println("Query SLow " + ((s2 - s1) / 1000) + " " + sql);
+            }
+
+            System.out.println("ELR QUERY ENDED");
         }
     }
 
