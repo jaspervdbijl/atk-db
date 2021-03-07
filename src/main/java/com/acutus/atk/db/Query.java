@@ -50,7 +50,7 @@ public class Query<T extends AbstractAtkEntity, O> {
     }
 
     private T entity;
-    private Integer limit;
+    private int limit = -1;
     private AtkEnFields orderBy;
     private OrderBy orderByType;
 
@@ -206,13 +206,6 @@ public class Query<T extends AbstractAtkEntity, O> {
         return sql;
     }
 
-    @SneakyThrows
-    private PreparedStatement prepareStatementFromFilter(Connection connection, Filter filter) {
-        String sql = prepareSql(filter);
-        return filter.prepare(connection.prepareStatement(limit != null
-                ? getDriver(connection).limit(sql, limit) : sql));
-    }
-
     private String getProcessedSql(Filter filter) {
         String sql = prepareSql(filter).replaceAll("\\p{Cntrl}", " ");
 
@@ -235,7 +228,7 @@ public class Query<T extends AbstractAtkEntity, O> {
             split.add(2 + offset, lj);
         }
 
-        String star = selectFilter != null ? selectFilter.getColNames().toString(",") : select;
+        String star = selectFilter != null ? entity.getEnFields().excludeIgnore().getColNames().toString(",") : select;
         return "select " + star + " " + split.toString(" ");
     }
 
@@ -274,17 +267,37 @@ public class Query<T extends AbstractAtkEntity, O> {
     }
 
     public void getAll(DataSource dataSource, Filter filter, CallOne<T> iterate, int limit) {
-        run(dataSource, c -> {
-            getAll(c, filter, iterate, limit);
-        });
+        run(dataSource, c -> getAll(c, filter, iterate, limit));
+    }
+
+    public List<O> getAllToBase(Connection c,Filter filter) {
+        List<O> results = new ArrayList<>();
+        getAll(c, filter, t -> results.add((O) t.toBase()), limit);
+        return results;
+    }
+
+    public List<O> getAllToBase(Connection c) {
+        return getAllToBase(c,new Filter(AND, entity.getEnFields().getSet()));
+    }
+
+    public List<O> getAllToBase(Connection c,String sql,Object ...params) {
+        return getAllToBase(c,new Filter(sql, params));
+    }
+
+    public List<O> getAllToBase(DataSource dataSource,String sql,Object ...params) {
+        return runAndReturn(dataSource, c -> getAllToBase(c,sql,params));
+    }
+
+    public List<O> getAllToBase(DataSource dataSource) {
+        return runAndReturn(dataSource, c -> getAllToBase(c));
     }
 
     public void getAll(Connection c, CallOne<T> iterate) {
-        getAll(c, new Filter(AND, entity.getEnFields().getSet()), iterate, -1);
+        getAll(c, new Filter(AND, entity.getEnFields().getSet()), iterate, limit);
     }
 
     public void getAll(DataSource dataSource, CallOne<T> iterate) {
-        getAll(dataSource, new Filter(AND, entity.getEnFields().getSet()), iterate, -1);
+        getAll(dataSource, new Filter(AND, entity.getEnFields().getSet()), iterate, limit);
     }
 
     public AtkEntities<T> getAll(Connection connection, Filter filter, int limit) {
@@ -323,11 +336,11 @@ public class Query<T extends AbstractAtkEntity, O> {
 
 
     public AtkEntities<T> getAll(Connection connection, Filter filter) {
-        return getAll(connection, filter, -1);
+        return getAll(connection, filter, limit);
     }
 
     public AtkEntities<T> getAll(Connection connection, String sql, Object... params) {
-        return getAll(connection, new Filter(sql, params), -1);
+        return getAll(connection, new Filter(sql, params), limit);
     }
 
     public <D> List<D> getAll(Connection connection, Class<D> type, int limit, String sql, Object... params) {
@@ -336,7 +349,7 @@ public class Query<T extends AbstractAtkEntity, O> {
 
 
     public AtkEntities<T> getAllFromResource(Connection connection, String resource, Object... params) {
-        return getAll(connection, new Filter(getSqlResource(resource), params), -1);
+        return getAll(connection, new Filter(getSqlResource(resource), params), limit);
     }
 
     public void getAllFromResource(Connection connection, CallOne<T> iterate, int limit, String resource, Object... params) {
@@ -369,7 +382,7 @@ public class Query<T extends AbstractAtkEntity, O> {
     }
 
     public AtkEntities<T> getAll(DataSource dataSource, Filter filter) {
-        return runAndReturn(dataSource, c -> getAll(c, filter, -1));
+        return runAndReturn(dataSource, c -> getAll(c, filter, limit));
     }
 
     public AtkEntities<T> getAll(DataSource dataSource, String sql, Object... params) {
@@ -377,11 +390,11 @@ public class Query<T extends AbstractAtkEntity, O> {
     }
 
     public AtkEntities<T> getAll(Connection connection) {
-        return getAll(connection, new Filter(AND, entity.getEnFields().getSet()), -1);
+        return getAll(connection, new Filter(AND, entity.getEnFields().getSet()), limit);
     }
 
     public AtkEntities<T> getAll(DataSource dataSource) {
-        return runAndReturn(dataSource, c -> getAll(c, new Filter(AND, entity.getEnFields().getSet()), -1));
+        return runAndReturn(dataSource, c -> getAll(c, new Filter(AND, entity.getEnFields().getSet()), limit));
     }
 
     public Optional<T> get(Connection connection) {
