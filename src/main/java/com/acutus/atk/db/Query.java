@@ -248,6 +248,7 @@ public class Query<T extends AbstractAtkEntity, O> {
         Three<AbstractAtkEntity, Boolean, Boolean> lastEntity = null;
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             filter.prepare(ps);
+            long s = System.currentTimeMillis();
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     if (!shouldLeftJoin) {
