@@ -306,6 +306,11 @@ public class Query<T extends AbstractAtkEntity, O> {
         getAll(c, new Filter(AND, entity.getEnFields().getSet()), iterate, limit);
     }
 
+    public void getAll(Connection c, CallOne<T> iterate,int limit, String sql,Object ... params) {
+        getAll(c, new Filter(sql,params), iterate, limit);
+    }
+
+
     public void getAll(DataSource dataSource, CallOne<T> iterate) {
         getAll(dataSource, new Filter(AND, entity.getEnFields().getSet()), iterate, limit);
     }
