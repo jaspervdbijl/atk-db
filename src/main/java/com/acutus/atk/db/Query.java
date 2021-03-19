@@ -33,7 +33,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.acutus.atk.db.Query.OrderBy.DESC;
-import static com.acutus.atk.db.driver.DriverFactory.getDriver;
 import static com.acutus.atk.db.sql.Filter.Type.AND;
 import static com.acutus.atk.db.sql.Filter.and;
 import static com.acutus.atk.db.sql.SQLHelper.*;
@@ -248,6 +247,8 @@ public class Query<T extends AbstractAtkEntity, O> {
         Three<AbstractAtkEntity, Boolean, Boolean> lastEntity = null;
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             filter.prepare(ps);
+            long start = System.currentTimeMillis();
+            log.info(sql);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     if (!shouldLeftJoin) {
@@ -260,6 +261,10 @@ public class Query<T extends AbstractAtkEntity, O> {
                         }
                         lastEntity = value;
                     }
+                }
+                long finish = System.currentTimeMillis();
+                if((finish - start)/1000 > 1) {
+                    log.info("{}, {}", (finish - start)/1000, sql);
                 }
             } catch (Exception ex) {
                 log.error("sql with error: " + sql);
