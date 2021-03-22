@@ -125,6 +125,10 @@ public class Persist<T extends AbstractAtkEntity> {
             // remove the ids
             updateFields = updateFields.removeWhen(f -> ids.contains(f));
             AtkEnFields updateValues = updateFields.clone();
+
+            if (updateFields.isEmpty()) {
+                return entity;
+            }
             // add the ids to the end
             updateValues.addAll(ids);
 
@@ -142,6 +146,9 @@ public class Persist<T extends AbstractAtkEntity> {
                 entity.getEnFields().reset();
             }
             return entity;
+        } catch (Exception ex) {
+            log.error(sql);
+            throw ex;
         } finally {
             long s2 = System.currentTimeMillis();
             if (s2 - t1 > 1000) {
