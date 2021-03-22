@@ -10,6 +10,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.sql.DataSource;
+import java.net.Inet4Address;
 import java.sql.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -40,7 +41,8 @@ public class SQLHelper {
                 call.call(con);
                 con.commit();
             } catch (Exception ex) {
-                log.error(ex.getMessage(), ex);
+
+                log.error("IP: " + Inet4Address.getLocalHost().getHostAddress() + " - " + ex.getMessage(), ex);
                 con.rollback();
                 throw ex instanceof RuntimeException
                         ? (RuntimeException) ex :
