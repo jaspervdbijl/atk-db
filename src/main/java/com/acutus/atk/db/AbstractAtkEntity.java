@@ -15,6 +15,7 @@ import javax.persistence.Table;
 import javax.sql.DataSource;
 import java.lang.reflect.Field;
 import java.sql.ResultSet;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -152,6 +153,9 @@ public class AbstractAtkEntity<T extends AbstractAtkEntity, O> extends AbstractA
     public boolean maintainColumns() {return true;}
     public boolean maintainForeignKeys() {return true;}
     public boolean maintainIndex() {return true;}
+
+    public ChronoUnit trim() {return ChronoUnit.FOREVER;}
+    public long trimD() {return -1;}
 
     public boolean maintainEntityColumn(AtkEnField field) {
         return maintainColumns() && (maintainColumnsFilter().length == 0
