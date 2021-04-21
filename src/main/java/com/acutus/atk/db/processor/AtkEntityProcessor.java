@@ -4,6 +4,7 @@ import com.acutus.atk.db.annotations.FieldFilter;
 import com.acutus.atk.db.annotations.Index;
 import com.acutus.atk.entity.processor.Atk;
 import com.acutus.atk.entity.processor.AtkProcessor;
+import com.acutus.atk.util.Assert;
 import com.acutus.atk.util.Strings;
 import com.acutus.atk.util.collection.Four;
 import com.google.auto.service.AutoService;
@@ -21,8 +22,11 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.TypeMirror;
 import javax.persistence.*;
 import java.lang.reflect.Method;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.OptionalInt;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -463,6 +467,16 @@ public class AtkEntityProcessor extends AtkProcessor {
                 .plus("import com.acutus.atk.db.*")
                 .plus("import com.acutus.atk.util.collection.*")
                 .plus("import com.acutus.atk.db.processor.AtkEntity")
-                .plus("import com.acutus.atk.util.call.CallOne").removeDuplicates();
+                .plus("import com.acutus.atk.util.call.CallOne")
+                .removeDuplicates();
+    }
+
+    @Override
+    protected void validate(Element element) {
+        super.validate(element);
+        AtkEntity atk = element.getAnnotation(AtkEntity.class);
+        if (!(atk.trim().equals(ChronoUnit.FOREVER) || atk.addAuditFields())) {
+            error(String.format("Element [%s]. Is trim is enabled then addAuditFields must also be added", element.getSimpleName()));
+        }
     }
 }

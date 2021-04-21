@@ -48,10 +48,10 @@ public class View<T extends View> {
     private void ignoreMissingFields(AtkEntities entities, ResultSetMetaData rsMeta) {
         Strings colNames = IntStream.range(1, rsMeta.getColumnCount())
                 .mapToObj(i -> handle(() -> rsMeta.getTableName(i) + "." + rsMeta.getColumnName(i))).collect(Collectors.toCollection(Strings::new));
+
         entities.stream().forEach(e -> ((AbstractAtkEntity) e).getEnFields().stream()
                 .filter(f -> !colNames.containsIgnoreCase(f.getTableAndColName())
-                        && !colNames.containsIgnoreCase("." + f.getColName())
-                )
+                        && !colNames.containsIgnoreCase("." + f.getColName()))
                 .forEach(f -> f.setIgnore(true)));
     }
 

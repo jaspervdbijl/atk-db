@@ -6,9 +6,12 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.time.DayOfWeek;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 
 @Target(ElementType.TYPE)
-@Retention(RetentionPolicy.SOURCE)
+@Retention(RetentionPolicy.RUNTIME)
 public @interface AtkEntity {
 
     // if no column name is defined, what naming stratergy should be used
@@ -46,6 +49,8 @@ public @interface AtkEntity {
     String [] daoIgnore() default {};
     boolean daoCopyAll() default true;
 
+    ChronoUnit trim() default ChronoUnit.FOREVER;
+    long trimD() default -1;
 
     enum ColumnNamingStrategy {
         NONE, CAMEL_CASE_UNDERSCORE
