@@ -46,8 +46,9 @@ public class View<T extends View> {
 
     @SneakyThrows
     private void ignoreMissingFields(AtkEntities entities, ResultSetMetaData rsMeta) {
-        Strings colNames = IntStream.range(1, rsMeta.getColumnCount())
-                .mapToObj(i -> handle(() -> rsMeta.getTableName(i) + "." + rsMeta.getColumnName(i))).collect(Collectors.toCollection(Strings::new));
+        Strings colNames = IntStream.range(1, rsMeta.getColumnCount() + 1)
+                .mapToObj(i -> handle(() -> rsMeta.getTableName(i) + "." +
+                        rsMeta.getColumnName(i))).collect(Collectors.toCollection(Strings::new));
 
         entities.stream().forEach(e -> ((AbstractAtkEntity) e).getEnFields().stream()
                 .filter(f -> !colNames.containsIgnoreCase(f.getTableAndColName())
@@ -58,9 +59,9 @@ public class View<T extends View> {
     private String getColNames() {
         return (String) getEntities().stream()
                 .flatMap(e -> ((AbstractAtkEntity) e).getEnFields().stream())
-                .filter(f -> !((AtkEnField)f).isIgnore())
+                .filter(f -> !((AtkEnField) f).isIgnore())
                 .map(f -> ((AtkEnField<?, ?>) f).getTableAndColName())
-                .reduce((s1, s2) -> s1+ "," + s2).get();
+                .reduce((s1, s2) -> s1 + "," + s2).get();
     }
 
     @SneakyThrows
@@ -105,11 +106,11 @@ public class View<T extends View> {
     }
 
     public List<T> getAll(DataSource dataSource, String sql, Object... params) {
-        return runAndReturn(dataSource, c -> getAll(c,sql,params));
+        return runAndReturn(dataSource, c -> getAll(c, sql, params));
     }
 
     @SneakyThrows
-    private <T> boolean observeMatch(Class observable, T v1,T v2) {
+    private <T> boolean observeMatch(Class observable, T v1, T v2) {
         Field obField = Reflect.getFields(getClass())
                 .filterType(AbstractAtkEntity.class).stream().filter(c -> c.getType().equals(observable)).findFirst().get();
         AbstractAtkEntity e1 = (AbstractAtkEntity) obField.get(v1);
@@ -119,16 +120,16 @@ public class View<T extends View> {
 
     @SneakyThrows
     public void observe(Connection connection, Class observable, String sql, CallOne<List<T>> call, Object... params) {
-        List<T>  values = new ArrayList<>();
-        iterate(connection,sql,(value) -> {
+        List<T> values = new ArrayList<>();
+        iterate(connection, sql, (value) -> {
             if (!values.isEmpty()) {
-                if (!observeMatch(observable,values.get(values.size()-1),value)) {
+                if (!observeMatch(observable, values.get(values.size() - 1), value)) {
                     call.call(values);
                     values.clear();
                 }
             }
             values.add((T) value.clone());
-        },params);
+        }, params);
         if (!values.isEmpty()) {
             call.call(values);
         }
