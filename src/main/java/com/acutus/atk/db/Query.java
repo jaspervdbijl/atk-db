@@ -28,6 +28,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -42,7 +43,7 @@ import static com.acutus.atk.util.AtkUtil.handle;
 @Slf4j
 public class Query<T extends AbstractAtkEntity, O> {
 
-    private static Map<String, String> RESOURCE_MAP = new HashMap<>();
+    private static Map<String, String> RESOURCE_MAP = new ConcurrentHashMap<>();
 
     public enum OrderBy {
         ASC, DESC
@@ -56,7 +57,7 @@ public class Query<T extends AbstractAtkEntity, O> {
     private boolean disableLeftJoin = false;
 
     @SneakyThrows
-    public static synchronized String getSqlResource(String name) {
+    public static  String getSqlResource(String name) {
         if (!RESOURCE_MAP.containsKey(name)) {
             RESOURCE_MAP.put(name, new String(IOUtil.readAvailable(Thread.currentThread().getContextClassLoader().getResourceAsStream(name))));
         }
