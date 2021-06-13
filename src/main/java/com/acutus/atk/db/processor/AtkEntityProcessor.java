@@ -4,7 +4,6 @@ import com.acutus.atk.db.annotations.FieldFilter;
 import com.acutus.atk.db.annotations.Index;
 import com.acutus.atk.entity.processor.Atk;
 import com.acutus.atk.entity.processor.AtkProcessor;
-import com.acutus.atk.util.Assert;
 import com.acutus.atk.util.Strings;
 import com.acutus.atk.util.collection.Four;
 import com.google.auto.service.AutoService;
@@ -22,11 +21,9 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.TypeMirror;
 import javax.persistence.*;
 import java.lang.reflect.Method;
-import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
 import java.util.OptionalInt;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -445,29 +442,30 @@ public class AtkEntityProcessor extends AtkProcessor {
 
     @Override
     protected Strings getImports(Element element) {
-        return super.getImports(element).plus("import com.acutus.atk.db.*")
-                .plus("import com.acutus.atk.db.annotations.*")
-                .plus("import static com.acutus.atk.db.sql.SQLHelper.runAndReturn")
-                .plus("import static com.acutus.atk.db.sql.SQLHelper.queryOne")
-                .plus("import static com.acutus.atk.db.sql.SQLHelper.query")
-                .plus("import static com.acutus.atk.util.AtkUtil.handle")
-                .plus("import java.sql.PreparedStatement")
-                .plus("import com.acutus.atk.db.annotations.audit.*")
-                .plus("import java.time.LocalDateTime")
-                .plus("import javax.persistence.Column")
-                .plus("import javax.persistence.Table")
-                .plus("import java.util.List")
-                .plus("import java.util.Optional")
-                .plus("import java.util.ArrayList")
-                .plus("import java.sql.Connection")
-                .plus("import javax.persistence.OneToMany")
-                .plus("import javax.persistence.ManyToOne")
-                .plus("import javax.persistence.OneToOne")
-                .plus("import javax.sql.DataSource")
-                .plus("import com.acutus.atk.db.*")
-                .plus("import com.acutus.atk.util.collection.*")
-                .plus("import com.acutus.atk.db.processor.AtkEntity")
-                .plus("import com.acutus.atk.util.call.CallOne")
+        return super.getImports(element)
+                .plus("import com.acutus.atk.db.*;\n")
+                .plus("import com.acutus.atk.db.annotations.*;\n")
+                .plus("import static com.acutus.atk.db.sql.SQLHelper.runAndReturn;\n")
+                .plus("import static com.acutus.atk.db.sql.SQLHelper.queryOne;\n")
+                .plus("import static com.acutus.atk.db.sql.SQLHelper.query;\n")
+                .plus("import static com.acutus.atk.util.AtkUtil.handle;\n")
+                .plus("import java.sql.PreparedStatement;\n")
+                .plus("import com.acutus.atk.db.annotations.audit.*;\n")
+                .plus("import java.time.LocalDateTime;\n")
+                .plus("import javax.persistence.Column;\n")
+                .plus("import javax.persistence.Table;\n")
+                .plus("import java.util.List;\n")
+                .plus("import java.util.Optional;\n")
+                .plus("import java.util.ArrayList;\n")
+                .plus("import java.sql.Connection;\n")
+                .plus("import javax.persistence.OneToMany;\n")
+                .plus("import javax.persistence.ManyToOne;\n")
+                .plus("import javax.persistence.OneToOne;\n")
+                .plus("import javax.sql.DataSource;\n")
+                .plus("import com.acutus.atk.db.*;\n")
+                .plus("import com.acutus.atk.util.collection.*;\n")
+                .plus("import com.acutus.atk.db.processor.AtkEntity;\n")
+                .plus("import com.acutus.atk.util.call.CallOne;\n")
                 .removeDuplicates();
     }
 
