@@ -103,6 +103,13 @@ public class FEHelper {
             }
         }
 
+        // INDEXES
+        for (AbstractAtkEntity entity : entities) {
+            if (entity.maintainIndex()) {
+                maintainIndexes(connection, driver, entity);
+            }
+        }
+
         // FK
         for (AbstractAtkEntity entity : entities) {
             if (entity.maintainForeignKeys()) {
@@ -110,12 +117,6 @@ public class FEHelper {
             }
         }
 
-        // INDEXES
-        for (AbstractAtkEntity entity : entities) {
-            if (entity.maintainIndex()) {
-                maintainIndexes(connection, driver, entity);
-            }
-        }
         // update checksums
         for (AbstractAtkEntity entity : entities) {
             maintainChecksum(connection, entity);
