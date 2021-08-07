@@ -424,7 +424,7 @@ public class AtkEntityProcessor extends AtkProcessor {
         if (atk.copyMethods()) {
             for (Element methodDeclaration : element.getEnclosedElements()) {
                 if (methodDeclaration instanceof ExecutableElement) {
-                    MethodTree methodTree = Trees.instance(processingEnv).getTree((ExecutableElement) methodDeclaration);
+                    MethodTree methodTree = Trees.instance(getProcessingEnv()).getTree((ExecutableElement) methodDeclaration);
 
                     if (methodTree != null &&
                             !methodTree.toString().contains("<init>()") &&
