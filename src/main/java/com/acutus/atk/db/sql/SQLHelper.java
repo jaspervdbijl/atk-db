@@ -82,6 +82,8 @@ public class SQLHelper {
                 return (T) ((Timestamp) value).toLocalDateTime().toLocalDate();
             if (LocalTime.class.equals(type) && value.getClass().equals(Time.class))
                 return (T) ((Time) value).toLocalTime();
+            if (LocalTime.class.equals(type) && value.getClass().equals(Timestamp.class))
+                return (T) ((Timestamp) value).toLocalDateTime().toLocalTime();
             throw new UnsupportedOperationException(
                     String.format("Could not unwrap types from %s to %s", type.getName(), value.getClass().getName()));
         } catch (Exception ex) {
