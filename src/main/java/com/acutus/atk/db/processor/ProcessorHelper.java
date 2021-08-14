@@ -3,7 +3,6 @@ package com.acutus.atk.db.processor;
 import javax.lang.model.type.TypeMirror;
 import javax.persistence.FetchType;
 
-import static com.acutus.atk.util.StringUtils.isEmpty;
 import static com.acutus.atk.util.StringUtils.isNotEmpty;
 
 public class ProcessorHelper {
@@ -56,7 +55,8 @@ public class ProcessorHelper {
             "    }\n\n";
 
     private static boolean isClassPrimitive(String className) {
-        return (className.startsWith("java.lang.") || className.startsWith("java.math."));
+        return (className.startsWith("java.lang.") || className.startsWith("java.math.") ||
+                className.startsWith("java.time.") || className.startsWith("java.sql."));
     }
 
     public static String getQueryMethod(String extName, TypeMirror type ,String methodName, String sql) {
