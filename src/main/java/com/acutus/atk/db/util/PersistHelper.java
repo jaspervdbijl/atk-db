@@ -111,7 +111,7 @@ public class PersistHelper {
         Default def = field.getField().getAnnotation(Default.class);
         if (insert == (def.type() == Default.Type.INSERT || def.type() == Default.Type.BOTH)
                 || !insert == (def.type() == Default.Type.UPDATE || def.type() == Default.Type.BOTH)) {
-            Enumerated enumerated = (Enumerated) field.getField().getAnnotation(Enumerated.class);
+            Enumerated enumerated = field.getField().getAnnotation(Enumerated.class);
             Class type = enumerated != null
                     ? enumerated.value().equals(EnumType.STRING)
                     ? String.class : Integer.class
