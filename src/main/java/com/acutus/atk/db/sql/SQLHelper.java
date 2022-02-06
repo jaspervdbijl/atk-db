@@ -64,7 +64,7 @@ public class SQLHelper {
     @SneakyThrows
     public static <T> T mapFromRs(ResultSet rs, Class<T> type, int index) {
         Assert.isTrue(RS_FUNC_INT_MAP.containsKey(type), "Type not supported %s", type);
-        return (T) RS_FUNC_INT_MAP.get(type).invoke(rs, index);
+        return (T) unwrap(type,RS_FUNC_INT_MAP.get(type).invoke(rs, index));
     }
 
     @SneakyThrows
@@ -82,7 +82,7 @@ public class SQLHelper {
                 return (T) ((Timestamp) value).toLocalDateTime().toLocalDate();
             if (LocalTime.class.equals(type) && value.getClass().equals(Time.class))
                 return (T) ((Time) value).toLocalTime();
-            if (LocalTime.class.equals(type) && value.getClass().equals(Timestamp.class))
+            if (LocalDateTime.class.equals(type) && value.getClass().equals(Timestamp.class))
                 return (T) ((Timestamp) value).toLocalDateTime().toLocalTime();
             throw new UnsupportedOperationException(
                     String.format("Could not unwrap types from %s to %s", type.getName(), value.getClass().getName()));
@@ -151,7 +151,7 @@ public class SQLHelper {
                 } finally {
                     s2 = System.currentTimeMillis();
                     if (s2 - s1 > 1000) {
-                        System.out.println("Query SLow " + ((s2-s1) / 1000) + " "+ query);
+                        log.info("Query SLow " + ((s2-s1) / 1000) + " "+ query);
                     }
                 }
             }
