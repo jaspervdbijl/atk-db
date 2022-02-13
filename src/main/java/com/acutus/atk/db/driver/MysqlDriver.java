@@ -3,19 +3,23 @@ package com.acutus.atk.db.driver;
 import com.acutus.atk.db.AbstractAtkEntity;
 import com.acutus.atk.db.AtkEnField;
 import com.acutus.atk.db.annotations.ForeignKey;
+import com.acutus.atk.db.sql.SQLHelper;
 import com.acutus.atk.util.Assert;
-import com.acutus.atk.util.StringUtils;
 import com.acutus.atk.util.collection.One;
+import com.acutus.atk.util.collection.Three;
 import lombok.SneakyThrows;
 
 import javax.persistence.Column;
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.List;
 import java.util.Optional;
 
 import static com.acutus.atk.db.annotations.ForeignKey.Action.NoAction;
 import static com.acutus.atk.db.sql.SQLHelper.query;
+import static com.acutus.atk.db.sql.SQLHelper.runAndReturn;
 
 public class MysqlDriver extends AbstractDriver {
 
@@ -54,6 +58,24 @@ public class MysqlDriver extends AbstractDriver {
     public String getColMetadataDefault(ResultSet rs) {
         String def = super.getColMetadataDefault(rs);
         return "0000-00-00 00:00:00".equals(def) ? "" : def;
+    }
+
+    @Override
+    public Optional<Long> getSlaveLag(DataSource dataSource) {
+        return runAndReturn(dataSource, c -> {
+            try (Statement smt = c.createStatement()) {
+                try (ResultSet rs = smt.executeQuery("show slave status")) {
+                    List<List> values = SQLHelper.query(rs,new Class[]{String.class,String.class,Long.class},
+                            new String[]{"Slave_IO_Running", "Slave_SQL_Running", "Seconds_Behind_Master"});
+                    return values.isEmpty()
+                            ? Optional.empty()
+                            : "Yes".equals(values.get(0).get(0)) && "Yes".equals(values.get(0).get(1))
+                            ? Optional.of((Long) values.get(0).get(2))
+                            : Optional.empty();
+
+                }
+            }
+        });
     }
 
 

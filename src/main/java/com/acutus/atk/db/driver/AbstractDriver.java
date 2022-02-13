@@ -18,6 +18,7 @@ import lombok.SneakyThrows;
 import javax.persistence.Column;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Lob;
+import javax.sql.DataSource;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.*;
@@ -281,6 +282,10 @@ public abstract class AbstractDriver {
     @SneakyThrows
     public String getColMetadataDefault(ResultSet rs) {
         return StringUtils.defaultString(rs.getString("COLUMN_DEF"));
+    }
+
+    public Optional<Long> getSlaveLag(DataSource dataSource) {
+        throw new UnsupportedOperationException("Not implemented");
     }
 
 }
