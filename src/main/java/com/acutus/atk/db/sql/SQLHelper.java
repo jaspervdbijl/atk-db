@@ -131,12 +131,16 @@ public class SQLHelper {
     }
 
     @SneakyThrows
-    public static PreparedStatement prepare(Connection connection, String query, Object... params) {
-        PreparedStatement ps = connection.prepareStatement(query);
+    public static PreparedStatement prepare(PreparedStatement ps, Object... params) {
         if (params != null) {
             IntStream.range(0, params.length).forEach(i -> handle(() -> ps.setObject(i + 1, params[i])));
         }
         return ps;
+    }
+
+    @SneakyThrows
+    public static PreparedStatement prepare(Connection connection, String query, Object... params) {
+        return prepare(connection.prepareStatement(query),params);
     }
 
     @SneakyThrows
@@ -261,6 +265,19 @@ public class SQLHelper {
             return ps.executeUpdate();
         }
     }
+
+    @SneakyThrows
+    public static int executeUpdate(Connection connection, String sql, List<Object[]> values) {
+        try (PreparedStatement ps = connection.prepareStatement(sql)) {
+            values.stream().forEach(v -> {
+                IntStream.range(0, v.length)
+                        .forEach(i -> handle(() -> ps.setObject(i + 1, v[i])));
+                handle(() -> ps.addBatch());
+            });
+            return ps.executeUpdate();
+        }
+    }
+
 
     public static void executeUpdate(DataSource dataSource, String sql, Object... params) {
         run(dataSource, c -> executeUpdate(c, sql, params));

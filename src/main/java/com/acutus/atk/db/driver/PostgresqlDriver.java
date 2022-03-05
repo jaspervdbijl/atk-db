@@ -8,7 +8,6 @@ import com.acutus.atk.util.collection.One;
 import lombok.SneakyThrows;
 
 import javax.persistence.Column;
-import javax.sql.DataSource;
 import java.sql.Connection;
 import java.util.List;
 import java.util.Optional;
@@ -47,6 +46,11 @@ public class PostgresqlDriver extends AbstractDriver {
     @Override
     public String getFieldTypeForClob(Optional<Column> column) {
         return "longtext";
+    }
+
+    @Override
+    public String createSequence(String name, int start, int cache) {
+        return "create sequence " + name + " start " + start + " cache " + cache;
     }
 
 }

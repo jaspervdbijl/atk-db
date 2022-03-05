@@ -22,4 +22,9 @@ public class AtkEntities<T extends AbstractAtkEntity> extends ArrayList<T> {
     public Strings getTableNames() {
         return stream().map(e -> e.getTableName()).collect(Collectors.toCollection(Strings::new));
     }
+
+    public BatchPersist<T> persist() {
+        return new BatchPersist<>(this);
+    }
+
 }

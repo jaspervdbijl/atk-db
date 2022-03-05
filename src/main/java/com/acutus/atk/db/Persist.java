@@ -4,6 +4,9 @@ import com.acutus.atk.db.driver.DriverFactory;
 import com.acutus.atk.db.util.AtkEnUtil;
 import com.acutus.atk.util.Assert;
 import com.acutus.atk.util.call.CallThree;
+import com.acutus.atk.util.collection.Four;
+import com.acutus.atk.util.collection.One;
+import com.acutus.atk.util.collection.Three;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
@@ -16,6 +19,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static com.acutus.atk.db.sql.SQLHelper.*;
 import static com.acutus.atk.db.util.PersistHelper.preProcessInsert;
@@ -50,42 +54,52 @@ public class Persist<T extends AbstractAtkEntity> {
         return false;
     }
 
+    protected Four<AtkEnFields, AtkEnFields, Boolean, String> prepareInsert() {
+        preProcessInsert(entity);
+        // no id
+        boolean autoInc = false;
+        AtkEnFields ids = entity.getEnFields().getIds();
+        if (ids.size() == 1) {
+            autoInc = populateIdAndReturnIsAutoIncrement(ids.get(0));
+        }
+        // exclude id is its a auto generated value
+        AtkEnFields clone = entity.getEnFields().clone().removeWhen(c -> c.get() == null);
+        if (autoInc) {
+            clone.removeAll(ids);
+        }
+        String sql = String.format("insert into %s (%s) values(%s)", entity.getTableName(), clone.getColNames().toString(","),
+                clone.stream().map(f -> "?").reduce((s1, s2) -> s1 + "," + s2).get());
+
+        return new Four(ids, clone, autoInc, sql);
+    }
+
+    @SneakyThrows
+    public T batchInsert(PreparedStatement batchPS) {
+        Four<AtkEnFields, AtkEnFields, Boolean, String> prepared = prepareInsert();
+        AtkEnFields clone = prepared.getSecond();
+        prepare(batchPS, wrapForPreparedStatement(clone).toArray());
+        batchPS.addBatch();
+        return entity;
+    }
+
     @SneakyThrows
     public T insert(Connection connection) {
-        long t1 = System.currentTimeMillis();
-        String sql = "";
-        try {
-            preProcessInsert(entity);
-            // no id
-            boolean autoInc = false;
-            AtkEnFields ids = entity.getEnFields().getIds();
-            if (ids.size() == 1) {
-                autoInc = populateIdAndReturnIsAutoIncrement(ids.get(0));
-            }
-            // exclude id is its a auto generated value
-            AtkEnFields clone = entity.getEnFields().clone().removeWhen(c -> c.get() == null);
-            if (autoInc) {
-                clone.removeAll(ids);
-            }
-            sql = String.format("insert into %s (%s) values(%s)", entity.getTableName(), clone.getColNames().toString(","),
-                    clone.stream().map(f -> "?").reduce((s1, s2) -> s1 + "," + s2).get());
+        Four<AtkEnFields, AtkEnFields, Boolean, String> prepared = prepareInsert();
+        AtkEnFields ids = prepared.getFirst();
+        AtkEnFields clone = prepared.getSecond();
+        boolean autoInc = prepared.getThird();
+        String sql = prepared.getFourth();
 
-            try (PreparedStatement ps = prepare(connection, sql, wrapForPreparedStatement(clone).toArray())) {
-                ps.executeUpdate();
-            }
-            // load any auto inc fields
-            if (autoInc) {
-                ids.get(0).set(DriverFactory.getDriver(connection).getLastInsertValue(connection, ids.get(0).getType()));
-            }
-            PERSIST_CALLBACK.ifPresent(c -> handle(() -> c.call(connection, entity, true)));
-            entity.setLoadedFromDB(true);
-            return entity;
-        } finally {
-            long s2 = System.currentTimeMillis();
-            if (s2 - t1 > 1000) {
-                log.debug("Slow insert " + ((s2 - t1) / 1000) + " " + sql);
-            }
+        try (PreparedStatement ps = prepare(connection, sql, wrapForPreparedStatement(clone).toArray())) {
+            ps.executeUpdate();
         }
+        // load any auto inc fields
+        if (autoInc) {
+            ids.get(0).set(DriverFactory.getDriver(connection).getLastInsertValue(connection, ids.get(0).getType()));
+        }
+        PERSIST_CALLBACK.ifPresent(c -> handle(() -> c.call(connection, entity, true)));
+        entity.setLoadedFromDB(true);
+        return entity;
     }
 
     private List wrapForPreparedStatement(AtkEnFields fields) {

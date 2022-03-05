@@ -4,6 +4,7 @@ import com.acutus.atk.db.AbstractAtkEntity;
 import com.acutus.atk.db.AtkEnField;
 import com.acutus.atk.db.AtkEnFields;
 import com.acutus.atk.db.AtkEnIndex;
+import com.acutus.atk.db.annotations.Sequence;
 import com.acutus.atk.db.driver.AbstractDriver;
 import com.acutus.atk.db.driver.DriverFactory;
 import com.acutus.atk.db.fe.indexes.Index;
@@ -19,6 +20,7 @@ import com.acutus.atk.util.collection.One;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.common.value.qual.IntRange;
 
 import javax.persistence.Enumerated;
 import java.lang.reflect.Field;
@@ -32,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static com.acutus.atk.db.constants.EnvProperties.DB_FE_ALLOW_DROP;
 import static com.acutus.atk.db.constants.EnvProperties.DB_FE_STRICT;
@@ -268,6 +271,15 @@ public class FEHelper {
                 log.warn("Maintain Columns disabled for {}. Did not execute: {}", entity.getTableName(), sql);
             }
         }
+        // maintain sequences
+        Sequence sequence = entity.getClass().getAnnotation(Sequence.class);
+        if (sequence != null) {
+            IntStream.range(0, sequence.name().length).forEach(i ->
+                    logAndExecute(connection,DriverFactory.getDriver(connection)
+                            .createSequence(sequence.name()[i], sequence.start()[i], sequence.cache()[i])));
+
+        }
+
     }
 
     private static void maintainPrimaryKeys(Connection connection, AbstractDriver driver, AbstractAtkEntity entity) {

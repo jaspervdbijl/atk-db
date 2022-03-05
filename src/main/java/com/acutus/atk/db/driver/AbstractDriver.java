@@ -288,4 +288,7 @@ public abstract class AbstractDriver {
         throw new UnsupportedOperationException("Not implemented");
     }
 
+    public String createSequence(String name, int start, int cache) {
+        throw new RuntimeException("Not implemented");
+    }
 }
