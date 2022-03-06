@@ -21,19 +21,20 @@ public class BatchPersist<T extends AbstractAtkEntity> {
     private AtkEntities<T> values;
 
     @SneakyThrows
-    public int insert(Connection c) {
+    public int[] insert(Connection c) {
         if (!values.isEmpty()) {
             T entity = values.get(0);
             Four<AtkEnFields, AtkEnFields, Boolean, String> prepared = entity.persist().prepareInsert();
             try (PreparedStatement ps = c.prepareStatement(prepared.getFourth())) {
                 values.stream().forEach(v -> v.persist().batchInsert(ps));
-                return ps.executeUpdate();
+                ps.clearParameters();
+                return ps.executeBatch();
             }
         }
-        return 0;
+        return new int[0];
     }
 
-    public int insert(DataSource dataSource) {
+    public int[] insert(DataSource dataSource) {
         return runAndReturn(dataSource,c -> insert(c));
     }
 }
