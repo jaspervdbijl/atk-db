@@ -430,7 +430,6 @@ public class AtkEntityProcessor extends AtkProcessor {
                             !methodTree.toString().contains("<init>()") &&
                             !methodTree.toString().contains("@Query") &&
                             !methodTree.toString().contains("@Execute")) {
-                        System.out.println(methodTree);
                         methods.add(methodTree.toString());
                     }
                 }
