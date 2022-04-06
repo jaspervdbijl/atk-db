@@ -2,6 +2,7 @@ package com.acutus.atk.db.processor;
 
 import com.acutus.atk.db.annotations.FieldFilter;
 import com.acutus.atk.db.annotations.Index;
+import com.acutus.atk.db.annotations.Sequence;
 import com.acutus.atk.entity.processor.Atk;
 import com.acutus.atk.entity.processor.AtkProcessor;
 import com.acutus.atk.util.Strings;
@@ -24,6 +25,7 @@ import java.lang.reflect.Method;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.OptionalInt;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -216,6 +218,12 @@ public class AtkEntityProcessor extends AtkProcessor {
             fields.add(getStaticField(parent, "createdDate"));
             fields.add(getStaticField(parent, "lastModifiedBy"));
             fields.add(getStaticField(parent, "lastModifiedDate"));
+        }
+        Sequence sequence = parent.getAnnotation(Sequence.class);
+        if (sequence != null) {
+            for (String name : sequence.name()) {
+                fields.add("\tpublic static final String SEQ_"+ name.toUpperCase(Locale.ROOT) + " = \""+name+"\"");
+            }
         }
         return fields.stream().distinct().collect(Collectors.toCollection(Strings::new));
     }

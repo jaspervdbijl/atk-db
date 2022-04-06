@@ -2,18 +2,24 @@ package com.acutus.atk.db.driver;
 
 import com.acutus.atk.db.AbstractAtkEntity;
 import com.acutus.atk.db.AtkEnField;
+import com.acutus.atk.db.AtkEnFields;
 import com.acutus.atk.db.annotations.ForeignKey;
+import com.acutus.atk.db.sql.SQLHelper;
 import com.acutus.atk.util.Assert;
 import com.acutus.atk.util.collection.One;
 import lombok.SneakyThrows;
 
 import javax.persistence.Column;
+import javax.persistence.GeneratedValue;
+import javax.sql.DataSource;
 import java.sql.Connection;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
 import static com.acutus.atk.db.annotations.ForeignKey.Action.NoAction;
 import static com.acutus.atk.db.sql.SQLHelper.query;
+import static com.acutus.atk.db.sql.SQLHelper.runAndReturn;
 
 public class PostgresqlDriver extends AbstractDriver {
 
@@ -44,13 +50,55 @@ public class PostgresqlDriver extends AbstractDriver {
     }
 
     @Override
+    public String getAlterColumnDefinition(AtkEnField field) {
+        String colDef = getColumnDefinition(field);
+        // tmp hack
+        if (colDef.endsWith(" null")) {
+            colDef = colDef.substring(0,colDef.length() - " null".length());
+        }
+        if (colDef.endsWith(" not null")) {
+            colDef = colDef.substring(0,colDef.length() - " not null".length());
+        }
+        return String.format("alter table %s alter column %s type %s", field.getEntity().getTableName()
+                , field.getColName(), colDef);
+    }
+
+
+    @Override
     public String getFieldTypeForClob(Optional<Column> column) {
         return "longtext";
     }
 
     @Override
-    public String createSequence(String name, int start, int cache) {
-        return "create sequence " + name + " start " + start + " cache " + cache;
+    public List<String> createSequence(String name, int start, int cache) {
+        return Arrays.asList("create sequence IF NOT EXISTS  " + name + " start " + start + " cache " + cache);
+    }
+
+    @SneakyThrows
+    public String addAutoIncrementPK(AtkEnFields ids) {
+
+        Optional<AtkEnField> atkEnFieldOptional =
+                ids.stream().filter(field ->
+                        field.getField().isAnnotationPresent(GeneratedValue.class) &&
+                                field.getType().isAssignableFrom(Integer.class) || field.getType().isAssignableFrom(Long.class)).findFirst();
+
+        if (atkEnFieldOptional.isPresent()) {
+            return String.format("alter table %s alter %s type SERIAL", ids.get(0).getEntity().getTableName(),
+                    atkEnFieldOptional.get().getColName());
+        } else {
+            return null;
+
+        }
+    }
+
+    @Override
+    public Integer nextSequence(Connection c, String name) {
+        return SQLHelper.queryOne(c,Integer.class,"SELECT nextval('"+name+"');").get().getFirst();
+    }
+
+    @Override
+    public Integer nextSequence(DataSource dataSource, String name) {
+        return runAndReturn(dataSource,c -> nextSequence(c,name));
     }
 
 }

@@ -30,6 +30,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.acutus.atk.db.annotations.ForeignKey.Action.NoAction;
+import static com.acutus.atk.db.sql.SQLHelper.runAndReturn;
 import static com.acutus.atk.util.StringUtils.isNotEmpty;
 
 public abstract class AbstractDriver {
@@ -288,7 +289,15 @@ public abstract class AbstractDriver {
         throw new UnsupportedOperationException("Not implemented");
     }
 
-    public String createSequence(String name, int start, int cache) {
+    public List<String> createSequence(String name, int start, int cache) {
         throw new RuntimeException("Not implemented");
+    }
+
+    public Integer nextSequence(Connection c, String name) {
+        throw new RuntimeException("Not implemented");
+    }
+
+    public Integer nextSequence(DataSource dataSource, String name) {
+        return runAndReturn(dataSource,c -> nextSequence(c,name));
     }
 }

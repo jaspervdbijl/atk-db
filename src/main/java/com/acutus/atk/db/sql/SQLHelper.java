@@ -101,6 +101,9 @@ public class SQLHelper {
         Assert.isTrue(RS_FUNC_INT_STR.containsKey(type), "Type not supported %s", type);
 
         try {
+            if (rs.getObject(colName) == null) {
+                return null;
+            }
             return (T) unwrap(type, RS_FUNC_INT_STR.get(type).invoke(rs, colName));
         } catch (Exception sqlException) {
             return (T) unwrap(type, RS_FUNC_INT_STR.get(type).invoke(rs, colName.substring(colName.indexOf(".") + 1)));

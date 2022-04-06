@@ -6,7 +6,6 @@ import com.acutus.atk.db.annotations.ForeignKey;
 import com.acutus.atk.db.sql.SQLHelper;
 import com.acutus.atk.util.Assert;
 import com.acutus.atk.util.collection.One;
-import com.acutus.atk.util.collection.Three;
 import lombok.SneakyThrows;
 
 import javax.persistence.Column;
@@ -14,6 +13,7 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -78,5 +78,16 @@ public class MysqlDriver extends AbstractDriver {
         });
     }
 
+    @Override
+    public List<String> createSequence(String name, int start, int cache) {
+        return Arrays.asList("create table if not exists seq_" + name + " (id INT NOT NULL)",
+                "INSERT INTO seq_" + name + " VALUES (0))");
+    }
+
+    @Override
+    public Integer nextSequence(Connection c, String name) {
+        SQLHelper.executeUpdate(c,"UPDATE seq_"+name+" SET id=LAST_INSERT_ID(id+1)");
+        return SQLHelper.queryOne(c,Integer.class,"SELECT LAST_INSERT_ID()").get().getFirst();
+    }
 
 }

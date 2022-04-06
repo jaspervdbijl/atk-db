@@ -275,8 +275,9 @@ public class FEHelper {
         Sequence sequence = entity.getClass().getAnnotation(Sequence.class);
         if (sequence != null) {
             IntStream.range(0, sequence.name().length).forEach(i ->
-                    logAndExecute(connection,DriverFactory.getDriver(connection)
-                            .createSequence(sequence.name()[i], sequence.start()[i], sequence.cache()[i])));
+                    DriverFactory.getDriver(connection)
+                            .createSequence(sequence.name()[i], sequence.start()[i], sequence.cache()[i])
+                            .forEach(s -> logAndExecute(connection,s)));
 
         }
 
