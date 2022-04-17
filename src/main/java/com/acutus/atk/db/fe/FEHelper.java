@@ -16,11 +16,10 @@ import com.acutus.atk.reflection.Reflect;
 import com.acutus.atk.util.Assert;
 import com.acutus.atk.util.StringUtils;
 import com.acutus.atk.util.Strings;
-import com.acutus.atk.util.collection.One;
+import com.acutus.atk.util.collection.Tuple1;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.checkerframework.common.value.qual.IntRange;
 
 import javax.persistence.Enumerated;
 import java.lang.reflect.Field;
@@ -62,7 +61,7 @@ public class FEHelper {
     }
 
     private static boolean recordMismatch(Connection connection, AbstractAtkEntity entity) {
-        Optional<One<String>> hash = SQLHelper.queryOne(connection, String.class, "select checksum from atk_db_record where lower(table_name) = ?"
+        Optional<Tuple1<String>> hash = SQLHelper.queryOne(connection, String.class, "select checksum from atk_db_record where lower(table_name) = ?"
                 , entity.getTableName().toLowerCase());
         return !hash.isPresent() || !hash.get().getFirst().equalsIgnoreCase(entity.getMd5Hash());
     }

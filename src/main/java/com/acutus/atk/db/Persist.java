@@ -4,9 +4,7 @@ import com.acutus.atk.db.driver.DriverFactory;
 import com.acutus.atk.db.util.AtkEnUtil;
 import com.acutus.atk.util.Assert;
 import com.acutus.atk.util.call.CallThree;
-import com.acutus.atk.util.collection.Four;
-import com.acutus.atk.util.collection.One;
-import com.acutus.atk.util.collection.Three;
+import com.acutus.atk.util.collection.Tuple4;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
@@ -19,7 +17,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static com.acutus.atk.db.sql.SQLHelper.*;
 import static com.acutus.atk.db.util.PersistHelper.preProcessInsert;
@@ -54,7 +51,7 @@ public class Persist<T extends AbstractAtkEntity> {
         return false;
     }
 
-    protected Four<AtkEnFields, AtkEnFields, Boolean, String> prepareInsert() {
+    protected Tuple4<AtkEnFields, AtkEnFields, Boolean, String> prepareInsert() {
         preProcessInsert(entity);
         // no id
         boolean autoInc = false;
@@ -70,12 +67,12 @@ public class Persist<T extends AbstractAtkEntity> {
         String sql = String.format("insert into %s (%s) values(%s)", entity.getTableName(), clone.getColNames().toString(","),
                 clone.stream().map(f -> "?").reduce((s1, s2) -> s1 + "," + s2).get());
 
-        return new Four(ids, clone, autoInc, sql);
+        return new Tuple4(ids, clone, autoInc, sql);
     }
 
     @SneakyThrows
     public T batchInsert(PreparedStatement batchPS) {
-        Four<AtkEnFields, AtkEnFields, Boolean, String> prepared = prepareInsert();
+        Tuple4<AtkEnFields, AtkEnFields, Boolean, String> prepared = prepareInsert();
         AtkEnFields clone = prepared.getSecond();
         prepare(batchPS, wrapForPreparedStatement(clone).toArray());
         batchPS.addBatch();
@@ -84,7 +81,7 @@ public class Persist<T extends AbstractAtkEntity> {
 
     @SneakyThrows
     public T insert(Connection connection) {
-        Four<AtkEnFields, AtkEnFields, Boolean, String> prepared = prepareInsert();
+        Tuple4<AtkEnFields, AtkEnFields, Boolean, String> prepared = prepareInsert();
         AtkEnFields ids = prepared.getFirst();
         AtkEnFields clone = prepared.getSecond();
         boolean autoInc = prepared.getThird();

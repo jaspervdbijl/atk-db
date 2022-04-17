@@ -11,8 +11,8 @@ import com.acutus.atk.util.Assert;
 import com.acutus.atk.util.Strings;
 import com.acutus.atk.util.call.CallNilRet;
 import com.acutus.atk.util.call.CallOne;
-import com.acutus.atk.util.collection.Three;
-import com.acutus.atk.util.collection.Two;
+import com.acutus.atk.util.collection.Tuple3;
+import com.acutus.atk.util.collection.Tuple2;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
@@ -144,9 +144,9 @@ public class Query<T extends AbstractAtkEntity, O> {
         return leftJoin.toString(" ");
     }
 
-    private Two<String, Boolean> keyToString(AbstractAtkEntity entity) {
+    private Tuple2<String, Boolean> keyToString(AbstractAtkEntity entity) {
         Optional<AtkEnField> hasNull = entity.getEnFields().getIds().stream().filter(f -> f.get() == null).findAny();
-        return new Two(entity.getTableName() + "_" + entity.getEnFields().getIds()
+        return new Tuple2(entity.getTableName() + "_" + entity.getEnFields().getIds()
                 .stream().map((f1 -> "" + f1.get())).reduce((o1, o2) -> o1 + "" + o2).get(), !hasNull.isEmpty());
     }
 
@@ -158,12 +158,12 @@ public class Query<T extends AbstractAtkEntity, O> {
      * @return the mapped entity, if the entity has already been loaded into the map, and if the entity's id is null
      */
     @SneakyThrows
-    private Three<AbstractAtkEntity, Boolean, Boolean> loadCascade(AbstractDriver driver, AtomicInteger cnt, Map<String, AbstractAtkEntity> map, AbstractAtkEntity entity, ResultSet rs) {
+    private Tuple3<AbstractAtkEntity, Boolean, Boolean> loadCascade(AbstractDriver driver, AtomicInteger cnt, Map<String, AbstractAtkEntity> map, AbstractAtkEntity entity, ResultSet rs) {
         if (cnt.get() > -1) {
             entity.setTableName(getTmpTablename(cnt.get()));
         }
         entity.set(driver, rs);
-        Two<String, Boolean> keyIsNul = keyToString(entity);
+        Tuple2<String, Boolean> keyIsNul = keyToString(entity);
         String key = keyIsNul.getFirst();
         boolean existed = map.containsKey(key);
         if (!map.containsKey(key)) {
@@ -176,7 +176,7 @@ public class Query<T extends AbstractAtkEntity, O> {
             for (Field f : getEagerFields(local)) {
                 AbstractAtkEntity child = (AbstractAtkEntity) getGenericFieldType(f).getConstructor().newInstance();
                 cnt.getAndIncrement();
-                Three<AbstractAtkEntity, Boolean, Boolean> value = loadCascade(driver, cnt, map, child, rs);
+                Tuple3<AbstractAtkEntity, Boolean, Boolean> value = loadCascade(driver, cnt, map, child, rs);
                 if (value.getThird()) {
                     // id was null
                     if (Optional.class.isAssignableFrom(f.getType())) {
@@ -195,7 +195,7 @@ public class Query<T extends AbstractAtkEntity, O> {
                 }
             }
         }
-        return new Three<>(local, existed, keyIsNul.getSecond());
+        return new Tuple3<>(local, existed, keyIsNul.getSecond());
     }
 
     private String prepareSql(Filter filter) {
@@ -245,7 +245,7 @@ public class Query<T extends AbstractAtkEntity, O> {
 
         // transform the select *
         Map<String, AbstractAtkEntity> map = new HashMap<>();
-        Three<AbstractAtkEntity, Boolean, Boolean> lastEntity = null;
+        Tuple3<AbstractAtkEntity, Boolean, Boolean> lastEntity = null;
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             filter.prepare(ps);
             long start = System.currentTimeMillis();
@@ -255,7 +255,7 @@ public class Query<T extends AbstractAtkEntity, O> {
                     if (!shouldLeftJoin) {
                         iterate.call((T) entity.set(driver, rs).clone());
                     } else {
-                        Three<AbstractAtkEntity, Boolean, Boolean> value = loadCascade(driver, new AtomicInteger(-1), map, entity, rs);
+                        Tuple3<AbstractAtkEntity, Boolean, Boolean> value = loadCascade(driver, new AtomicInteger(-1), map, entity, rs);
                         if (lastEntity != null && !value.getFirst().isIdEqual(lastEntity.getFirst())) {
                             iterate.call((T) lastEntity.getFirst());
                             if (--limit == 0) return;

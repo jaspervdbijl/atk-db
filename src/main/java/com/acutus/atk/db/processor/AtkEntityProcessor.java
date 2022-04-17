@@ -6,7 +6,7 @@ import com.acutus.atk.db.annotations.Sequence;
 import com.acutus.atk.entity.processor.Atk;
 import com.acutus.atk.entity.processor.AtkProcessor;
 import com.acutus.atk.util.Strings;
-import com.acutus.atk.util.collection.Four;
+import com.acutus.atk.util.collection.Tuple4;
 import com.google.auto.service.AutoService;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.util.Trees;
@@ -389,12 +389,12 @@ public class AtkEntityProcessor extends AtkProcessor {
 
     @SneakyThrows
     @Override
-    protected List<Four<Element, Atk.Match, Boolean, String[]>> getDaoClass(Element element) {
+    protected List<Tuple4<Element, Atk.Match, Boolean, String[]>> getDaoClass(Element element) {
         AtkEntity atk = element.getAnnotation(AtkEntity.class);
         return atk == null || extractDaoClassNames(atk.toString()).isEmpty()
                 ? List.of()
                 : extractDaoClassNames(atk.toString()).stream()
-                .map(c -> new Four<>(getClassElement(c), atk.daoMatch(), atk.daoCopyAll(), atk.daoIgnore())).collect(Collectors.toList());
+                .map(c -> new Tuple4<>(getClassElement(c), atk.daoMatch(), atk.daoCopyAll(), atk.daoIgnore())).collect(Collectors.toList());
     }
 
     @Override

@@ -2,7 +2,7 @@ package com.acutus.atk.db.fe;
 
 import com.acutus.atk.db.AbstractAtkEntity;
 import com.acutus.atk.db.driver.DriverFactory;
-import com.acutus.atk.util.collection.One;
+import com.acutus.atk.util.collection.Tuple1;
 import lombok.Synchronized;
 
 import java.sql.Connection;
@@ -26,7 +26,7 @@ public class TableVersionHelper {
             EXISTS_CHECKED = true;
             createIfNotExists(connection);
         }
-        List<One<Integer>> version = query(connection, Integer.class, "select version from atk_table_version where name = ?", tableName);
+        List<Tuple1<Integer>> version = query(connection, Integer.class, "select version from atk_table_version where name = ?", tableName);
         return version.isEmpty() ? Optional.empty() : Optional.of(version.get(0).getFirst());
     }
 

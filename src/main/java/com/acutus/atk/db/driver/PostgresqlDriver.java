@@ -6,7 +6,7 @@ import com.acutus.atk.db.AtkEnFields;
 import com.acutus.atk.db.annotations.ForeignKey;
 import com.acutus.atk.db.sql.SQLHelper;
 import com.acutus.atk.util.Assert;
-import com.acutus.atk.util.collection.One;
+import com.acutus.atk.util.collection.Tuple1;
 import lombok.SneakyThrows;
 
 import javax.persistence.Column;
@@ -24,7 +24,7 @@ import static com.acutus.atk.db.sql.SQLHelper.runAndReturn;
 public class PostgresqlDriver extends AbstractDriver {
 
     public <T> T getLastInsertValue(Connection connection, Class<T> clazz) {
-        List<One<T>> id = query(connection, clazz, "select LAST_INSERT_ID()");
+        List<Tuple1<T>> id = query(connection, clazz, "select LAST_INSERT_ID()");
         Assert.isTrue(!id.isEmpty(), "No inserted id found");
         return id.get(0).getFirst();
     }

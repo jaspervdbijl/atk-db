@@ -182,83 +182,98 @@ public class SQLHelper {
                 .collect(Collectors.toList());
     }
 
-    public static <A> List<One<A>> query(Connection connection, Class<A> type, String query, Object... params) {
-        return (List<One<A>>) query(connection, One.class, new Class[]{type}, query, params);
+    public static <A> List<Tuple1<A>> query(Connection connection, Class<A> type, String query, Object... params) {
+        return (List<Tuple1<A>>) query(connection, Tuple1.class, new Class[]{type}, query, params);
     }
 
-    public static <A> List<A> reMap(List<One<A>> map) {
+    public static <A> List<A> reMap(List<Tuple1<A>> map) {
         return map.stream().map(a -> a.getFirst()).collect(Collectors.toList());
     }
 
-    public static <A> List<One<A>> query(DataSource dataSource, Class<A> type, String query, Object... params) {
+    public static <A> List<Tuple1<A>> query(DataSource dataSource, Class<A> type, String query, Object... params) {
         return runAndReturn(dataSource, connection -> query(connection, type, query, params));
     }
 
-    public static <A> Optional<One<A>> queryOne(Connection connection, Class<A> type, String query, Object... params) {
-        List<One<A>> list = query(connection, type, query, params);
+    public static <A> Optional<Tuple1<A>> queryOne(Connection connection, Class<A> type, String query, Object... params) {
+        List<Tuple1<A>> list = query(connection, type, query, params);
         return Optional.ofNullable(!list.isEmpty() ? list.get(0) : null);
     }
 
-    public static <A> Optional<One<A>> queryOne(DataSource dataSource, Class<A> type, String query, Object... params) {
+    public static <A> Optional<Tuple1<A>> queryOne(DataSource dataSource, Class<A> type, String query, Object... params) {
         return runAndReturn(dataSource, connection -> queryOne(connection, type, query, params));
     }
 
 
-    public static <A, B> List<Two<A, B>> query(Connection connection, Class<A> t1, Class<B> t2, String query, Object... params) {
-        return (List<Two<A, B>>) query(connection, Two.class, new Class[]{t1, t2}, query, params);
+    public static <A, B> List<Tuple2<A, B>> query(Connection connection, Class<A> t1, Class<B> t2, String query, Object... params) {
+        return (List<Tuple2<A, B>>) query(connection, Tuple2.class, new Class[]{t1, t2}, query, params);
     }
 
-    public static <A, B> List<Two<A, B>> query(DataSource dataSource, Class<A> t1, Class<B> t2, String query, Object... params) {
+    public static <A, B> List<Tuple2<A, B>> query(DataSource dataSource, Class<A> t1, Class<B> t2, String query, Object... params) {
         return runAndReturn(dataSource, connection -> query(connection, t1, t2, query, params));
     }
 
-    public static <A, B, C> List<Three<A, B, C>> query(Connection connection, Class<A> t1, Class<B> t2
+    public static <A, B, C> List<Tuple3<A, B, C>> query(Connection connection, Class<A> t1, Class<B> t2
             , Class<C> t3, String query, Object... params) {
-        return (List<Three<A, B, C>>) query(connection, Three.class, new Class[]{t1, t2, t3}, query, params);
+        return (List<Tuple3<A, B, C>>) query(connection, Tuple3.class, new Class[]{t1, t2, t3}, query, params);
     }
 
-    public static <A, B, C> List<Three<A, B, C>> query(DataSource dataSource, Class<A> t1, Class<B> t2
+    public static <A, B, C> List<Tuple3<A, B, C>> query(DataSource dataSource, Class<A> t1, Class<B> t2
             , Class<C> t3, String query, Object... params) {
         return runAndReturn(dataSource, connection -> query(connection, t1, t2, t3, query, params));
     }
 
-    public static <A, B, C, D> List<Four<A, B, C, D>> query(Connection connection, Class<A> t1, Class<B> t2
-            , Class<C> t3, Class<D> t4, String query, Object... params) {
-        return (List<Four<A, B, C, D>>) query(connection, Four.class, new Class[]{t1, t2, t3, t4}, query, params);
+    public static <T> List<TupleS3<T>> query3(DataSource dataSource, Class<T> t1, String query, Object... params) {
+        return runAndReturn(dataSource, connection -> query(connection, t1, t1, t1, query, params)
+                .stream().map(t -> new TupleS3<T>(t)).collect(Collectors.toList()));
     }
 
-    public static <A, B, C, D> List<Four<A, B, C, D>> query(DataSource dataSource, Class<A> t1, Class<B> t2
+    public static <A, B, C, D> List<Tuple4<A, B, C, D>> query(Connection connection, Class<A> t1, Class<B> t2
+            , Class<C> t3, Class<D> t4, String query, Object... params) {
+        return (List<Tuple4<A, B, C, D>>) query(connection, Tuple4.class, new Class[]{t1, t2, t3, t4}, query, params);
+    }
+
+    public static <A, B, C, D> List<Tuple4<A, B, C, D>> query(DataSource dataSource, Class<A> t1, Class<B> t2
             , Class<C> t3, Class<D> t4, String query, Object... params) {
         return runAndReturn(dataSource, connection -> query(connection, t1, t2, t3, t4, query, params));
     }
 
-    public static <A, B, C, D, E> List<Five<A, B, C, D, E>> query(Connection connection, Class<A> t1, Class<B> t2
-            , Class<C> t3, Class<D> t4, Class<E> t5, String query, Object... params) {
-        return (List<Five<A, B, C, D, E>>) query(connection, Five.class, new Class[]{t1, t2, t3, t4, t5}, query, params);
+    public static <T> List<TupleS4<T>> query4(DataSource dataSource, Class<T> t1, String query, Object... params) {
+        return runAndReturn(dataSource, connection -> query(connection, t1, t1, t1, t1, query, params)
+                .stream().map(t -> new TupleS4<T>(t)).collect(Collectors.toList()));
     }
 
-    public static <A, B, C, D, E> List<Five<A, B, C, D, E>> query(DataSource dataSource, Class<A> t1, Class<B> t2
+    public static <A, B, C, D, E> List<Tuple5<A, B, C, D, E>> query(Connection connection, Class<A> t1, Class<B> t2
+            , Class<C> t3, Class<D> t4, Class<E> t5, String query, Object... params) {
+        return (List<Tuple5<A, B, C, D, E>>) query(connection, Tuple5.class, new Class[]{t1, t2, t3, t4, t5}, query, params);
+    }
+
+    public static <A, B, C, D, E> List<Tuple5<A, B, C, D, E>> query(DataSource dataSource, Class<A> t1, Class<B> t2
             , Class<C> t3, Class<D> t4, Class<E> t5, String query, Object... params) {
         return runAndReturn(dataSource, connection -> query(connection, t1, t2, t3, t4, t5, query, params));
     }
 
-    public static <A, B, C, D, E, F> List<Six<A, B, C, D, E, F>> query(Connection connection, Class<A> t1, Class<B> t2
-            , Class<C> t3, Class<D> t4, Class<E> t5, Class<F> t6, String query, Object... params) {
-        return (List<Six<A, B, C, D, E, F>>) query(connection, Six.class, new Class[]{t1, t2, t3, t4, t5, t6}, query, params);
+    public static <T> List<TupleS5<T>> query5(DataSource dataSource, Class<T> t1, String query, Object... params) {
+        return runAndReturn(dataSource, connection -> query(connection, t1, t1, t1, t1, t1, query, params)
+                .stream().map(t -> new TupleS5<T>(t)).collect(Collectors.toList()));
     }
 
-    public static <A, B, C, D, E, F> List<Six<A, B, C, D, E, F>> query(DataSource dataSource, Class<A> t1, Class<B> t2
+    public static <A, B, C, D, E, F> List<Tuple6<A, B, C, D, E, F>> query(Connection connection, Class<A> t1, Class<B> t2
+            , Class<C> t3, Class<D> t4, Class<E> t5, Class<F> t6, String query, Object... params) {
+        return (List<Tuple6<A, B, C, D, E, F>>) query(connection, Tuple6.class, new Class[]{t1, t2, t3, t4, t5, t6}, query, params);
+    }
+
+    public static <A, B, C, D, E, F> List<Tuple6<A, B, C, D, E, F>> query(DataSource dataSource, Class<A> t1, Class<B> t2
             , Class<C> t3, Class<D> t4, Class<E> t5, Class<F> t6, String query, Object... params) {
         return runAndReturn(dataSource, connection -> query(connection, t1, t2, t3, t4, t5, t6, query, params));
     }
 
-    public static <A, B, C, D, E, F, G> List<Seven<A, B, C, D, E, F, G>> query(Connection connection, Class<A> t1, Class<B> t2
-            , Class<C> t3, Class<D> t4, Class<E> t5, Class<F> t6, Class<G> t7,String query, Object... params) {
-        return (List<Seven<A, B, C, D, E, F, G>>) query(connection, Seven.class, new Class[]{t1, t2, t3, t4, t5, t6, t7}, query, params);
+    public static <A, B, C, D, E, F, G> List<Tuple7<A, B, C, D, E, F, G>> query(Connection connection, Class<A> t1, Class<B> t2
+            , Class<C> t3, Class<D> t4, Class<E> t5, Class<F> t6, Class<G> t7, String query, Object... params) {
+        return (List<Tuple7<A, B, C, D, E, F, G>>) query(connection, Tuple7.class, new Class[]{t1, t2, t3, t4, t5, t6, t7}, query, params);
     }
 
-    public static <A, B, C, D, E, F,G> List<Seven<A, B, C, D, E, F,G>> query(DataSource dataSource, Class<A> t1, Class<B> t2
-            , Class<C> t3, Class<D> t4, Class<E> t5, Class<F> t6, Class<G> t7,String query, Object... params) {
+    public static <A, B, C, D, E, F,G> List<Tuple7<A, B, C, D, E, F,G>> query(DataSource dataSource, Class<A> t1, Class<B> t2
+            , Class<C> t3, Class<D> t4, Class<E> t5, Class<F> t6, Class<G> t7, String query, Object... params) {
         return runAndReturn(dataSource, connection -> query(connection, t1, t2, t3, t4, t5, t6,t7, query, params));
     }
 

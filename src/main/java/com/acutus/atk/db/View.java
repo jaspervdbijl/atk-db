@@ -4,14 +4,8 @@ import com.acutus.atk.db.driver.AbstractDriver;
 import com.acutus.atk.db.driver.DriverFactory;
 import com.acutus.atk.db.sql.SQLHelper;
 import com.acutus.atk.reflection.Reflect;
-import com.acutus.atk.util.Assert;
 import com.acutus.atk.util.Strings;
-import com.acutus.atk.util.call.CallNil;
-import com.acutus.atk.util.call.CallNilRet;
 import com.acutus.atk.util.call.CallOne;
-import com.acutus.atk.util.collection.One;
-import com.acutus.atk.util.collection.Three;
-import com.acutus.atk.util.collection.Two;
 import lombok.SneakyThrows;
 
 import javax.sql.DataSource;
@@ -22,12 +16,9 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static com.acutus.atk.db.Query.populateFrom;
 import static com.acutus.atk.db.sql.SQLHelper.*;
 import static com.acutus.atk.util.AtkUtil.handle;
 

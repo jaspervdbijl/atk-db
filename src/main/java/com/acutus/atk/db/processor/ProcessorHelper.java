@@ -33,10 +33,10 @@ public class ProcessorHelper {
             "        return new _TYPE_().query().get(connection,\"_SQL_\",params);\n" +
             "    }";
 
-    public static String QUERY_PRIM = "\tpublic static java.util.Optional<One<_TYPE_>> _METHOD_NAME_(javax.sql.DataSource dataSource, Object ... params) {\n" +
+    public static String QUERY_PRIM = "\tpublic static java.util.Optional<Tuple1<_TYPE_>> _METHOD_NAME_(javax.sql.DataSource dataSource, Object ... params) {\n" +
             "        return queryOne(dataSource,_TYPE_.class,\"_SQL_\",params);\n" +
             "    }\n\n" +
-            "\tpublic static java.util.Optional<One<_TYPE_>> _METHOD_NAME_(java.sql.Connection connection, Object ... params) {\n" +
+            "\tpublic static java.util.Optional<Tuple1<_TYPE_>> _METHOD_NAME_(java.sql.Connection connection, Object ... params) {\n" +
             "        return queryOne(connection,_TYPE_.class,\"_SQL_\",params);\n" +
             "    }";
 
