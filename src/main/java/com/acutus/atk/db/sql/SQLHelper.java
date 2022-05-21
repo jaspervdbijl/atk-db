@@ -158,7 +158,7 @@ public class SQLHelper {
                 } finally {
                     s2 = System.currentTimeMillis();
                     if (s2 - s1 > 1000) {
-                        log.info("Query SLow " + ((s2-s1) / 1000) + " "+ query);
+                        log.debug("Query SLow " + ((s2-s1) / 1000) + " "+ query);
                     }
                 }
             }
