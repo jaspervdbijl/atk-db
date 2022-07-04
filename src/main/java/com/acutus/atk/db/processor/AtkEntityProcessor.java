@@ -455,6 +455,7 @@ public class AtkEntityProcessor extends AtkProcessor {
                 .plus("import static com.acutus.atk.db.sql.SQLHelper.runAndReturn")
                 .plus("import static com.acutus.atk.db.sql.SQLHelper.queryOne")
                 .plus("import static com.acutus.atk.db.sql.SQLHelper.query")
+                .plus("import com.acutus.atk.db.sql.SQLHelper")
                 .plus("import static com.acutus.atk.util.AtkUtil.handle")
                 .plus("import java.sql.PreparedStatement")
                 .plus("import com.acutus.atk.db.annotations.audit.*")

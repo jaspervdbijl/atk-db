@@ -47,14 +47,15 @@ public class ProcessorHelper {
             "        return new _TYPE_().query()._GET_ALL_METHOD_(connection,\"_SQL_\",params);\n" +
             "    }";
 
-    public static String QUERY_ALL_PRIM = "\tpublic static java.util.List<One<_TYPE_>> _METHOD_NAME_(javax.sql.DataSource dataSource, Object ... params) {\n" +
-            "        return query(dataSource,_TYPE_.class,\"_SQL_\",params);\n" +
+    public static String QUERY_ALL_PRIM = "\tpublic static java.util.List<Tuple1<_TYPE_>> _METHOD_NAME_(javax.sql.DataSource dataSource, Object ... params) {\n" +
+            "        return SQLHelper.query(dataSource,_TYPE_.class,\"_SQL_\",params);\n" +
             "    }\n\n" +
-            "\tpublic static java.util.List<One<_TYPE_>> _METHOD_NAME_(java.sql.Connection connection, Object ... params) {\n" +
-            "        return query(connection,_TYPE_.class,\"_SQL_\",params);\n" +
+            "\tpublic static java.util.List<Tuple1<_TYPE_>> _METHOD_NAME_(java.sql.Connection connection, Object ... params) {\n" +
+            "        return SQLHelper.query(connection,_TYPE_.class,\"_SQL_\",params);\n" +
             "    }\n\n";
 
     private static boolean isClassPrimitive(String className) {
+        className = className.startsWith("java.util.List<") ? className.substring("java.util.List<".length(),className.length()-1) : className;
         return (className.startsWith("java.lang.") || className.startsWith("java.math.") ||
                 className.startsWith("java.time.") || className.startsWith("java.sql."));
     }
