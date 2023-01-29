@@ -149,7 +149,7 @@ public class AbstractAtkEntity<T extends AbstractAtkEntity, O> extends AbstractA
     private static final String[] EMPTY_STRING = new String[]{};
 
     public String[] maintainColumnsFilter() {return EMPTY_STRING;};
-    public boolean maintainEntity() {return true;}
+    public boolean maintainEntity() {return false;}
     public boolean maintainColumns() {return true;}
     public boolean maintainForeignKeys() {return true;}
     public boolean maintainIndex() {return true;}
