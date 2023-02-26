@@ -278,7 +278,11 @@ public abstract class AbstractDriver {
 
     public abstract <T> T getLastInsertValue(Connection connection, Class<T> clazz);
 
-    public abstract String limit(String sql, int limit);
+    public abstract String limit(String sql, int limit, int offset);
+
+    public String limit(String sql, int limit) {
+        return limit(sql, limit,0);
+    }
 
     @SneakyThrows
     public String getColMetadataDefault(ResultSet rs) {

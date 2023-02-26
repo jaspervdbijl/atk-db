@@ -50,7 +50,7 @@ public class Query<T extends AbstractAtkEntity, O> {
     }
 
     private T entity;
-    private int limit = -1;
+    private int limit = -1, offset = 0;
     private AtkEnFields orderBy;
     private OrderBy orderByType;
 
@@ -241,7 +241,7 @@ public class Query<T extends AbstractAtkEntity, O> {
     public void getAll(Connection connection, Filter filter, CallOne<T> iterate, int limit) {
         AbstractDriver driver = DriverFactory.getDriver(connection);
         boolean shouldLeftJoin = !disableLeftJoin&& entity.getEntityType() == AtkEntity.Type.TABLE;
-        String sql = !shouldLeftJoin && limit > -1 ? driver.limit(getProcessedSql(filter), limit) : getProcessedSql(filter);
+        String sql = !shouldLeftJoin && limit > -1 ? driver.limit(getProcessedSql(filter), limit, offset) : getProcessedSql(filter);
 
         // transform the select *
         Map<String, AbstractAtkEntity> map = new HashMap<>();
@@ -467,6 +467,11 @@ public class Query<T extends AbstractAtkEntity, O> {
 
     public Query<T, O> setLimit(Integer limit) {
         this.limit = limit;
+        return this;
+    }
+
+    public Query<T, O> setOffset(Integer offset) {
+        this.offset = offset;
         return this;
     }
 

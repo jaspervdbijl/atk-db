@@ -30,8 +30,8 @@ public class MysqlDriver extends AbstractDriver {
     }
 
     @Override
-    public String limit(String sql, int limit) {
-        return String.format("%s limit %d", sql, limit);
+    public String limit(String sql, int limit, int offset) {
+        return String.format("%s limit %d,%d", sql, limit, offset);
     }
 
     @SneakyThrows
