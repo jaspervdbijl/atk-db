@@ -8,7 +8,7 @@ import com.acutus.atk.db.annotations.audit.CreatedBy;
 import com.acutus.atk.db.annotations.audit.CreatedDate;
 import com.acutus.atk.db.annotations.audit.LastModifiedBy;
 import com.acutus.atk.db.annotations.audit.LastModifiedDate;
-import com.acutus.atk.io.IOUtil;
+import com.acutus.atk.util.IOUtil;
 import com.acutus.atk.util.Assert;
 import com.acutus.atk.util.call.CallOneRet;
 import lombok.SneakyThrows;
