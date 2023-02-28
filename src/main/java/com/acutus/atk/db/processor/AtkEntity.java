@@ -6,8 +6,6 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import java.time.DayOfWeek;
-import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 
 @Target(ElementType.TYPE)
@@ -32,9 +30,8 @@ public @interface AtkEntity {
     int version() default 0;
 
     // will auto add auditing fields
-    boolean addAuditFields() default false;
-
-    boolean auditTable() default false;
+    boolean enableAuditByUser() default false;
+    boolean enableAuditing() default false;
 
     boolean maintainEntity() default false;
     boolean maintainColumns() default true;

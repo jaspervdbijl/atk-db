@@ -186,7 +186,7 @@ public class AtkEntityProcessor extends AtkProcessor {
     private Strings getAuditFields(Element element) {
         Strings append = new Strings();
         AtkEntity atk = element.getAnnotation(AtkEntity.class);
-        if (atk.addAuditFields()) {
+        if (atk.enableAuditByUser()) {
             append.add("@CreatedBy @Column(name = \"created_by\") private String createdBy");
             append.add("@CreatedBy " + getAuditAtkEnField(element, "createdBy", "String"));
             append.add("@CreatedDate @Column(name = \"created_date\") private LocalDateTime createdDate");
@@ -213,7 +213,7 @@ public class AtkEntityProcessor extends AtkProcessor {
     protected Strings getStaticFields(Element parent) {
         Strings fields = super.getStaticFields(parent);
         AtkEntity atk = parent.getAnnotation(AtkEntity.class);
-        if (atk.addAuditFields()) {
+        if (atk.enableAuditByUser()) {
             fields.add(getStaticField(parent, "createdBy"));
             fields.add(getStaticField(parent, "createdDate"));
             fields.add(getStaticField(parent, "lastModifiedBy"));
@@ -236,7 +236,7 @@ public class AtkEntityProcessor extends AtkProcessor {
     @Override
     protected boolean shouldExcludeField(Element element, String name) {
         AtkEntity atk = element.getAnnotation(AtkEntity.class);
-        return atk.addAuditFields() && isAuditField(name);
+        return atk.enableAuditByUser() && isAuditField(name);
     }
 
     @Override
@@ -488,7 +488,7 @@ public class AtkEntityProcessor extends AtkProcessor {
     protected void validate(Element element) {
         super.validate(element);
         AtkEntity atk = element.getAnnotation(AtkEntity.class);
-        if (!(atk.trim().equals(ChronoUnit.FOREVER) || atk.addAuditFields())) {
+        if (!(atk.trim().equals(ChronoUnit.FOREVER) || atk.enableAuditByUser())) {
             error(String.format("Element [%s]. Is trim is enabled then addAuditFields must also be added", element.getSimpleName()));
         }
     }
