@@ -13,10 +13,7 @@ import javax.persistence.GeneratedValue;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.acutus.atk.db.sql.SQLHelper.*;
@@ -121,12 +118,19 @@ public class Persist<T extends AbstractAtkEntity> {
 
     protected Tuple2<AtkEnFields,AtkEnFields> getUpdateFieldsAndValues(
             AbstractAtkEntity entity,
-            AtkEnFields updateFields,
-            boolean includeNonNull) {
+            AtkEnFields initUpdateFields,
+            boolean isBulkUpdate) {
 
-        List<Optional<AtkEnField>> mod = preProcessUpdate(entity,includeNonNull);
-        updateFields.addAll(mod.stream().filter(o -> o.isPresent())
+        List<Optional<AtkEnField>> mod = preProcessUpdate(entity,isBulkUpdate);
+        AtkEnFields updateFields = initUpdateFields.clone();
+        updateFields.addAll(mod.stream().filter(o -> o.isPresent()
+                        && !initUpdateFields.getByColName(o.get().getColName()).isPresent())
                 .map(o -> o.get()).collect(Collectors.toList()));
+        // need to sort the fields if its used in bulk updates
+        if (isBulkUpdate) {
+            updateFields = updateFields.stream().sorted(Comparator.comparing(AtkEnField::getColName))
+                    .collect(Collectors.toCollection(AtkEnFields::new));
+        }
 
         AtkEnFields ids = entity.getEnFields().getIds();
         assertIdIsPresent(ids);

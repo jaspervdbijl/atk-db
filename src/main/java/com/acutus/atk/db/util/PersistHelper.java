@@ -47,14 +47,14 @@ public class PersistHelper {
     public static List<Optional<AtkEnField>> preProcess(
             AbstractAtkEntity entity, Map<Class<? extends Annotation>,
             CallOneRet<AtkEnField, Optional<AtkEnField>>> processor,
-            boolean includeNonNull) {
+            boolean isBulkUpdate) {
         List<Optional<AtkEnField>> fields = new ArrayList<>();
-        entity.getEnFields().stream().filter(f -> includeNonNull || f.get() == null).forEach(field -> {
+        entity.getEnFields().stream().filter(f -> isBulkUpdate || f.get() == null).forEach(field -> {
             for (Annotation a : field.getField().getAnnotations()) {
                 if (processor.containsKey(a.annotationType())) {
                     if (field.get() == null) {
                         fields.add(handle(() -> processor.get(a.annotationType()).call(field)));
-                    } else if (includeNonNull) {
+                    } else if (isBulkUpdate) {
                         fields.add(Optional.of(field));
                     }
                 }
@@ -70,14 +70,14 @@ public class PersistHelper {
 
     /**
      * @param entity
-     * @param includeNonNull is used to create a consistent batch update
+     * @param isBulkUpdate is used to create a consistent batch update
      * @return
      */
     @SneakyThrows
     public static List<Optional<AtkEnField>> preProcessUpdate(
             AbstractAtkEntity entity,
-            boolean includeNonNull) {
-        return preProcess(entity, updatePreProcessor, includeNonNull);
+            boolean isBulkUpdate) {
+        return preProcess(entity, updatePreProcessor, isBulkUpdate);
     }
 
 
