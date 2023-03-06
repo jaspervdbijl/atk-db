@@ -27,29 +27,36 @@ import static com.acutus.atk.db.util.UserContextHolder.getUsername;
 import static com.acutus.atk.util.AtkUtil.handle;
 
 public class PersistHelper {
-    private static Map<String,String> defaultResourceMap = new HashMap<>();
-    private static Map<Class<? extends Annotation>, CallOneRet<AtkEnField,Optional<AtkEnField>>> insertPreProcessor = new HashMap<>();
-    private static Map<Class<? extends Annotation>, CallOneRet<AtkEnField,Optional<AtkEnField>>> updatePreProcessor = new HashMap<>();
+    private static Map<String, String> defaultResourceMap = new HashMap<>();
+    private static Map<Class<? extends Annotation>, CallOneRet<AtkEnField, Optional<AtkEnField>>> insertPreProcessor = new HashMap<>();
+    private static Map<Class<? extends Annotation>, CallOneRet<AtkEnField, Optional<AtkEnField>>> updatePreProcessor = new HashMap<>();
 
     static {
-        insertPreProcessor.put(CreatedDate.class, (e) -> processCreatedOrLastModifiedDate(e,false));
-        insertPreProcessor.put(CreatedBy.class, (e) -> processCreatedOrModifiedBy(e,false));
+        insertPreProcessor.put(CreatedDate.class, (e) -> processCreatedOrLastModifiedDate(e, false));
+        insertPreProcessor.put(CreatedBy.class, (e) -> processCreatedOrModifiedBy(e, false));
         insertPreProcessor.put(UID.class, (e) -> processUID(e));
         insertPreProcessor.put(Default.class, (e) -> processDefault(e, true));
     }
 
     static {
-        updatePreProcessor.put(LastModifiedDate.class, (e) -> processCreatedOrLastModifiedDate(e,true));
-        updatePreProcessor.put(LastModifiedBy.class, (e) -> processCreatedOrModifiedBy(e,true));
+        updatePreProcessor.put(LastModifiedDate.class, (e) -> processCreatedOrLastModifiedDate(e, true));
+        updatePreProcessor.put(LastModifiedBy.class, (e) -> processCreatedOrModifiedBy(e, true));
     }
 
     @SneakyThrows
-    public static List<Optional<AtkEnField>> preProcess(AbstractAtkEntity entity,Map<Class<? extends Annotation>, CallOneRet<AtkEnField,Optional<AtkEnField>>> processor) {
+    public static List<Optional<AtkEnField>> preProcess(
+            AbstractAtkEntity entity, Map<Class<? extends Annotation>,
+            CallOneRet<AtkEnField, Optional<AtkEnField>>> processor,
+            boolean includeNonNull) {
         List<Optional<AtkEnField>> fields = new ArrayList<>();
-        entity.getEnFields().stream().filter(f -> f.get() == null).forEach(field -> {
+        entity.getEnFields().stream().filter(f -> includeNonNull || f.get() == null).forEach(field -> {
             for (Annotation a : field.getField().getAnnotations()) {
                 if (processor.containsKey(a.annotationType())) {
-                    fields.add(handle(() -> processor.get(a.annotationType()).call(field)));
+                    if (field.get() == null) {
+                        fields.add(handle(() -> processor.get(a.annotationType()).call(field)));
+                    } else if (includeNonNull) {
+                        fields.add(Optional.of(field));
+                    }
                 }
             }
         });
@@ -58,12 +65,19 @@ public class PersistHelper {
 
     @SneakyThrows
     public static List<Optional<AtkEnField>> preProcessInsert(AbstractAtkEntity entity) {
-        return preProcess(entity,insertPreProcessor);
+        return preProcess(entity, insertPreProcessor, false);
     }
 
+    /**
+     * @param entity
+     * @param includeNonNull is used to create a consistent batch update
+     * @return
+     */
     @SneakyThrows
-    public static List<Optional<AtkEnField>> preProcessUpdate(AbstractAtkEntity entity) {
-        return preProcess(entity,updatePreProcessor);
+    public static List<Optional<AtkEnField>> preProcessUpdate(
+            AbstractAtkEntity entity,
+            boolean includeNonNull) {
+        return preProcess(entity, updatePreProcessor, includeNonNull);
     }
 
 
@@ -101,7 +115,7 @@ public class PersistHelper {
     @SneakyThrows
     private static String getDefaultResource(String keyName) {
         if (!defaultResourceMap.containsKey(keyName)) {
-            defaultResourceMap.put(keyName,IOUtil.readAvailableAsStr(Thread.currentThread().getContextClassLoader().getResourceAsStream(keyName)));
+            defaultResourceMap.put(keyName, IOUtil.readAvailableAsStr(Thread.currentThread().getContextClassLoader().getResourceAsStream(keyName)));
         }
         return defaultResourceMap.get(keyName);
     }

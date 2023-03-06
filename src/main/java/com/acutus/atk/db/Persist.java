@@ -4,6 +4,7 @@ import com.acutus.atk.db.driver.DriverFactory;
 import com.acutus.atk.db.util.AtkEnUtil;
 import com.acutus.atk.util.Assert;
 import com.acutus.atk.util.call.CallThree;
+import com.acutus.atk.util.collection.Tuple2;
 import com.acutus.atk.util.collection.Tuple4;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +29,7 @@ import static javax.persistence.GenerationType.IDENTITY;
 @Slf4j
 public class Persist<T extends AbstractAtkEntity> {
 
-    private static Optional<CallThree<Connection, AbstractAtkEntity, Boolean>> PERSIST_CALLBACK = Optional.empty();
+    protected static Optional<CallThree<Connection, AbstractAtkEntity, Boolean>> PERSIST_CALLBACK = Optional.empty();
 
     public static void setPersistCallback(CallThree<Connection, AbstractAtkEntity, Boolean> callback) {
         PERSIST_CALLBACK = Optional.of(callback);
@@ -99,7 +100,7 @@ public class Persist<T extends AbstractAtkEntity> {
         return entity;
     }
 
-    private List wrapForPreparedStatement(AtkEnFields fields) {
+    public static List wrapForPreparedStatement(AtkEnFields fields) {
         // note that a lambda stream will remove null values
         List values = new ArrayList();
         for (AtkEnField field : fields) {
@@ -118,53 +119,52 @@ public class Persist<T extends AbstractAtkEntity> {
                 , "Ids can not be null %s %s", entity.getTableName(), entity.getEnFields().getIds());
     }
 
-    /**
-     * update on the entity id
-     *
-     * @param connection
-     * @return
-     */
+    protected Tuple2<AtkEnFields,AtkEnFields> getUpdateFieldsAndValues(
+            AbstractAtkEntity entity,
+            AtkEnFields updateFields,
+            boolean includeNonNull) {
+
+        List<Optional<AtkEnField>> mod = preProcessUpdate(entity,includeNonNull);
+        updateFields.addAll(mod.stream().filter(o -> o.isPresent())
+                .map(o -> o.get()).collect(Collectors.toList()));
+
+        AtkEnFields ids = entity.getEnFields().getIds();
+        assertIdIsPresent(ids);
+
+        // remove the ids
+        updateFields = updateFields.removeWhen(f -> ids.contains(f));
+        AtkEnFields updateValues = updateFields.clone();
+        updateValues.addAll(ids);
+
+        return new Tuple2<>(updateFields,updateValues);
+    }
+
+    @SneakyThrows
+    protected PreparedStatement prepareBatchPreparedStatement(
+            Connection connection, Tuple2<AtkEnFields,AtkEnFields> uFieldAndValue) {
+
+        String sql = String.format("update %s set %s where %s",
+                entity.getTableName(), uFieldAndValue.getFirst().getColNames().append("= ?").toString(","),
+                entity.getEnFields().getIds().getColNames().append("= ?").toString(","));
+
+        return connection.prepareStatement(sql);
+    }
+
     @SneakyThrows
     private T update(Connection connection, AtkEnFields updateFields) {
-        long t1 = System.currentTimeMillis();
-        String sql = "";
-        try {
-            List<Optional<AtkEnField>> mod = preProcessUpdate(entity);
-            updateFields.addAll(mod.stream().filter(o -> o.isPresent()).map(o -> o.get()).collect(Collectors.toList()));
-            AtkEnFields ids = entity.getEnFields().getIds();
-            assertIdIsPresent(ids);
-            // remove the ids
-            updateFields = updateFields.removeWhen(f -> ids.contains(f));
-            AtkEnFields updateValues = updateFields.clone();
-
-            if (updateFields.isEmpty()) {
-                return entity;
-            }
-            // add the ids to the end
-            updateValues.addAll(ids);
-
-            sql = String.format("update %s set %s where %s",
-                    entity.getTableName(), updateFields.getColNames().append("= ?").toString(","),
-                    entity.getEnFields().getIds().getColNames().append("= ?").toString(","));
-
-            try (PreparedStatement ps = prepare(connection, sql, wrapForPreparedStatement(updateValues).toArray(new Object[]{}))) {
-                int updated = ps.executeUpdate();
-
-                Assert.isTrue(updated == 1, "Failed to update %s on %s", entity.getTableName(), entity.getEnFields().getIds());
-
-                PERSIST_CALLBACK.ifPresent(c -> handle(() -> c.call(connection, entity, false)));
-
-                entity.getEnFields().reset();
-            }
+        if (updateFields.isEmpty()) {
             return entity;
-        } catch (Exception ex) {
-            log.error(sql);
-            throw ex;
-        } finally {
-            long s2 = System.currentTimeMillis();
-            if (s2 - t1 > 1000) {
-                log.debug("Update SLow " + ((s2 - t1) / 1000) + " " + sql);
-            }
+        }
+
+        Tuple2<AtkEnFields,AtkEnFields> uFieldAndValue = getUpdateFieldsAndValues(entity,updateFields, false);
+        try (PreparedStatement ps = prepareBatchPreparedStatement(connection,uFieldAndValue)) {
+
+            prepare(ps, wrapForPreparedStatement(uFieldAndValue.getSecond()).toArray(new Object[]{}));
+
+            ps.executeUpdate();
+            PERSIST_CALLBACK.ifPresent(c -> handle(() -> c.call(connection, entity, false)));
+            entity.getEnFields().reset();
+            return entity;
         }
     }
 
