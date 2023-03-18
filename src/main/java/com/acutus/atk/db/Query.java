@@ -241,7 +241,8 @@ public class Query<T extends AbstractAtkEntity, O> {
     public void getAll(Connection connection, Filter filter, CallOne<T> iterate, int limit) {
         AbstractDriver driver = DriverFactory.getDriver(connection);
         boolean shouldLeftJoin = !disableLeftJoin&& entity.getEntityType() == AtkEntity.Type.TABLE;
-        String sql = !shouldLeftJoin && limit > -1 ? driver.limit(getProcessedSql(filter), limit, offset) : getProcessedSql(filter);
+        String sql = getProcessedSql(filter);
+        int ofs = offset;
 
         // transform the select *
         Map<String, AbstractAtkEntity> map = new HashMap<>();
@@ -253,11 +254,15 @@ public class Query<T extends AbstractAtkEntity, O> {
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     if (!shouldLeftJoin) {
-                        iterate.call((T) entity.set(driver, rs).clone());
+                        if (ofs-- <= 0) {
+                            iterate.call((T) entity.set(driver, rs).clone());
+                        }
                     } else {
                         Tuple3<AbstractAtkEntity, Boolean, Boolean> value = loadCascade(driver, new AtomicInteger(-1), map, entity, rs);
                         if (lastEntity != null && !value.getFirst().isIdEqual(lastEntity.getFirst())) {
-                            iterate.call((T) lastEntity.getFirst());
+                            if (ofs-- <= 0) {
+                                iterate.call((T) lastEntity.getFirst());
+                            }
                             if (--limit == 0) return;
                         }
                         lastEntity = value;
@@ -272,7 +277,7 @@ public class Query<T extends AbstractAtkEntity, O> {
                 throw ex;
             }
         }
-        if (lastEntity != null) {
+        if (lastEntity != null && ofs <= 0) {
             iterate.call((T) lastEntity.getFirst());
         }
     }
