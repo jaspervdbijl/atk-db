@@ -243,6 +243,7 @@ public class Query<T extends AbstractAtkEntity, O> {
         boolean shouldLeftJoin = !disableLeftJoin&& entity.getEntityType() == AtkEntity.Type.TABLE;
         String sql = getProcessedSql(filter);
         int ofs = offset;
+        limit += ofs;
 
         // transform the select *
         Map<String, AbstractAtkEntity> map = new HashMap<>();
