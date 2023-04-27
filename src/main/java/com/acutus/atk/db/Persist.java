@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import javax.persistence.GeneratedValue;
 import javax.sql.DataSource;
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -116,13 +117,14 @@ public class Persist<T extends AbstractAtkEntity> {
                 , "Ids can not be null %s %s", entity.getTableName(), entity.getEnFields().getIds());
     }
 
-    protected Tuple2<AtkEnFields,AtkEnFields> getUpdateFieldsAndValues(
+    protected Tuple2<AtkEnFields, AtkEnFields> getUpdateFieldsAndValues(
             AbstractAtkEntity entity,
             AtkEnFields initUpdateFields,
             boolean isBulkUpdate) {
 
-        List<Optional<AtkEnField>> mod = preProcessUpdate(entity,isBulkUpdate);
-        AtkEnFields updateFields = initUpdateFields.clone();
+        List<Optional<AtkEnField>> mod = preProcessUpdate(entity, isBulkUpdate);
+        AtkEnFields updateFields = isBulkUpdate ? initUpdateFields.clone() : initUpdateFields;
+
         updateFields.addAll(mod.stream().filter(o -> o.isPresent()
                         && !initUpdateFields.getByColName(o.get().getColName()).isPresent())
                 .map(o -> o.get()).collect(Collectors.toList()));
@@ -140,12 +142,12 @@ public class Persist<T extends AbstractAtkEntity> {
         AtkEnFields updateValues = updateFields.clone();
         updateValues.addAll(ids);
 
-        return new Tuple2<>(updateFields,updateValues);
+        return new Tuple2<>(updateFields, updateValues);
     }
 
     @SneakyThrows
     protected PreparedStatement prepareBatchPreparedStatement(
-            Connection connection, Tuple2<AtkEnFields,AtkEnFields> uFieldAndValue) {
+            Connection connection, Tuple2<AtkEnFields, AtkEnFields> uFieldAndValue) {
 
         String sql = String.format("update %s set %s where %s",
                 entity.getTableName(), uFieldAndValue.getFirst().getColNames().append("= ?").toString(","),
@@ -160,8 +162,8 @@ public class Persist<T extends AbstractAtkEntity> {
             return entity;
         }
 
-        Tuple2<AtkEnFields,AtkEnFields> uFieldAndValue = getUpdateFieldsAndValues(entity,updateFields, false);
-        try (PreparedStatement ps = prepareBatchPreparedStatement(connection,uFieldAndValue)) {
+        Tuple2<AtkEnFields, AtkEnFields> uFieldAndValue = getUpdateFieldsAndValues(entity, updateFields, false);
+        try (PreparedStatement ps = prepareBatchPreparedStatement(connection, uFieldAndValue)) {
 
             prepare(ps, wrapForPreparedStatement(uFieldAndValue.getSecond()).toArray(new Object[]{}));
 
