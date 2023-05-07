@@ -218,7 +218,10 @@ public abstract class AbstractDriver {
 
     public String getFieldType(AtkEnField field) {
         GeneratedValue generated = field.getField().getAnnotation(GeneratedValue.class);
-        String unsigned = (generated  != null ? " unsigned" : "");
+        ForeignKey fkey = field.getField().getAnnotation(ForeignKey.class);
+        String unsigned = (generated  != null ||
+                fkey != null && (Long.class.equals(field.getColumnType(this)) ||  Integer.class.equals(field.getColumnType(this)))
+                ? " unsigned" : "");
         Optional<Column> column = field.getColumn();
         Class type = field.getColumnType(this);
         if (column.isPresent() && isNotEmpty(column.get().columnDefinition())) {

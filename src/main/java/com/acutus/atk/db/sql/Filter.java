@@ -82,8 +82,9 @@ public class Filter {
 
     public String getSql() {
         if (fields != null && !fields.isEmpty()) {
-            return fields.getTableAndColName().append(" = ? ")
-                    .toString(String.format(" %s ", type.name().toLowerCase()));
+            return fields.stream().map(f -> f.getTableAndColName() + " "
+                    + (f.get() == null ? " is null " : " = ? "))
+                    .reduce((a,b) -> a+" and " + b).get();
         } else if (s1 != null) {
             return String.format("((%s) %s (%s))", s1.getSql(), type.name().toLowerCase(), s2.getSql());
         } else {
@@ -96,7 +97,9 @@ public class Filter {
     private void set(PreparedStatement ps, AtomicInteger index) {
         if (fields != null) {
             for (AtkEnField f : fields) {
-                ps.setObject(index.getAndIncrement(), wrapForPreparedStatement(f));
+                if (f.get() != null) {
+                    ps.setObject(index.getAndIncrement(), wrapForPreparedStatement(f));
+                }
             }
         } else if (s1 != null) {
             s1.set(ps, index);
