@@ -34,6 +34,11 @@ public class MysqlDriver extends AbstractDriver {
         return String.format("%s limit %d,%d", sql, offset, limit);
     }
 
+    @Override
+    public String replace(String column, String text, String replace) {
+        return String.format("replace(%s,%s,%s)d", column, text, replace);
+    }
+
     @SneakyThrows
     public String addForeignKey(AtkEnField field) {
         ForeignKey key = field.getField().getAnnotation(ForeignKey.class);

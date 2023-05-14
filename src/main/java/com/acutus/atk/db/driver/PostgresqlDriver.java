@@ -63,6 +63,11 @@ public class PostgresqlDriver extends AbstractDriver {
                 , field.getColName(), colDef);
     }
 
+    @Override
+    public String replace(String column, String text, String replace) {
+        return null;
+    }
+
 
     @Override
     public String getFieldTypeForClob(Optional<Column> column) {

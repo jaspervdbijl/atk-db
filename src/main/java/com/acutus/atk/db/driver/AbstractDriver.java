@@ -161,6 +161,8 @@ public abstract class AbstractDriver {
                 , ids.getColNames().toString(","));
     }
 
+    public abstract String replace(String column, String text, String replace);
+
     @SneakyThrows
     public String addForeignKey(AtkEnField field) {
         throw new UnsupportedOperationException("Not implemented");
