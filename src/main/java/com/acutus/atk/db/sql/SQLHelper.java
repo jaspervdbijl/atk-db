@@ -212,6 +212,14 @@ public class SQLHelper {
         return runAndReturn(dataSource, connection -> queryOne(connection, t1, t2, query, params));
     }
 
+    public static <A,B,C> Optional<Tuple3<A,B,C>> queryOne(Connection connection, Class<A> t1, Class<B> t2, Class<C> t3, String query, Object... params) {
+        List<Tuple3<A,B,C>> list = query(connection, t1, t2, t3, query, params);
+        return Optional.ofNullable(!list.isEmpty() ? list.get(0) : null);
+    }
+
+    public static <A,B,C> Optional<Tuple3<A,B,C>> queryOne(DataSource dataSource, Class<A> t1, Class<B> t2, Class<C> t3, String query, Object... params) {
+        return runAndReturn(dataSource, connection -> queryOne(connection, t1, t2, t3, query, params));
+    }
     public static <A, B> List<Tuple2<A, B>> query(Connection connection, Class<A> t1, Class<B> t2, String query, Object... params) {
         return (List<Tuple2<A, B>>) query(connection, Tuple2.class, new Class[]{t1, t2}, query, params);
     }
