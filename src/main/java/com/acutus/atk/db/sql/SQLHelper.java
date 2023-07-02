@@ -301,14 +301,14 @@ public class SQLHelper {
     }
 
     @SneakyThrows
-    public static int executeUpdate(Connection connection, String sql, List<Object[]> values) {
+    public static void executeUpdate(Connection connection, String sql, List<Object[]> values) {
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             values.stream().forEach(v -> {
                 IntStream.range(0, v.length)
                         .forEach(i -> handle(() -> ps.setObject(i + 1, v[i])));
                 handle(() -> ps.addBatch());
             });
-            return ps.executeUpdate();
+            ps.executeBatch();
         }
     }
 
