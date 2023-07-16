@@ -4,6 +4,7 @@ import com.acutus.atk.db.AbstractAtkEntity;
 import com.acutus.atk.db.AtkEnField;
 import com.acutus.atk.db.AtkEnFields;
 import com.acutus.atk.db.AtkEnIndex;
+import com.acutus.atk.db.annotations.ForeignKey;
 import com.acutus.atk.db.annotations.Sequence;
 import com.acutus.atk.db.driver.AbstractDriver;
 import com.acutus.atk.db.driver.DriverFactory;
@@ -191,10 +192,11 @@ public class FEHelper {
             colNames.add(meta.getColumnName(i + 1));
             Optional<AtkEnField> atkField = entity.getEnFields().getByColName(meta.getColumnName(i + 1));
             if (atkField.isPresent()) {
+                ForeignKey foreignKey = atkField.get().getField().getAnnotation(ForeignKey.class);
                 if (entity.maintainEntityColumn(atkField.get())) {
                     boolean typeMatch =
                             driver.getFieldType(atkField.get()).equalsIgnoreCase(meta.getColumnTypeName(i + 1)) ||
-                                    classTypeMatch(driver, atkField.get(), meta, i) ||
+                                    foreignKey == null && classTypeMatch(driver, atkField.get(), meta, i) ||
                                     atkField.get().getColumnDefinitionType().equalsIgnoreCase(meta.getColumnTypeName(i + 1));
 
                     if (!typeMatch) {

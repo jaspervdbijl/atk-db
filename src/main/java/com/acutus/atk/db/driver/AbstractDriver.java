@@ -98,7 +98,7 @@ public abstract class AbstractDriver {
                                 field.getType().isAssignableFrom(Integer.class) || field.getType().isAssignableFrom(Long.class)).findFirst();
 
         if (atkEnFieldOptional.isPresent()) {
-            return String.format("alter table %s modify %s int auto_increment;", ids.get(0).getEntity().getTableName(),
+            return String.format("alter table %s modify %s int unsigned auto_increment;", ids.get(0).getEntity().getTableName(),
                     atkEnFieldOptional.get().getColName());
         } else {
             return null;
