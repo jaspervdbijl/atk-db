@@ -25,20 +25,19 @@ import lombok.extern.slf4j.Slf4j;
 import javax.persistence.Enumerated;
 import java.lang.reflect.Field;
 import java.sql.*;
+import java.sql.Date;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.temporal.Temporal;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.acutus.atk.db.constants.EnvProperties.DB_FE_ALLOW_DROP;
 import static com.acutus.atk.db.constants.EnvProperties.DB_FE_STRICT;
 import static com.acutus.atk.db.sql.SQLHelper.execute;
+import static com.acutus.atk.db.sql.SQLHelper.main;
 import static com.acutus.atk.util.AtkUtil.handle;
 
 @Slf4j
@@ -78,10 +77,16 @@ public class FEHelper {
     private static void maintainDataDefinition(Connection connection, AbstractAtkEntity... entities) {
         createRecordLogTableIfNotExists(connection);
 
+        List<String> duplicates = new ArrayList<>();
         // filter
         entities = Arrays.stream(entities)
                 .filter(c -> c.maintainEntity())
                 .filter(c -> recordMismatch(connection, c))
+                .filter(c -> {
+                    boolean duplicate = duplicates.contains(c.getTableName());
+                    duplicates.add(c.getTableName());
+                    return !duplicate;
+                })
                 .collect(Collectors.toList()).toArray(new AbstractAtkEntity[]{});
 
         AbstractDriver driver = DriverFactory.getDriver(connection);
@@ -166,7 +171,7 @@ public class FEHelper {
     @SneakyThrows
     public static void maintainTable(AbstractDriver driver, Connection connection, AbstractAtkEntity entity) {
         try (Statement smt = connection.createStatement()) {
-            try (ResultSet rs = smt.executeQuery(driver.limit(String.format("select * from %s", entity.getTableName()),1))) {
+            try (ResultSet rs = smt.executeQuery(driver.limit(String.format("select * from %s", entity.getTableName()), 1))) {
                 maintainTable(connection, driver, entity, rs.getMetaData());
                 connection.commit();
             }
@@ -200,7 +205,7 @@ public class FEHelper {
                                     atkField.get().getColumnDefinitionType().equalsIgnoreCase(meta.getColumnTypeName(i + 1));
 
                     if (!typeMatch) {
-                        log.info("Type mismatch {}.{}",entity.getTableName(),atkField.get().getColName());
+                        log.info("Type mismatch {}.{}", entity.getTableName(), atkField.get().getColName());
                     }
 
                     boolean sizeMatch = Clob.class.equals(atkField.get().getColumnType(driver))
@@ -278,7 +283,7 @@ public class FEHelper {
             IntStream.range(0, sequence.name().length).forEach(i ->
                     DriverFactory.getDriver(connection)
                             .createSequence(sequence.name()[i], sequence.start()[i], sequence.cache()[i])
-                            .forEach(s -> logAndExecute(connection,s)));
+                            .forEach(s -> logAndExecute(connection, s)));
 
         }
 
