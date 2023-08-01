@@ -418,7 +418,7 @@ public class AtkEntityProcessor extends AtkProcessor {
             methods.add(String.format("\tpublic static String getViewResource() {return getCachedResource(\"%s\");}", atk.viewSqlResource()));
             if (isNotEmpty(atk.viewSqlResource())) {
                 methods.add(String.format("\tpublic List<%s> view(Connection c,Object ... params) {return new Query(this).getAllFromResource(c,\"%s\",params);}", getClassName(element), atk.viewSqlResource()));
-                methods.add(String.format("\tpublic List<%s> viewFrom(Connection c,String sql,Object ... params) {return new Query(this).getAllFromResource(c,sql);}", getClassName(element)));
+                methods.add(String.format("\tpublic List<%s> viewFrom(Connection c,String resourceName,Object ... params) {return new Query(this).getAllFromResource(c,resourceName, params);}", getClassName(element)));
                 methods.add(String.format("\tpublic void view(Connection c,CallOne<%s> itr, int limit,Object ... params) {new Query(this).getAllFromResource(c,itr,limit,\"%s\",params);}", getClassName(element), atk.viewSqlResource()));
                 methods.add(String.format("\tpublic void view(Connection c,String sql, CallOne<%s> itr, int limit,Object ... params) {new Query(this).getAllFromResource(c,itr,limit,sql,params);}", getClassName(element)));
             }

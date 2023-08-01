@@ -31,7 +31,7 @@ public class AtkEnRelation<T extends AbstractAtkEntity> {
     private AbstractAtkEntity source;
     private String fieldFilter;
 
-    @Setter @Getter
+    @Getter @Setter
     private FetchType fetchType;
 
     public AtkEnRelation(Class<T> type, RelType relType, AbstractAtkEntity source) {
