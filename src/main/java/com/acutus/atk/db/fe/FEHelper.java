@@ -368,5 +368,10 @@ public class FEHelper {
 
     }
 
+    public static void main(String[] args) {
+        Integer i = 4332;
+        System.out.println(i != null ? String.format("%.2f", i/1000.0) : "");
+
+    }
 
 }
