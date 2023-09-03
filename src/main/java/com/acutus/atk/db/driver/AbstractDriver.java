@@ -66,6 +66,10 @@ public abstract class AbstractDriver {
                 .collect(Collectors.toCollection(Indexes::new));
     }
 
+    public abstract String getTableCharset(Connection connection, String tableName) throws SQLException;
+
+    public abstract String setCharset(String tableName, String charset);
+
 
     @SneakyThrows
     public boolean doesTableExist(Connection connection, String tableName) {
@@ -234,8 +238,6 @@ public abstract class AbstractDriver {
             return "longtext";
         } else if (Integer.class.equals(type)) {
             return "int" + unsigned;
-        } else if (field.getField().isAnnotationPresent(ForeignKey.class) && (Long.class.equals(type) || BigInteger.class.equals(type))) {
-            return "int unsigned";
         } else if (Long.class.equals(type) || BigInteger.class.equals(type)) {
             return "bigint" + unsigned;
         } else if (BigDecimal.class.equals(type) || Double.class.equals(type)) {

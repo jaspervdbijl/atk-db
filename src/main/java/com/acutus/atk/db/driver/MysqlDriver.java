@@ -12,6 +12,7 @@ import javax.persistence.Column;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Arrays;
 import java.util.List;
@@ -32,6 +33,19 @@ public class MysqlDriver extends AbstractDriver {
     @Override
     public String limit(String sql, int limit, int offset) {
         return String.format("%s limit %d,%d", sql, offset, limit);
+    }
+
+    @Override
+    public String getTableCharset(Connection connection, String tableName) throws SQLException {
+        return SQLHelper.queryOne(connection,String.class,"SELECT CCSA.character_set_name FROM information_schema.`TABLES` T" +
+                ", information_schema.`COLLATION_CHARACTER_SET_APPLICABILITY` CCSA "
+                + "WHERE CCSA.collation_name = T.table_collation "
+                + "AND T.table_schema = ? and T.TABLE_NAME = ?",connection.getCatalog(),tableName).get().getFirst();
+    }
+
+    @Override
+    public String setCharset(String tableName, String charset) {
+        return "ALTER TABLE "+tableName+" CONVERT TO CHARACTER SET " + charset;
     }
 
     @Override
@@ -95,4 +109,8 @@ public class MysqlDriver extends AbstractDriver {
         return SQLHelper.queryOne(c,Integer.class,"SELECT LAST_INSERT_ID()").get().getFirst();
     }
 
+    @Override
+    public String getCreateSql(AbstractAtkEntity entity) {
+        return super.getCreateSql(entity) + (!entity.charset().isEmpty() ? "  DEFAULT CHARACTER SET " + entity.charset() : "");
+    }
 }

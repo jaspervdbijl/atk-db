@@ -409,6 +409,7 @@ public class AtkEntityProcessor extends AtkProcessor {
 
 
         methods.add(String.format("\t@Override\n\tpublic boolean maintainEntity() {return %s;}", atk.maintainEntity() + ""));
+        methods.add(String.format("\t@Override\n\tpublic String charset() {return %s;}", "\""+atk.charset() + "\""));
         methods.add(String.format("\t@Override\n\tpublic boolean maintainColumns() {return %s;}", atk.maintainColumns() + ""));
         methods.add(String.format("\t@Override\n\tpublic boolean maintainForeignKeys() {return %s;}", atk.maintainForeignKeys() + ""));
         methods.add(String.format("\t@Override\n\tpublic boolean maintainIndex() {return %s;}", atk.maintainIndex() + ""));

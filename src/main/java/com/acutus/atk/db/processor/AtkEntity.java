@@ -20,6 +20,8 @@ public @interface AtkEntity {
 
     Type type() default Type.TABLE;
 
+    String charset() default "";
+
     String viewSqlResource() default "";
 
     String className() default "";

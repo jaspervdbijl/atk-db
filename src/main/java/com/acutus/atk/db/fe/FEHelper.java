@@ -154,7 +154,9 @@ public class FEHelper {
                 field.set(entity, source.get(field.getName()));
             }
         }
-        entity.persist().insert(connection);
+        if (!entity.clone().query().getById(connection) .isPresent()){
+            entity.persist().insert(connection);
+        }
     }
 
     @SneakyThrows
@@ -178,6 +180,12 @@ public class FEHelper {
         }
     }
 
+    private static boolean signMatch(AbstractDriver driver, AtkEnField field, ResultSetMetaData meta, int i) throws SQLException, ClassNotFoundException {
+        boolean isId = field.getField().getAnnotation(javax.persistence.Id.class) != null;
+         boolean isNumber = Number.class.isAssignableFrom(Class.forName(meta.getColumnClassName(i+1)));
+        return !isId || !isNumber
+                || isNumber && !meta.isSigned(i+1) == isId;
+    }
     @SneakyThrows
     private static boolean classTypeMatch(AbstractDriver driver, AtkEnField field, ResultSetMetaData meta, int i) {
         return field.getColumnType(driver).getName().equals(meta.getColumnClassName(i + 1))
@@ -190,6 +198,10 @@ public class FEHelper {
     @SneakyThrows
     private static void maintainTable(Connection connection, AbstractDriver driver, AbstractAtkEntity entity, ResultSetMetaData meta) {
 
+        // check table charset
+        if (!entity.charset().isEmpty() && !entity.charset().equals(driver.getTableCharset(connection,entity.getTableName()))) {
+            logAndExecute(connection,driver.setCharset(entity.getTableName(),entity.charset()));
+        }
         FrKeys dbKeys = driver.shouldDropConstraintPriorToAlter() ? FrKeys.load(driver.getForeignKeys(connection, entity.getTableName())) : null;
 
         Strings colNames = new Strings();
@@ -199,10 +211,14 @@ public class FEHelper {
             if (atkField.isPresent()) {
                 ForeignKey foreignKey = atkField.get().getField().getAnnotation(ForeignKey.class);
                 if (entity.maintainEntityColumn(atkField.get())) {
+
                     boolean typeMatch =
-                            driver.getFieldType(atkField.get()).equalsIgnoreCase(meta.getColumnTypeName(i + 1)) ||
+                            driver.getFieldType(atkField.get()).toUpperCase().equalsIgnoreCase(
+                                    (meta.getColumnTypeName(i + 1).equals("VARCHAR") ? "VARCHAR("+meta.getColumnDisplaySize(i+1)+")"
+                                            :  meta.getColumnTypeName(i + 1))) ||
                                     foreignKey == null && classTypeMatch(driver, atkField.get(), meta, i) ||
                                     atkField.get().getColumnDefinitionType().equalsIgnoreCase(meta.getColumnTypeName(i + 1));
+                    typeMatch = typeMatch && signMatch(driver, atkField.get(), meta, i);
 
                     if (!typeMatch) {
                         log.info("Type mismatch {}.{}", entity.getTableName(), atkField.get().getColName());
@@ -285,6 +301,13 @@ public class FEHelper {
                             .createSequence(sequence.name()[i], sequence.start()[i], sequence.cache()[i])
                             .forEach(s -> logAndExecute(connection, s)));
 
+        }
+
+        // maintain missing lookups
+        Populate populate = entity.getClass().getAnnotation(Populate.class);
+        if (populate != null) {
+            new ObjectMapper().readValue(Thread.currentThread().getContextClassLoader().getResourceAsStream(populate.value()), List.class)
+                    .stream().forEach(o -> populateValues(connection, entity, (Map) o));
         }
 
     }

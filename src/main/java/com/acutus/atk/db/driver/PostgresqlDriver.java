@@ -79,6 +79,16 @@ public class PostgresqlDriver extends AbstractDriver {
         return Arrays.asList("create sequence IF NOT EXISTS  " + name + " start " + start + " cache " + cache);
     }
 
+    @Override
+    public String getTableCharset(Connection connection, String tableName) {
+        return "";
+    }
+
+    @Override
+    public String setCharset(String tableName, String charset) {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
     @SneakyThrows
     public String addAutoIncrementPK(AtkEnFields ids) {
 

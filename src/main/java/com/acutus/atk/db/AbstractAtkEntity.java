@@ -162,6 +162,8 @@ public class AbstractAtkEntity<T extends AbstractAtkEntity, O> extends AbstractA
                 || new Strings(maintainColumnsFilter()).containsIgnoreCase(field.getField().getName()));
     }
 
-
+    public String charset() {
+        return "";
+    }
 
 }
