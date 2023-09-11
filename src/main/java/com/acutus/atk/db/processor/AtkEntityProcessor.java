@@ -13,6 +13,7 @@ import com.sun.source.util.Trees;
 import lombok.SneakyThrows;
 
 import javax.annotation.processing.Processor;
+import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.SourceVersion;
@@ -21,19 +22,20 @@ import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.type.TypeMirror;
 import javax.persistence.*;
+import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Method;
+import java.nio.file.Files;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
-import java.util.OptionalInt;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.acutus.atk.db.processor.AtkEntity.ColumnNamingStrategy.CAMEL_CASE_UNDERSCORE;
 import static com.acutus.atk.db.processor.ProcessorHelper.*;
-import static com.acutus.atk.util.StringUtils.isNotEmpty;
-import static com.acutus.atk.util.StringUtils.removeAllASpaces;
+import static com.acutus.atk.util.StringUtils.*;
 
 @SupportedAnnotationTypes(
         "com.acutus.atk.db.processor.AtkEntity")
@@ -483,6 +485,28 @@ public class AtkEntityProcessor extends AtkProcessor {
                 .plus("import static com.acutus.atk.db.annotations.ForeignKey.Action.Cascade")
                 .plus("import static com.acutus.atk.db.annotations.ForeignKey.Action.Restrict")
                 .removeDuplicates();
+    }
+
+    @Override
+    public String getHashCode(Element element, Strings entity) throws NoSuchAlgorithmException, IOException {
+        MessageDigest md = MessageDigest.getInstance("MD5");
+        String value = entity.toString("");
+
+        // add lookups to digest
+        Populate populate = element.getAnnotation(Populate.class);
+        if (populate != null) {
+            File file = new File(new File("").getAbsolutePath()+"/src/main/resources/"+populate.value());
+            if (file.exists()) {
+               value += Files.readString(file.toPath());
+            } else {
+                value += UUID.randomUUID().toString();
+            }
+        }
+
+        md.update(value.getBytes());
+        byte[] digest = md.digest();
+        return bytesToHex(digest).toUpperCase();
+
     }
 
     @Override
