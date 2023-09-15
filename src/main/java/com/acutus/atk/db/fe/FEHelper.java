@@ -18,6 +18,7 @@ import com.acutus.atk.util.Assert;
 import com.acutus.atk.util.StringUtils;
 import com.acutus.atk.util.Strings;
 import com.acutus.atk.util.collection.Tuple1;
+import com.acutus.atk.util.collection.Tuple2;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -39,6 +40,7 @@ import static com.acutus.atk.db.constants.EnvProperties.DB_FE_STRICT;
 import static com.acutus.atk.db.sql.SQLHelper.execute;
 import static com.acutus.atk.db.sql.SQLHelper.main;
 import static com.acutus.atk.util.AtkUtil.handle;
+import static com.acutus.atk.util.TimeHelper.toTimestamp;
 
 @Slf4j
 public class FEHelper {
@@ -61,16 +63,21 @@ public class FEHelper {
     }
 
     private static boolean recordMismatch(Connection connection, AbstractAtkEntity entity) {
-        Optional<Tuple1<String>> hash = SQLHelper.queryOne(connection, String.class, "select checksum from atk_db_record where lower(table_name) = ?"
+        Optional<Tuple2<String,LocalDateTime>> hash = SQLHelper.queryOne(connection, String.class, LocalDateTime.class, "select checksum,modified_time from atk_db_record where lower(table_name) = ?"
                 , entity.getTableName().toLowerCase());
-        return !hash.isPresent() || !hash.get().getFirst().equalsIgnoreCase(entity.getMd5Hash());
+        boolean mismatch = !hash.isPresent() || !hash.get().getFirst ().equalsIgnoreCase(entity.getMd5Hash());
+        if (mismatch && hash.get().getSecond().isAfter(entity.getCompileTimeAsTime())) {
+            log.warn("!!!!!!!! FE Entity ["+entity.getTableName()+"] is compiled ["+entity.getCompileTime()+"] before last executed ["+hash.get().getSecond()+"]. FE Will not RUN. This may result in runtime issues");
+            return false;
+        }
+        return mismatch;
     }
 
     @SneakyThrows
     private static void maintainChecksum(Connection connection, AbstractAtkEntity entity) {
         log.info("Maintain checksum {}", entity.getTableName());
         SQLHelper.executeUpdate(connection, "delete from atk_db_record where lower(table_name) = ? ", entity.getTableName());
-        SQLHelper.executeUpdate(connection, "insert into atk_db_record(table_name,checksum) values (?,?) ", entity.getTableName(), entity.getMd5Hash());
+        SQLHelper.executeUpdate(connection, "insert into atk_db_record(table_name,checksum,modified_time) values (?,?,?) ", entity.getTableName(), entity.getMd5Hash(),toTimestamp(entity.getCompileTimeAsTime()));
     }
 
     @SneakyThrows
