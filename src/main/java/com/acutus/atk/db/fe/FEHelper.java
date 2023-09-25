@@ -164,6 +164,7 @@ public class FEHelper {
             }
         }
         if (!entity.clone().query().getById(connection).isPresent()) {
+            log.info("Populate entity {}", entity.getTableName());
             entity.persist().insert(connection);
         }
     }
