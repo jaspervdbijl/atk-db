@@ -291,11 +291,14 @@ public class FEHelper {
             } else if (entity.maintainColumns() && entity.maintainColumnsFilter().length == 0) {
                 // drop the extra column
                 String sql = DriverFactory.getDriver(connection).getDropColumnColumnDefinition(entity.getTableName(), meta.getColumnName(i + 1));
-                Assert.isTrue(DB_FE_ALLOW_DROP.get(), "Dropping of columns %s not allowed", meta.getColumnName(i + 1));
-                if (entity.maintainColumns()) {
-                    logAndExecute(connection, sql);
+                if (DB_FE_ALLOW_DROP.get()) {
+                    if (entity.maintainColumns()) {
+                        logAndExecute(connection, sql);
+                    } else {
+                        log.warn("Maintain Columns disabled for {}. Did not execute: {}", entity.getTableName(), sql);
+                    }
                 } else {
-                    log.warn("Maintain Columns disabled for {}. Did not execute: {}", entity.getTableName(), sql);
+                    log.warn("Column drop is not enabled. Did not execute: {}", entity.getTableName(), sql);
                 }
             }
         }

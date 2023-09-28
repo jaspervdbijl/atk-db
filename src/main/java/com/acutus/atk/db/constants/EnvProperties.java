@@ -9,6 +9,6 @@ public class EnvProperties {
     // if strict mode option is enabled, this any column size changes will also be altered
     public static PropertyField<Boolean> DB_FE_STRICT = new PropertyField<>("atk.db.forward_engineering.strict", true);
 
-    public static PropertyField<Boolean> DB_FE_ALLOW_DROP = new PropertyField<>("atk.db.forward_engineering.allow.drop", true);
+    public static PropertyField<Boolean> DB_FE_ALLOW_DROP = new PropertyField<>("atk.db.forward_engineering.allow.drop", false);
 
 }
