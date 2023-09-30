@@ -3,7 +3,9 @@ package com.acutus.atk.db;
 import com.acutus.atk.db.driver.AbstractDriver;
 import com.acutus.atk.db.driver.DriverFactory;
 import com.acutus.atk.db.sql.SQLHelper;
+import static com.acutus.atk.db.sql.SQLHelper.runAndReturn;
 import com.acutus.atk.reflection.Reflect;
+import static com.acutus.atk.util.AtkUtil.handle;
 import com.acutus.atk.util.Strings;
 import com.acutus.atk.util.call.CallOne;
 import lombok.SneakyThrows;
@@ -18,9 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
-import static com.acutus.atk.db.sql.SQLHelper.*;
-import static com.acutus.atk.util.AtkUtil.handle;
 
 public class View<T extends View> {
 
@@ -73,7 +72,7 @@ public class View<T extends View> {
             try (ResultSet rs = ps.executeQuery()) {
                 ignoreMissingFields(entities, rs.getMetaData());
                 while (rs.next()) {
-                    entities.stream().forEach(e -> ((AbstractAtkEntity) e).set(driver, rs));
+                    entities.forEach(e -> ((AbstractAtkEntity) e).set(driver, rs));
                     call.call((T) this);
                 }
             }
