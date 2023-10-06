@@ -298,7 +298,7 @@ public class FEHelper {
                         log.warn("Maintain Columns disabled for {}. Did not execute: {}", entity.getTableName(), sql);
                     }
                 } else {
-                    log.warn("Column drop is not enabled. Did not execute: {}", entity.getTableName(), sql);
+                    log.warn("Column drop is not enabled. Did not execute: {} {}", entity.getTableName(), sql);
                 }
             }
         }
