@@ -4,7 +4,6 @@ import com.acutus.atk.db.AbstractAtkEntity;
 import com.acutus.atk.db.AtkEnField;
 import com.acutus.atk.db.AtkEnFields;
 import com.acutus.atk.db.AtkEnIndex;
-import com.acutus.atk.db.annotations.Default;
 import com.acutus.atk.db.annotations.ForeignKey;
 import com.acutus.atk.db.fe.indexes.Index;
 import com.acutus.atk.db.fe.indexes.Indexes;
@@ -310,5 +309,21 @@ public abstract class AbstractDriver {
 
     public Integer nextSequence(DataSource dataSource, String name) {
         return runAndReturn(dataSource,c -> nextSequence(c,name));
+    }
+
+    public Strings getTableNames(Connection connection, String schema) {
+        return SQLHelper.query(connection, String.class, "SELECT table_name " +
+                                "FROM information_schema.tables " +
+                                "WHERE table_schema = ?",
+                        schema).stream().map(a -> a.getFirst())
+                .collect(Collectors.toCollection(Strings::new));
+    }
+    public Strings getTableColumnNames(Connection connection, String schema, String tableName) {
+        return SQLHelper.query(connection, String.class, "SELECT column_name " +
+                        "FROM information_schema.columns " +
+                        "WHERE table_schema = ? " +
+                        "  AND table_name   = ?",
+                schema,tableName).stream().map(a -> a.getFirst())
+                .collect(Collectors.toCollection(Strings::new));
     }
 }

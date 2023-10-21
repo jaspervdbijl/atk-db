@@ -347,6 +347,7 @@ public class SQLHelper {
         return head + sql;
     }
 
+
     public static void main(String[] args) {
         System.out.println(alias(Strings.asList("vendor_payment", "invoice", "booking"),
                 "select * from vendor_payment,invoice,booking where vendor_payment.invoice_id = invoice.id and invoice.id = booking.invoice_id and vendor_payment.status = ? and invoice.user_id = ? order by vendor_payment.schedule_date desc", 'a'));
