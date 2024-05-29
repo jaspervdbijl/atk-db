@@ -224,7 +224,7 @@ public class AtkEntityProcessor extends AtkProcessor {
         Sequence sequence = parent.getAnnotation(Sequence.class);
         if (sequence != null) {
             for (String name : sequence.name()) {
-                fields.add("\tpublic static final String SEQ_"+ name.toUpperCase(Locale.ROOT) + " = \""+name+"\"");
+                fields.add("\tpublic static final String SEQ_" + name.toUpperCase(Locale.ROOT) + " = \"" + name + "\"");
             }
         }
         return fields.stream().distinct().collect(Collectors.toCollection(Strings::new));
@@ -411,7 +411,7 @@ public class AtkEntityProcessor extends AtkProcessor {
 
 
         methods.add(String.format("\t@Override\n\tpublic boolean maintainEntity() {return %s;}", atk.maintainEntity() + ""));
-        methods.add(String.format("\t@Override\n\tpublic String charset() {return %s;}", "\""+atk.charset() + "\""));
+        methods.add(String.format("\t@Override\n\tpublic String charset() {return %s;}", "\"" + atk.charset() + "\""));
         methods.add(String.format("\t@Override\n\tpublic boolean maintainColumns() {return %s;}", atk.maintainColumns() + ""));
         methods.add(String.format("\t@Override\n\tpublic boolean maintainForeignKeys() {return %s;}", atk.maintainForeignKeys() + ""));
         methods.add(String.format("\t@Override\n\tpublic boolean maintainIndex() {return %s;}", atk.maintainIndex() + ""));
@@ -455,6 +455,7 @@ public class AtkEntityProcessor extends AtkProcessor {
         return super.getImports(element)
                 .plus("import com.acutus.atk.db.*;")
                 .plus("import com.acutus.atk.db.annotations.*;")
+                .plus("import static com.acutus.atk.db.annotations.Default.Type.*;")
                 .plus("import static com.acutus.atk.db.sql.SQLHelper.runAndReturn;")
                 .plus("import static com.acutus.atk.db.sql.SQLHelper.queryOne;")
                 .plus("import static com.acutus.atk.db.sql.SQLHelper.query;")
@@ -495,9 +496,9 @@ public class AtkEntityProcessor extends AtkProcessor {
         // add lookups to digest
         Populate populate = element.getAnnotation(Populate.class);
         if (populate != null) {
-            File file = new File(new File("").getAbsolutePath()+"/src/main/resources/"+populate.value());
+            File file = new File(new File("").getAbsolutePath() + "/src/main/resources/" + populate.value());
             if (file.exists()) {
-               value += Files.readString(file.toPath());
+                value += Files.readString(file.toPath());
             } else {
                 value += UUID.randomUUID().toString();
             }
