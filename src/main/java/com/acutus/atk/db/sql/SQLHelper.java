@@ -313,8 +313,8 @@ public class SQLHelper {
     }
 
 
-    public static void executeUpdate(DataSource dataSource, String sql, Object... params) {
-        run(dataSource, c -> executeUpdate(c, sql, params));
+    public static int executeUpdate(DataSource dataSource, String sql, Object... params) {
+        return runAndReturn(dataSource, c -> executeUpdate(c, sql, params));
     }
 
 
