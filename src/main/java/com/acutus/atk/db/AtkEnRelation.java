@@ -116,7 +116,7 @@ public class AtkEnRelation<T extends AbstractAtkEntity> {
 
     public Optional<T> get(Connection connection) {
         T entity = getEntity();
-        return entity != null ? entity.query().get(connection) : Optional.empty();
+        return entity != null && !entity.getFields().getSet().isEmpty() ? entity.query().get(connection) : Optional.empty();
     }
 
     public void iterate(Connection connection, CallOne<T> call) {

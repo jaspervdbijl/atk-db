@@ -1,6 +1,7 @@
 package com.acutus.atk.db.processor;
 
 import com.acutus.atk.db.annotations.FieldFilter;
+import com.acutus.atk.db.annotations.ForeignKey;
 import com.acutus.atk.db.annotations.Index;
 import com.acutus.atk.db.annotations.Sequence;
 import com.acutus.atk.entity.processor.Atk;
@@ -35,6 +36,7 @@ import java.util.stream.IntStream;
 
 import static com.acutus.atk.db.processor.AtkEntity.ColumnNamingStrategy.CAMEL_CASE_UNDERSCORE;
 import static com.acutus.atk.db.processor.ProcessorHelper.*;
+import static com.acutus.atk.util.AtkUtil.handle;
 import static com.acutus.atk.util.StringUtils.*;
 
 @SupportedAnnotationTypes(
@@ -209,6 +211,22 @@ public class AtkEntityProcessor extends AtkProcessor {
                 .filter(f -> f.getAnnotation(Index.class) != null)
                 .forEach(f -> indexes.add(getIndex(f, f.getAnnotation(Index.class), fNames)));
         return indexes;
+    }
+
+    @Override
+    protected String getSetterExtra(Element parent, Element e) {
+        ForeignKey foreignKey = e.getAnnotation(ForeignKey.class);
+        if (foreignKey != null) {
+            String key = foreignKey.toString();
+            key = key.substring(key.indexOf("table=") + "table=".length());
+            key = key.substring(0, key.indexOf(".class"));
+            for (Element element : parent.getEnclosedElements()) {
+                if (element.asType().toString().equals(key)) {
+                    return "\nthis." + element.getSimpleName() + " = null;\n";
+                }
+            }
+        }
+        return "";
     }
 
     @Override
