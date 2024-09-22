@@ -24,6 +24,7 @@ public class SQLConstants {
         put(Boolean.class, handle(() -> ResultSet.class.getMethod("getBoolean", int.class)));
         put(Byte.class, handle(() -> ResultSet.class.getMethod("getByte", int.class)));
         put(Byte[].class, handle(() -> ResultSet.class.getMethod("getBytes", int.class)));
+        put(byte[].class, handle(() -> ResultSet.class.getMethod("getBytes", int.class)));
         put(java.sql.Date.class, handle(() -> ResultSet.class.getMethod("getDate", int.class)));
         put(Double.class, handle(() -> ResultSet.class.getMethod("getDouble", int.class)));
         put(Short.class, handle(() -> ResultSet.class.getMethod("getShort", int.class)));
