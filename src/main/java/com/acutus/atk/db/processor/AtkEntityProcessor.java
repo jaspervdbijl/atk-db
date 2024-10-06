@@ -222,7 +222,9 @@ public class AtkEntityProcessor extends AtkProcessor {
             key = key.substring(0, key.indexOf(".class"));
             for (Element element : parent.getEnclosedElements()) {
                 if (element.asType().toString().equals(key)) {
-                    return "\nthis." + element.getSimpleName() + " = null;\n";
+                    return String.format("\nif (this.get%s() == null || !this.get%s().equals(%s)) this." + element.getSimpleName() + " = null;\n",
+                            methodName(e.getSimpleName().toString()), methodName(e.getSimpleName().toString()),
+                            e.getSimpleName().toString());
                 }
             }
         }
