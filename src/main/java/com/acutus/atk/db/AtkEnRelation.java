@@ -28,20 +28,22 @@ public class AtkEnRelation<T extends AbstractAtkEntity> {
     private Class<T> type;
     @Getter
     private RelType relType;
+    private Optional<? extends Class> targetClass;
     private AbstractAtkEntity source;
     private String fieldFilter;
 
     @Getter @Setter
     private FetchType fetchType;
 
-    public AtkEnRelation(Class<T> type, RelType relType, AbstractAtkEntity source) {
+    public AtkEnRelation(Class<T> type, RelType relType, Optional<? extends Class> targetClass, AbstractAtkEntity source) {
         this.type = type;
         this.relType = relType;
         this.source = source;
+        this.targetClass = targetClass;
     }
 
-    public AtkEnRelation(Class<T> type, RelType relType, String fieldFilter, AbstractAtkEntity source) {
-        this(type,relType,source);
+    public AtkEnRelation(Class<T> type, RelType relType, String fieldFilter, Optional<Class> targetClass, AbstractAtkEntity source) {
+        this(type,relType,targetClass,source);
         this.fieldFilter = fieldFilter;
     }
 
@@ -63,7 +65,9 @@ public class AtkEnRelation<T extends AbstractAtkEntity> {
     }
 
     private T getOneToOne(T instance) {
-        if (!instance.getEnFields().getForeignKeys(source.getClass()).isEmpty()) {
+        if (targetClass.isPresent() && source.getBaseClass().equals(targetClass.get())) {
+            return getManyToOne(instance);
+        } else  if (!instance.getEnFields().getForeignKeys(source.getClass()).isEmpty()) {
             return getOneToMany(instance);
         } else {
             return getManyToOne(instance);
