@@ -4,6 +4,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.util.Arrays;
 
 import static com.acutus.atk.db.annotations.ForeignKey.Deferrability.NotDeferrable;
 
@@ -30,16 +31,20 @@ public @interface ForeignKey {
     Deferrability deferrable() default NotDeferrable;
 
     public enum Action {
-        NoAction(3), SetDefault(4), SetNull(2), Cascade(0), Restrict(1);
+        NoAction(1,3), SetDefault(4), SetNull(2), Cascade(0), Restrict(1);
 
-        int code;
+        int[] codes;
 
-        Action(int code) {
-            this.code = code;
+        Action(int ... codes) {
+            this.codes = codes;
         }
 
-        public int getCode() {
-            return code;
+        public int[] getCode() {
+            return codes;
+        }
+
+        public boolean matches(int index) {
+            return Arrays.stream(codes).anyMatch(code -> code == index);
         }
     }
 
