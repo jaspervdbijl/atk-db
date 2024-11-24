@@ -14,7 +14,6 @@ import com.sun.source.util.Trees;
 import lombok.SneakyThrows;
 
 import javax.annotation.processing.Processor;
-import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.SourceVersion;
@@ -189,7 +188,7 @@ public class AtkEntityProcessor extends AtkProcessor {
     private Strings getAuditFields(Element element) {
         Strings append = new Strings();
         AtkEntity atk = element.getAnnotation(AtkEntity.class);
-        if (atk.enableAuditByUser()) {
+        if (atk.audit()) {
             append.add("@CreatedBy @Column(name = \"created_by\") private String createdBy");
             append.add("@CreatedBy " + getAuditAtkEnField(element, "createdBy", "String"));
             append.add("@CreatedDate @Column(name = \"created_date\") private LocalDateTime createdDate");
@@ -234,7 +233,7 @@ public class AtkEntityProcessor extends AtkProcessor {
     protected Strings getStaticFields(Element parent) {
         Strings fields = super.getStaticFields(parent);
         AtkEntity atk = parent.getAnnotation(AtkEntity.class);
-        if (atk.enableAuditByUser()) {
+        if (atk.audit()) {
             fields.add(getStaticField(parent, "createdBy"));
             fields.add(getStaticField(parent, "createdDate"));
             fields.add(getStaticField(parent, "lastModifiedBy"));
@@ -257,7 +256,7 @@ public class AtkEntityProcessor extends AtkProcessor {
     @Override
     protected boolean shouldExcludeField(Element element, String name) {
         AtkEntity atk = element.getAnnotation(AtkEntity.class);
-        return atk.enableAuditByUser() && isAuditField(name);
+        return atk.audit() && isAuditField(name);
     }
 
     @Override
@@ -541,7 +540,7 @@ public class AtkEntityProcessor extends AtkProcessor {
     protected void validate(Element element) {
         super.validate(element);
         AtkEntity atk = element.getAnnotation(AtkEntity.class);
-        if (!(atk.trim().equals(ChronoUnit.FOREVER) || atk.enableAuditByUser())) {
+        if (!(atk.trim().equals(ChronoUnit.FOREVER) || atk.audit())) {
             error(String.format("Element [%s]. Is trim is enabled then addAuditFields must also be added", element.getSimpleName()));
         }
     }
