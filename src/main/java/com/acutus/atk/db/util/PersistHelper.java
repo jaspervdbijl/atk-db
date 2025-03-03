@@ -47,12 +47,12 @@ public class PersistHelper {
     public static List<Optional<AtkEnField>> preProcess(
             AbstractAtkEntity entity, Map<Class<? extends Annotation>,
             CallOneRet<AtkEnField, Optional<AtkEnField>>> processor,
-            boolean isBulkUpdate) {
+            boolean isBulkUpdate, boolean isUpdate) {
         List<Optional<AtkEnField>> fields = new ArrayList<>();
-        entity.getEnFields().stream().filter(f -> isBulkUpdate || f.get() == null).forEach(field -> {
+        entity.getEnFields().stream().filter(f -> isBulkUpdate || isUpdate || f.get() == null).forEach(field -> {
             for (Annotation a : field.getField().getAnnotations()) {
                 if (processor.containsKey(a.annotationType())) {
-                    if (field.get() == null) {
+                    if (field.get() == null || isUpdate) {
                         fields.add(handle(() -> processor.get(a.annotationType()).call(field)));
                     } else if (isBulkUpdate) {
                         fields.add(Optional.of(field));
@@ -65,7 +65,7 @@ public class PersistHelper {
 
     @SneakyThrows
     public static List<Optional<AtkEnField>> preProcessInsert(AbstractAtkEntity entity) {
-        return preProcess(entity, insertPreProcessor, false);
+        return preProcess(entity, insertPreProcessor, false, false);
     }
 
     /**
@@ -77,7 +77,7 @@ public class PersistHelper {
     public static List<Optional<AtkEnField>> preProcessUpdate(
             AbstractAtkEntity entity,
             boolean isBulkUpdate) {
-        return preProcess(entity, updatePreProcessor, isBulkUpdate);
+        return preProcess(entity, updatePreProcessor, isBulkUpdate, true);
     }
 
 
@@ -97,13 +97,13 @@ public class PersistHelper {
                 throw new UnsupportedOperationException("Type not implemented " + field.getType());
             }
         }
-        return wasNull && field.get() != null ? Optional.of(field) : Optional.empty();
+        return wasNull && field.get() != null || update ? Optional.of(field) : Optional.empty();
     }
 
     public static Optional<AtkEnField> processCreatedOrModifiedBy(AtkEnField field, boolean update) {
         boolean wasNull = field.get() == null;
         field.set(field.get() == null || update ? getUsername() : field.get());
-        return wasNull ? Optional.of(field) : Optional.empty();
+        return wasNull || update ? Optional.of(field) : Optional.empty();
     }
 
     public static Optional<AtkEnField> processUID(AtkEnField field) {
