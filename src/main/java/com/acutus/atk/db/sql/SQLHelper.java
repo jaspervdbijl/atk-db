@@ -64,7 +64,7 @@ public class SQLHelper {
     @SneakyThrows
     public static <T> T mapFromRs(ResultSet rs, Class<T> type, int index) {
         Assert.isTrue(RS_FUNC_INT_MAP.containsKey(type), "Type not supported %s", type);
-        return (T) unwrap(type,RS_FUNC_INT_MAP.get(type).invoke(rs, index));
+        return (T) unwrap(type, RS_FUNC_INT_MAP.get(type).invoke(rs, index));
     }
 
     @SneakyThrows
@@ -74,6 +74,7 @@ public class SQLHelper {
             if (type.equals(value.getClass())) return (T) value;
             if (Clob.class.equals(type)) return (T) value;
             if (Blob.class.equals(type)) return (T) value;
+            if (Byte[].class.equals(type)) return (T) value;
             if (Character.class.equals(type))
                 return (T) (isNotEmpty(value.toString()) ? value.toString().charAt(0) : null);
             if (LocalDateTime.class.equals(type) && value.getClass().equals(Timestamp.class))
@@ -143,14 +144,14 @@ public class SQLHelper {
 
     @SneakyThrows
     public static PreparedStatement prepare(Connection connection, String query, Object... params) {
-        return prepare(connection.prepareStatement(query),params);
+        return prepare(connection.prepareStatement(query), params);
     }
 
     @SneakyThrows
     public static List<List> query(Connection connection, Class type[], String query, Object... params) {
         try (PreparedStatement ps = prepare(connection, query, params)) {
             try (ResultSet rs = ps.executeQuery()) {
-                long s1 =0 ,s2 = 0;
+                long s1 = 0, s2 = 0;
                 try {
                     s1 = System.currentTimeMillis();
                     return query(rs, type);
@@ -158,7 +159,7 @@ public class SQLHelper {
                 } finally {
                     s2 = System.currentTimeMillis();
                     if (s2 - s1 > 1000) {
-                        log.debug("Query SLow " + ((s2-s1) / 1000) + " "+ query);
+                        log.debug("Query SLow " + ((s2 - s1) / 1000) + " " + query);
                     }
                 }
             }
@@ -203,23 +204,24 @@ public class SQLHelper {
         return runAndReturn(dataSource, connection -> queryOne(connection, type, query, params));
     }
 
-    public static <A,B> Optional<Tuple2<A,B>> queryOne(Connection connection, Class<A> t1, Class<B> t2, String query, Object... params) {
-        List<Tuple2<A,B>> list = query(connection, t1, t2, query, params);
+    public static <A, B> Optional<Tuple2<A, B>> queryOne(Connection connection, Class<A> t1, Class<B> t2, String query, Object... params) {
+        List<Tuple2<A, B>> list = query(connection, t1, t2, query, params);
         return Optional.ofNullable(!list.isEmpty() ? list.get(0) : null);
     }
 
-    public static <A,B> Optional<Tuple2<A,B>> queryOne(DataSource dataSource, Class<A> t1, Class<B> t2, String query, Object... params) {
+    public static <A, B> Optional<Tuple2<A, B>> queryOne(DataSource dataSource, Class<A> t1, Class<B> t2, String query, Object... params) {
         return runAndReturn(dataSource, connection -> queryOne(connection, t1, t2, query, params));
     }
 
-    public static <A,B,C> Optional<Tuple3<A,B,C>> queryOne(Connection connection, Class<A> t1, Class<B> t2, Class<C> t3, String query, Object... params) {
-        List<Tuple3<A,B,C>> list = query(connection, t1, t2, t3, query, params);
+    public static <A, B, C> Optional<Tuple3<A, B, C>> queryOne(Connection connection, Class<A> t1, Class<B> t2, Class<C> t3, String query, Object... params) {
+        List<Tuple3<A, B, C>> list = query(connection, t1, t2, t3, query, params);
         return Optional.ofNullable(!list.isEmpty() ? list.get(0) : null);
     }
 
-    public static <A,B,C> Optional<Tuple3<A,B,C>> queryOne(DataSource dataSource, Class<A> t1, Class<B> t2, Class<C> t3, String query, Object... params) {
+    public static <A, B, C> Optional<Tuple3<A, B, C>> queryOne(DataSource dataSource, Class<A> t1, Class<B> t2, Class<C> t3, String query, Object... params) {
         return runAndReturn(dataSource, connection -> queryOne(connection, t1, t2, t3, query, params));
     }
+
     public static <A, B> List<Tuple2<A, B>> query(Connection connection, Class<A> t1, Class<B> t2, String query, Object... params) {
         return (List<Tuple2<A, B>>) query(connection, Tuple2.class, new Class[]{t1, t2}, query, params);
     }
@@ -288,9 +290,9 @@ public class SQLHelper {
         return (List<Tuple7<A, B, C, D, E, F, G>>) query(connection, Tuple7.class, new Class[]{t1, t2, t3, t4, t5, t6, t7}, query, params);
     }
 
-    public static <A, B, C, D, E, F,G> List<Tuple7<A, B, C, D, E, F,G>> query(DataSource dataSource, Class<A> t1, Class<B> t2
+    public static <A, B, C, D, E, F, G> List<Tuple7<A, B, C, D, E, F, G>> query(DataSource dataSource, Class<A> t1, Class<B> t2
             , Class<C> t3, Class<D> t4, Class<E> t5, Class<F> t6, Class<G> t7, String query, Object... params) {
-        return runAndReturn(dataSource, connection -> query(connection, t1, t2, t3, t4, t5, t6,t7, query, params));
+        return runAndReturn(dataSource, connection -> query(connection, t1, t2, t3, t4, t5, t6, t7, query, params));
     }
 
     @SneakyThrows
@@ -313,8 +315,8 @@ public class SQLHelper {
     }
 
 
-    public static void executeUpdate(DataSource dataSource, String sql, Object... params) {
-        run(dataSource, c -> executeUpdate(c, sql, params));
+    public static int executeUpdate(DataSource dataSource, String sql, Object... params) {
+        return runAndReturn(dataSource, c -> executeUpdate(c, sql, params));
     }
 
 

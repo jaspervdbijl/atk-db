@@ -60,7 +60,7 @@ public class FrKey {
     }
 
     public boolean equalsStrict(Class<? extends AbstractAtkEntity> eClass, AtkEnField field, ForeignKey key) {
-        return equals(eClass, field, key) && key.onDeleteAction().getCode() == getDELETE_RULE() &&
+        return equals(eClass, field, key) && key.onDeleteAction().matches(getDELETE_RULE()) &&
                 getDEFERRABILITY() == key.deferrable().getCode();
     }
 

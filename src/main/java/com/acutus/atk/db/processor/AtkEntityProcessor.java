@@ -1,6 +1,7 @@
 package com.acutus.atk.db.processor;
 
 import com.acutus.atk.db.annotations.FieldFilter;
+import com.acutus.atk.db.annotations.ForeignKey;
 import com.acutus.atk.db.annotations.Index;
 import com.acutus.atk.db.annotations.Sequence;
 import com.acutus.atk.entity.processor.Atk;
@@ -13,7 +14,6 @@ import com.sun.source.util.Trees;
 import lombok.SneakyThrows;
 
 import javax.annotation.processing.Processor;
-import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.SourceVersion;
@@ -35,10 +35,10 @@ import java.util.stream.IntStream;
 
 import static com.acutus.atk.db.processor.AtkEntity.ColumnNamingStrategy.CAMEL_CASE_UNDERSCORE;
 import static com.acutus.atk.db.processor.ProcessorHelper.*;
+import static com.acutus.atk.util.AtkUtil.handle;
 import static com.acutus.atk.util.StringUtils.*;
 
-@SupportedAnnotationTypes(
-        "com.acutus.atk.db.processor.AtkEntity")
+@SupportedAnnotationTypes("com.acutus.atk.db.processor.AtkEntity")
 @SupportedSourceVersion(SourceVersion.RELEASE_21)
 @AutoService(Processor.class)
 public class AtkEntityProcessor extends AtkProcessor {
@@ -188,7 +188,7 @@ public class AtkEntityProcessor extends AtkProcessor {
     private Strings getAuditFields(Element element) {
         Strings append = new Strings();
         AtkEntity atk = element.getAnnotation(AtkEntity.class);
-        if (atk.enableAuditByUser()) {
+        if (atk.audit()) {
             append.add("@CreatedBy @Column(name = \"created_by\") private String createdBy");
             append.add("@CreatedBy " + getAuditAtkEnField(element, "createdBy", "String"));
             append.add("@CreatedDate @Column(name = \"created_date\") private LocalDateTime createdDate");
@@ -212,10 +212,28 @@ public class AtkEntityProcessor extends AtkProcessor {
     }
 
     @Override
+    protected String getSetterExtra(Element parent, Element e) {
+        ForeignKey foreignKey = e.getAnnotation(ForeignKey.class);
+        if (foreignKey != null) {
+            String key = foreignKey.toString();
+            key = key.substring(key.indexOf("table=") + "table=".length());
+            key = key.substring(0, key.indexOf(".class"));
+            for (Element element : parent.getEnclosedElements()) {
+                if (element.asType().toString().equals(key)) {
+                    return String.format("\nif (this.get%s() == null || !this.get%s().equals(%s)) this." + element.getSimpleName() + " = null;\n",
+                            methodName(e.getSimpleName().toString()), methodName(e.getSimpleName().toString()),
+                            e.getSimpleName().toString());
+                }
+            }
+        }
+        return "";
+    }
+
+    @Override
     protected Strings getStaticFields(Element parent) {
         Strings fields = super.getStaticFields(parent);
         AtkEntity atk = parent.getAnnotation(AtkEntity.class);
-        if (atk.enableAuditByUser()) {
+        if (atk.audit()) {
             fields.add(getStaticField(parent, "createdBy"));
             fields.add(getStaticField(parent, "createdDate"));
             fields.add(getStaticField(parent, "lastModifiedBy"));
@@ -238,7 +256,7 @@ public class AtkEntityProcessor extends AtkProcessor {
     @Override
     protected boolean shouldExcludeField(Element element, String name) {
         AtkEntity atk = element.getAnnotation(AtkEntity.class);
-        return atk.enableAuditByUser() && isAuditField(name);
+        return atk.audit() && isAuditField(name);
     }
 
     @Override
@@ -301,7 +319,7 @@ public class AtkEntityProcessor extends AtkProcessor {
         return String.format("public AtkEntities<%s> %s(%s c) {\n" +
                 "\t%s = %s == null ? %sRef.getAll(c) : %s;\n" +
                 "\treturn %s;\n" +
-                "};", className, mName, cType, eName, eName, eName, eName, eName);
+                "}", className, mName, cType, eName, eName, eName, eName, eName);
     }
 
     protected String getOneToManyImp(AtkEntity atk, Element element) {
@@ -316,8 +334,8 @@ public class AtkEntityProcessor extends AtkProcessor {
         }
         String className = type.substring(type.indexOf("<") + 1, type.indexOf(">"));
         String classNameAndRef = className + atk.classNameExt();
-        String atkRef = String.format("\tpublic transient AtkEnRelation<%s> %sRef = new AtkEnRelation<>(%s.class, AtkEnRelation.RelType.OneToMany, this);"
-                , classNameAndRef, element.toString(), classNameAndRef);
+        String atkRef = String.format("\tpublic transient AtkEnRelation<%s> %sRef = new AtkEnRelation<>(%s.class, AtkEnRelation.RelType.OneToMany, null, Optional.empty(), this);"
+                , classNameAndRef, element, classNameAndRef);
 
         // TODO add a getter, that wil automatically execute the atkReference
 
@@ -326,7 +344,7 @@ public class AtkEntityProcessor extends AtkProcessor {
         list.add(String.format("private transient AtkEntities<%s> %s;", classNameAndRef, element.toString()));
         list.add(getLazyLoadMethod(classNameAndRef, element, "Connection"));
         list.add(getLazyLoadMethod(classNameAndRef, element, "DataSource"));
-        return atkRef + "\n\n\t" + list.toString("\n\t");
+        return atkRef + "\n\t" + list.toString("\n\t");
     }
 
     private String getLazyLoadMethodForOptional(String className, Element element, String cType) {
@@ -340,6 +358,12 @@ public class AtkEntityProcessor extends AtkProcessor {
     }
 
 
+    private String getTargetClass(String oneToRel) {
+        oneToRel = oneToRel.substring(oneToRel.indexOf("targetEntity=") + "targetEntity=".length());
+        oneToRel = oneToRel.substring(0, oneToRel.length() - 1);
+        return "void.class".equals(oneToRel) ? "Optional.empty()" : "Optional.of(" + oneToRel + ")";
+    }
+
     protected Strings getManyToOneImp(AtkEntity atk, Element element) {
         Strings values = new Strings();
         String type = element.asType().toString();
@@ -349,12 +373,14 @@ public class AtkEntityProcessor extends AtkProcessor {
         // add reference
         ManyToOne manyToOne = element.getAnnotation(ManyToOne.class);
         OneToOne oneToOne = element.getAnnotation(OneToOne.class);
+        String targetClass = manyToOne != null
+                ? getTargetClass(manyToOne.toString()) : oneToOne != null
+                ? getTargetClass(oneToOne.toString()) : "Optional.empty()";
 
         FieldFilter filter = element.getAnnotation(FieldFilter.class);
-        String filterStr = filter != null ? "\"" + filter.fields()[0] + "\", " : "";
-        values.add(String.format("\tpublic transient AtkEnRelation<%s> %sRef = new AtkEnRelation<>(%s.class, AtkEnRelation.RelType." + (manyToOne != null ? "ManyToOne" : "OneToOne") + ",%s this);"
-                , className, element.toString(), className, filterStr));
-        FieldFilter fieldFilter = element.getAnnotation(FieldFilter.class);
+        String filterStr = filter != null ? "\"" + filter.fields()[0] + "\"" : "null";
+        values.add(String.format("\tpublic transient AtkEnRelation<%s> %sRef = new AtkEnRelation<>(%s.class, AtkEnRelation.RelType." + (manyToOne != null ? "ManyToOne" : "OneToOne") + ",%s,%s, this);"
+                , className, element, className, filterStr, targetClass));
 
         // TODO - Validate that there is exactly one ForeignKey Match
         if (manyToOne != null || oneToOne != null) {
@@ -404,17 +430,17 @@ public class AtkEntityProcessor extends AtkProcessor {
         AtkEntity atk = element.getAnnotation(AtkEntity.class);
         // add all query shortcuts
         Strings methods = new Strings();
-        methods.add(String.format("\tpublic com.acutus.atk.db.Query<%s,%s> query() {return new com.acutus.atk.db.Query(this);}", getClassName(element), element.getSimpleName()));
-        methods.add(String.format("\tpublic com.acutus.atk.db.Persist<%s> persist() {return new com.acutus.atk.db.Persist(this);}", getClassName(element)));
-        methods.add(String.format("\tpublic int version() {return %d;}", atk.version()));
-        methods.add(String.format("\t@Override\n\tpublic AtkEntity.Type getEntityType() {return AtkEntity.Type.%s;}", atk.type().name()));
+        methods.add(String.format("\n\tpublic com.acutus.atk.db.Query<%s,%s> query() {return new com.acutus.atk.db.Query(this);}", getClassName(element), element.getSimpleName()));
+        methods.add(String.format("\n\tpublic com.acutus.atk.db.Persist<%s> persist() {return new com.acutus.atk.db.Persist(this);}", getClassName(element)));
+        methods.add(String.format("\n\tpublic int version() {return %d;}", atk.version()));
+        methods.add(String.format("\n\t@Override\n\tpublic AtkEntity.Type getEntityType() {return AtkEntity.Type.%s;}", atk.type().name()));
 
 
-        methods.add(String.format("\t@Override\n\tpublic boolean maintainEntity() {return %s;}", atk.maintainEntity() + ""));
-        methods.add(String.format("\t@Override\n\tpublic String charset() {return %s;}", "\"" + atk.charset() + "\""));
-        methods.add(String.format("\t@Override\n\tpublic boolean maintainColumns() {return %s;}", atk.maintainColumns() + ""));
-        methods.add(String.format("\t@Override\n\tpublic boolean maintainForeignKeys() {return %s;}", atk.maintainForeignKeys() + ""));
-        methods.add(String.format("\t@Override\n\tpublic boolean maintainIndex() {return %s;}", atk.maintainIndex() + ""));
+        methods.add(String.format("\n\t@Override\n\tpublic boolean maintainEntity() {return %s;}", atk.maintainEntity() + ""));
+        methods.add(String.format("\n\t@Override\n\tpublic String charset() {return %s;}", "\"" + atk.charset() + "\""));
+        methods.add(String.format("\n\t@Override\n\tpublic boolean maintainColumns() {return %s;}", atk.maintainColumns() + ""));
+        methods.add(String.format("\n\t@Override\n\tpublic boolean maintainForeignKeys() {return %s;}", atk.maintainForeignKeys() + ""));
+        methods.add(String.format("\n\t@Override\n\tpublic boolean maintainIndex() {return %s;}", atk.maintainIndex() + ""));
 
         // views
         if (atk.type() == AtkEntity.Type.VIEW) {
@@ -514,7 +540,7 @@ public class AtkEntityProcessor extends AtkProcessor {
     protected void validate(Element element) {
         super.validate(element);
         AtkEntity atk = element.getAnnotation(AtkEntity.class);
-        if (!(atk.trim().equals(ChronoUnit.FOREVER) || atk.enableAuditByUser())) {
+        if (!(atk.trim().equals(ChronoUnit.FOREVER) || atk.audit())) {
             error(String.format("Element [%s]. Is trim is enabled then addAuditFields must also be added", element.getSimpleName()));
         }
     }

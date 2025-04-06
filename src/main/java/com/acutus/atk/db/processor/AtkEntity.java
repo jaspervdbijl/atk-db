@@ -32,8 +32,8 @@ public @interface AtkEntity {
     int version() default 0;
 
     // will auto add auditing fields
-    boolean enableAuditByUser() default false;
-    boolean enableAuditing() default false;
+    boolean audit() default false;
+    boolean auditChanges() default false;
 
     boolean maintainEntity() default false;
     boolean maintainColumns() default true;
