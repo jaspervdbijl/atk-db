@@ -8,7 +8,6 @@ import com.acutus.atk.entity.processor.Atk;
 import com.acutus.atk.entity.processor.AtkProcessor;
 import com.acutus.atk.util.Strings;
 import com.acutus.atk.util.collection.Tuple4;
-import com.google.auto.service.AutoService;
 import com.sun.source.tree.MethodTree;
 import com.sun.source.util.Trees;
 import lombok.SneakyThrows;
@@ -40,7 +39,6 @@ import static com.acutus.atk.util.StringUtils.*;
 
 @SupportedAnnotationTypes("com.acutus.atk.db.processor.AtkEntity")
 @SupportedSourceVersion(SourceVersion.RELEASE_21)
-@AutoService(Processor.class)
 public class AtkEntityProcessor extends AtkProcessor {
 
 

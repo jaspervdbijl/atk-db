@@ -94,6 +94,7 @@ public class Persist<T extends AbstractAtkEntity> {
             ids.get(0).set(DriverFactory.getDriver(connection).getLastInsertValue(connection, ids.get(0).getType()));
         }
         PERSIST_CALLBACK.ifPresent(c -> handle(() -> c.call(connection, entity, true)));
+        EntityEvents.insertEvent(entity);
         entity.setLoadedFromDB(true);
         return entity;
     }
@@ -169,6 +170,7 @@ public class Persist<T extends AbstractAtkEntity> {
 
             ps.executeUpdate();
             PERSIST_CALLBACK.ifPresent(c -> handle(() -> c.call(connection, entity, false)));
+            EntityEvents.updateEvent(entity);
             entity.getEnFields().reset();
             return entity;
         }
