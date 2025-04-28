@@ -167,13 +167,15 @@ public class AtkEntityProcessor extends AtkProcessor {
         if (!mismatch.isEmpty()) {
             error(String.format("Index [%s] column mismatch [%s]", index.name(), mismatch));
         }
-        return String.format("public transient AtkEnIndex %s = new AtkEnIndex(\"%s\",this);"
+        return String.format("@Getter\n" +
+                        "public transient AtkEnIndex %s = new AtkEnIndex(\"%s\",this);"
                 , formatIndexName(index.name()), field.getSimpleName());
     }
 
     private String getAuditAtkEnField(Element element, String name, String type) {
         return String.format(
-                "public transient AtkEnField<%s,%s> _%s = new AtkEnField<>(Reflect.getFields(%s.class).getByName(\"%s\").get(),this)",
+                "@Getter\n" +
+                        "public transient AtkEnField<%s,%s> _%s = new AtkEnField<>(Reflect.getFields(%s.class).getByName(\"%s\").get(),this)",
                 type, getClassName(element), name, getClassName(element), name);
     }
 
@@ -332,7 +334,8 @@ public class AtkEntityProcessor extends AtkProcessor {
         }
         String className = type.substring(type.indexOf("<") + 1, type.indexOf(">"));
         String classNameAndRef = className + atk.classNameExt();
-        String atkRef = String.format("\tpublic transient AtkEnRelation<%s> %sRef = new AtkEnRelation<>(%s.class, AtkEnRelation.RelType.OneToMany, null, Optional.empty(), this);"
+        String atkRef = String.format("\t@Getter\n" +
+                        "public transient AtkEnRelation<%s> %sRef = new AtkEnRelation<>(%s.class, AtkEnRelation.RelType.OneToMany, null, Optional.empty(), this);"
                 , classNameAndRef, element, classNameAndRef);
 
         // TODO add a getter, that wil automatically execute the atkReference
