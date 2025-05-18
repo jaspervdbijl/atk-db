@@ -189,7 +189,7 @@ public class AtkEntityProcessor extends AtkProcessor {
         Strings append = new Strings();
         AtkEntity atk = element.getAnnotation(AtkEntity.class);
         if (atk.audit()) {
-            append.add("@CreatedBy @Getter @Column(name = \"created_by\") private String createdBy");
+            append.add("@CreatedBy @Getter @Setter @Column(name = \"created_by\") private String createdBy");
             append.add("@CreatedBy " + getAuditAtkEnField(element, "createdBy", "String"));
             append.add("@CreatedDate @Getter @Column(name = \"created_date\") private LocalDateTime createdDate");
             append.add("@CreatedDate " + getAuditAtkEnField(element, "createdDate", "LocalDateTime"));
