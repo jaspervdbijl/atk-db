@@ -110,21 +110,18 @@ public class Filter {
   @SneakyThrows
   public PreparedStatement prepare(PreparedStatement ps) {
     if (type == Type.CUSTOM) {
-      int index = 0;
       for (int i = 0; customParams != null && i < customParams.length; i++) {
         if (customParams[i] instanceof List) {
           for (Object item : ((List<?>) customParams[i])) {
-            ps.setObject(i + 1 + index, item);
-            index = index + 1;
+              ps.setObject(i + 1, item);
           }
         } else if (customParams[i] instanceof Object[]) {
           for (Object item : ((Object[]) customParams[i])) {
-            ps.setObject(i + 1 + index, item);
-            index = index + 1;
+              ps.setObject(i + 1, item);
           }
 
         } else {
-          ps.setObject(i + 1 + index, customParams[i]);
+            ps.setObject(i + 1, customParams[i]);
         }
       }
     } else {
