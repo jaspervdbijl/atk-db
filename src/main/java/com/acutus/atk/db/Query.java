@@ -237,13 +237,15 @@ public class Query<T extends AbstractAtkEntity, O> {
 
         // Check if we need to replace an any list items
         if (filter.isCustom()) {
+            int offset = 0;
             for (int i = 0; filter.getCustomParams() != null && i < filter.getCustomParams().length; i++) {
                 if (filter.getCustomParams()[i] instanceof List || filter.getCustomParams()[i] instanceof Object[]) {
                     // Find the index of the ? to be replaces
-                    int indexToReplace = findIndexOfParamToReplace(i, returnSql.toString());
-                    returnSql.replace(indexToReplace, indexToReplace + 1,
-                            (String) (filter.getCustomParams()[i] instanceof List ? ((List) filter.getCustomParams()[i]).stream() :
-                                    Arrays.stream((Object[]) filter.getCustomParams()[i])).
+                    int indexToReplace = findIndexOfParamToReplace(i + offset, returnSql.toString());
+                    List lst = (filter.getCustomParams()[i] instanceof List ? ((List) filter.getCustomParams()[i]) :
+                            Arrays.stream((Object[]) filter.getCustomParams()[i]).toList());
+                    offset += lst.size() - 1;
+                    returnSql.replace(indexToReplace, indexToReplace + 1, (String) lst.stream().
                                     map(item -> "?").
                                     collect(Collectors.joining(",")));
                 }
