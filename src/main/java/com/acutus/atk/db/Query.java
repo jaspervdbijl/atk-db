@@ -269,6 +269,11 @@ public class Query<T extends AbstractAtkEntity, O> {
         String sql = getProcessedSql(filter);
         int ofs = offset;
         limit += ofs;
+        if (!shouldLeftJoin) {
+            sql += " limit " + (limit < 1 ? 1 : limit) + " offset " + offset;
+            limit = -1;
+            offset = 0;
+        }
 
         // transform the select *
         Map<String, AbstractAtkEntity> map = new HashMap<>();
