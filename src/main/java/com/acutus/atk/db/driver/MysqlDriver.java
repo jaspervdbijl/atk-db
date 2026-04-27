@@ -49,6 +49,11 @@ public class MysqlDriver extends AbstractDriver {
     }
 
     @Override
+    public String getAddColumnColumnDefinition(AtkEnField field) {
+        return super.getAddColumnColumnDefinition(field) + ", algorithm=instant";
+    }
+
+    @Override
     public String replace(String column, String text, String replace) {
         return String.format("replace(%s,%s,%s)d", column, text, replace);
     }
